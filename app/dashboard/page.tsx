@@ -17,14 +17,14 @@ export default async function DashboardPage({
 
     const { officeId, employeeCode, officeName } = session.user as { officeId: string; employeeCode: string; officeName: string }
 
-    // ─── Fetch office cutoff time ─────────────────────────────────
+
     const office = await prisma.office.findUnique({
         where: { id: officeId },
     })
 
     const cutoffTime = office?.cutoffTime || "18:00"
 
-    // ─── Fetch tomorrow's menu ────────────────────────────────────
+
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 1)
     tomorrow.setHours(0, 0, 0, 0)
@@ -58,7 +58,7 @@ export default async function DashboardPage({
             available: false,
         }
 
-    // ─── Fetch existing selection ─────────────────────────────────
+
     const selection = await prisma.mealSelection.findUnique({
         where: {
             employeeId_date: {
@@ -76,7 +76,7 @@ export default async function DashboardPage({
         }
         : null
 
-    // ─── Show confirmation if just submitted or has existing selection ──
+
     const params = await searchParams
     const justSubmitted = params.submitted === "true"
 

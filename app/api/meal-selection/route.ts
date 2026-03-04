@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
-// ─── GET /api/meal-selection ───────────────────────────────────────
 // Returns the employee's current selection for tomorrow.
 
 export async function GET() {
@@ -45,7 +44,6 @@ export async function GET() {
     }
 }
 
-// ─── POST /api/meal-selection ──────────────────────────────────────
 // Creates or updates the employee's selection for tomorrow.
 // Enforces:
 //   1. Cutoff time validation (backend)
@@ -61,7 +59,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json()
         const { status, preference } = body
 
-        // ─── Validate input ────────────────────────────────────────
+
         if (!status || !["OPT_IN", "OPT_OUT"].includes(status)) {
             return NextResponse.json(
                 { error: "Invalid status. Must be OPT_IN or OPT_OUT." },
@@ -78,7 +76,7 @@ export async function POST(request: NextRequest) {
 
         const { officeId } = session.user as { officeId: string }
 
-        // ─── 1. CUTOFF VALIDATION (BACKEND) ───────────────────────
+
         const office = await prisma.office.findUnique({
             where: { id: officeId },
         })
@@ -105,7 +103,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // ─── 2. MENU AVAILABILITY VALIDATION ──────────────────────
+
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
         tomorrow.setHours(0, 0, 0, 0)
@@ -139,7 +137,7 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // ─── 3. UPSERT SELECTION ──────────────────────────────────
+
         const selection = await prisma.mealSelection.upsert({
             where: {
                 employeeId_date: {

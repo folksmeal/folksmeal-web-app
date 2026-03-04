@@ -2,8 +2,6 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
-// ─── GET /api/menu ─────────────────────────────────────────────────
-// Returns tomorrow's menu for the authenticated employee's office.
 
 export async function GET() {
     try {

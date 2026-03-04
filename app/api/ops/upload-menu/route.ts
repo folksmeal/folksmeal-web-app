@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import ExcelJS from "exceljs"
 
-// ─── POST /api/ops/upload-menu ─────────────────────────────────────
 // Accepts an Excel file with weekly menus.
 // Expected columns: date, day, veg_item, nonveg_item, side_beverage, notes
 // Requires: role = OPS
@@ -21,7 +20,7 @@ export async function POST(request: NextRequest) {
 
         const { officeId } = session.user as { officeId: string }
 
-        // ─── Parse uploaded file ──────────────────────────────────
+
         const formData = await request.formData()
         const file = formData.get("file") as File
 
@@ -45,7 +44,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // ─── Process rows ─────────────────────────────────────────
+
         const results: { date: string; vegItem: string; nonvegItem: string | null; action: string }[] = []
         const errors: { row: number; error: string }[] = []
 
