@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────
+
+enum MealPreference {
+  VEG
+  NONVEG
+}
+
+enum SelectionStatus {
+  OPT_IN
+  OPT_OUT
+}
+
+enum EmployeeRole {
+  EMPLOYEE
+  OPS
+}
+
+// ─── Models ──────────────────────────────────────────────────────────
+
+model Office {
+  id         String   @id @default(cuid())
+  name       String
+  cutoffTime String   @default("18:00") @map("cutoff_time") // HH:MM format (24h)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  employees Employee[]
+  menus     Menu[]
+
+  @@map("offices")
+}
+
+model Employee {
+  id                String         @id @default(cuid())
+  name              String
+  employeeCode      String         @unique @map("employee_code")
+  password          String         // bcrypt hash
+  officeId          String         @map("office_id")
+  defaultPreference MealPreference @default(VEG) @map("default_preference")
+  role              EmployeeRole   @default(EMPLOYEE)
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  office         Office          @relation(fields: [officeId], references: [id])
+  mealSelections MealSelection[]
+
+  @@map("employees")
+}
+
+model Menu {
+  id           String   @id @default(cuid())
+  officeId     String   @map("office_id")
+  date         DateTime @db.Date
+  day          String?
+  vegItem      String   @map("veg_item")
+  nonvegItem   String?  @map("nonveg_item")
+  sideBeverage String?  @map("side_beverage")
+  notes        String?
+
+  office Office @relation(fields: [officeId], references: [id])
+
+  @@unique([officeId, date])
+  @@map("menus")
+}
+
+model MealSelection {
+  id         String          @id @default(cuid())
+  employeeId String          @map("employee_id")
+  date       DateTime        @db.Date
+  status     SelectionStatus
+  preference MealPreference? // null when opted out
+  updatedAt  DateTime        @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, date])
+  @@map("meal_selections")
+}

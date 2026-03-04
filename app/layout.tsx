@@ -1,31 +1,19 @@
-import type { Metadata } from 'next'
-import { Inter, DM_Sans } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
-import './globals.css'
+import type { Metadata } from "next"
+import { Inter, DM_Sans } from "next/font/google"
+import { Analytics } from "@vercel/analytics/next"
+import { Providers } from "@/components/providers"
+import "./globals.css"
 
-const _inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const _dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" })
 
 export const metadata: Metadata = {
-  title: 'FolksMeal - Corporate Meal Selection',
-  description: 'Simple internal office meal selection tool for employees. Choose your meal preference for tomorrow.',
-  generator: 'v0.app',
+  title: "FolksMeal - Corporate Meal Selection",
+  description:
+    "Simple internal office meal selection tool for employees. Choose your meal preference for tomorrow.",
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: "/favicon.png",
+    apple: "/favicon.png",
   },
 }
 
@@ -36,8 +24,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${_inter.variable} ${_dmSans.variable} font-sans antialiased`}>
-        {children}
+      <body
+        className={`${inter.variable} ${dmSans.variable} font-sans antialiased`}
+      >
+        <Providers>{children}</Providers>
         <Analytics />
       </body>
     </html>

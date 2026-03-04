@@ -1,21 +1,22 @@
 "use client"
 
 import { useState } from "react"
+import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Loader2 } from "lucide-react"
 
-interface LoginScreenProps {
-  onLogin: (employeeId: string) => void
-}
-
-export function LoginScreen({ onLogin }: LoginScreenProps) {
+export function LoginScreen() {
+  const router = useRouter()
   const [employeeId, setEmployeeId] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
 
@@ -28,7 +29,26 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
       return
     }
 
-    onLogin(employeeId.trim())
+    setLoading(true)
+
+    try {
+      const result = await signIn("credentials", {
+        employeeCode: employeeId.trim(),
+        password: password.trim(),
+        redirect: false,
+      })
+
+      if (result?.error) {
+        setError("Invalid Employee ID or password.")
+      } else {
+        router.push("/dashboard")
+        router.refresh()
+      }
+    } catch {
+      setError("Something went wrong. Please try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -37,20 +57,25 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         {/* Logo */}
         <div className="mb-10 flex flex-col items-center gap-3">
           <Image
-            src="/images/logo-large.webp"
+            src="/logo-large.png"
             alt="FolksMeal"
             width={180}
             height={46}
             className="h-10 w-auto"
             priority
           />
-          <p className="text-sm font-medium text-foreground">FolksMeal Employee Portal</p>
+          <p className="text-sm font-medium text-foreground">
+            FolksMeal Employee Portal
+          </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="employee-id" className="text-xs font-medium text-muted-foreground">
+            <Label
+              htmlFor="employee-id"
+              className="text-xs font-medium text-muted-foreground"
+            >
               Employee ID
             </Label>
             <Input
@@ -61,11 +86,15 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               onChange={(e) => setEmployeeId(e.target.value)}
               className="h-11 bg-card"
               autoComplete="username"
+              disabled={loading}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="password" className="text-xs font-medium text-muted-foreground">
+            <Label
+              htmlFor="password"
+              className="text-xs font-medium text-muted-foreground"
+            >
               Password
             </Label>
             <Input
@@ -76,20 +105,34 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               onChange={(e) => setPassword(e.target.value)}
               className="h-11 bg-card"
               autoComplete="current-password"
+              disabled={loading}
             />
           </div>
 
           {error && (
-            <p className="text-xs text-destructive" role="alert">{error}</p>
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
           )}
 
-          <Button type="submit" size="lg" className="mt-1 h-11 w-full">
-            Sign In
+          <Button
+            type="submit"
+            className="mt-1 w-full"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              "Sign In"
+            )}
           </Button>
         </form>
 
         <p className="mt-8 text-center text-[11px] leading-relaxed text-muted-foreground">
-          {"Use your company credentials to sign in."}
+          Use your company credentials to sign in.
         </p>
       </div>
     </div>
