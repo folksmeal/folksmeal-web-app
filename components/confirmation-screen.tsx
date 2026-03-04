@@ -58,7 +58,6 @@ function formatTimestamp(iso: string) {
 }
 
 export function ConfirmationScreen({
-  employeeCode,
   officeName,
   status,
   preference,

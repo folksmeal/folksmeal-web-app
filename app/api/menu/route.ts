@@ -12,7 +12,7 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const { officeId } = session.user as any
+        const { officeId } = session.user as { officeId: string }
 
         // Tomorrow's date (midnight, no time component)
         const tomorrow = new Date()

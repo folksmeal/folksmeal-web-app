@@ -56,7 +56,6 @@ function formatCutoff(cutoffTime: string) {
 }
 
 export function MenuScreen({
-  employeeCode,
   officeName,
   cutoffTime,
   menu,

@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const { officeId } = session.user as any
+        const { officeId } = session.user as { officeId: string }
 
         // ─── 1. CUTOFF VALIDATION (BACKEND) ───────────────────────
         const office = await prisma.office.findUnique({

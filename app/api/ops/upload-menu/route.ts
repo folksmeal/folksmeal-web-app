@@ -15,11 +15,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        if ((session.user as any).role !== "OPS") {
+        if ((session.user as { role: string }).role !== "OPS") {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 })
         }
 
-        const { officeId } = session.user as any
+        const { officeId } = session.user as { officeId: string }
 
         // ─── Parse uploaded file ──────────────────────────────────
         const formData = await request.formData()
@@ -107,8 +107,8 @@ export async function POST(request: NextRequest) {
                 parsedDate = new Date(rawDate)
             } else if (typeof rawDate === "object" && rawDate !== null && 'result' in rawDate) {
                 // Handle formula results that might return a Date
-                const result = (rawDate as any).result
-                parsedDate = result instanceof Date ? result : new Date(result)
+                const result = (rawDate as { result: unknown }).result
+                parsedDate = result instanceof Date ? result : new Date(result as string | number)
             } else {
                 errors.push({ row: rowNum, error: `Invalid date format: ${JSON.stringify(rawDate)}` })
                 continue
@@ -131,10 +131,10 @@ export async function POST(request: NextRequest) {
 
                 if (val === null || val === undefined) return null
                 if (typeof val === 'object' && 'richText' in val) {
-                    return (val as any).richText.map((rt: any) => rt.text).join('')
+                    return (val as { richText: { text: string }[] }).richText.map((rt) => rt.text).join('')
                 }
                 if (typeof val === 'object' && 'result' in val) {
-                    return String((val as any).result)
+                    return String((val as { result: unknown }).result)
                 }
                 return String(val).trim()
             }

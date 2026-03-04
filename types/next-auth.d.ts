@@ -1,4 +1,4 @@
-import { EmployeeRole, MealPreference } from "@prisma/client"
+import { EmployeeRole } from "@prisma/client"
 
 // Extend NextAuth types to include our custom fields
 declare module "next-auth" {

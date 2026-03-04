@@ -33,7 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 return {
                     id: employee.id,
                     name: employee.name,
-                    email: employee.employeeCode, // NextAuth expects email; we repurpose it for employeeCode
+                    email: employee.employeeCode,
                     role: employee.role,
                     officeId: employee.officeId,
                     officeName: employee.office.name,
@@ -53,19 +53,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (user) {
                 token.employeeId = user.id
                 token.employeeCode = user.email
-                token.role = (user as any).role
-                token.officeId = (user as any).officeId
-                token.officeName = (user as any).officeName
+                token.role = (user as { role: string }).role
+                token.officeId = (user as { officeId: string }).officeId
+                token.officeName = (user as { officeName: string }).officeName
             }
             return token
         },
         async session({ session, token }) {
             if (session.user) {
-                session.user.id = token.employeeId as string
-                    ; (session.user as any).employeeCode = token.employeeCode as string
-                    ; (session.user as any).role = token.role as string
-                    ; (session.user as any).officeId = token.officeId as string
-                    ; (session.user as any).officeName = token.officeName as string
+                const u = session.user as typeof session.user & {
+                    employeeCode: string
+                    role: string
+                    officeId: string
+                    officeName: string
+                }
+                u.id = token.employeeId as string
+                u.employeeCode = token.employeeCode as string
+                u.role = token.role as string
+                u.officeId = token.officeId as string
+                u.officeName = token.officeName as string
             }
             return session
         },

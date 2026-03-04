@@ -15,7 +15,7 @@ export default async function DashboardPage({
         redirect("/")
     }
 
-    const { officeId, employeeCode, officeName } = session.user as any
+    const { officeId, employeeCode, officeName } = session.user as { officeId: string; employeeCode: string; officeName: string }
 
     // ─── Fetch office cutoff time ─────────────────────────────────
     const office = await prisma.office.findUnique({

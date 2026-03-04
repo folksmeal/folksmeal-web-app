@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
         }
 
         // Authenticated but not OPS role → reject
-        if (session && (session.user as any).role !== "OPS" && opsPath !== "/" && opsPath !== "/login") {
+        if (session && (session.user as { role: string }).role !== "OPS" && opsPath !== "/" && opsPath !== "/login") {
             const loginUrl = new URL(isOpsSubdomain ? "/" : "/ops", request.url)
             return NextResponse.redirect(loginUrl)
         }

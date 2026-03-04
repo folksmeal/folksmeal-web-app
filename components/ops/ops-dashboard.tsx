@@ -51,7 +51,7 @@ interface OpsDashboardProps {
     officeName: string
 }
 
-export function OpsDashboard({ userName, officeName }: OpsDashboardProps) {
+export function OpsDashboard({ officeName }: OpsDashboardProps) {
     const [date, setDate] = useState(() => {
         const d = new Date()
         d.setDate(d.getDate() + 1)
