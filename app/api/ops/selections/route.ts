@@ -45,18 +45,18 @@ export async function GET(request: NextRequest) {
         // ─── Compute aggregates ───────────────────────────────────
         const stats = {
             total: selections.length,
-            optedIn: selections.filter((s) => s.status === "OPT_IN").length,
-            optedOut: selections.filter((s) => s.status === "OPT_OUT").length,
+            optedIn: selections.filter((s: any) => s.status === "OPT_IN").length,
+            optedOut: selections.filter((s: any) => s.status === "OPT_OUT").length,
             vegCount: selections.filter(
-                (s) => s.status === "OPT_IN" && s.preference === "VEG"
+                (s: any) => s.status === "OPT_IN" && s.preference === "VEG"
             ).length,
             nonvegCount: selections.filter(
-                (s) => s.status === "OPT_IN" && s.preference === "NONVEG"
+                (s: any) => s.status === "OPT_IN" && s.preference === "NONVEG"
             ).length,
         }
 
         // ─── Format response ──────────────────────────────────────
-        const rows = selections.map((s) => ({
+        const rows = selections.map((s: any) => ({
             employeeName: s.employee.name,
             employeeCode: s.employee.employeeCode,
             office: s.employee.office.name,

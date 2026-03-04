@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import * as XLSX from "xlsx"
+import ExcelJS from "exceljs"
 
 // ─── POST /api/ops/upload-menu ─────────────────────────────────────
 // Accepts an Excel file with weekly menus.
@@ -32,15 +32,15 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const buffer = Buffer.from(await file.arrayBuffer())
-        const workbook = XLSX.read(buffer, { type: "buffer" })
-        const sheetName = workbook.SheetNames[0]
-        const sheet = workbook.Sheets[sheetName]
-        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet)
+        const arrayBuffer = await file.arrayBuffer()
+        const workbook = new ExcelJS.Workbook()
+        await workbook.xlsx.load(arrayBuffer)
 
-        if (!rows.length) {
+        const sheet = workbook.worksheets[0] // get first worksheet
+
+        if (!sheet || sheet.rowCount <= 1) {
             return NextResponse.json(
-                { error: "Excel file is empty" },
+                { error: "Excel file is empty or missing data rows" },
                 { status: 400 }
             )
         }
@@ -49,39 +49,69 @@ export async function POST(request: NextRequest) {
         const results: { date: string; vegItem: string; nonvegItem: string | null; action: string }[] = []
         const errors: { row: number; error: string }[] = []
 
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i]
-            const rowNum = i + 2 // +2 because row 1 is header, data starts at row 2
+        // Extract headers from the first row
+        const headers: Record<string, number> = {}
+        const headerRow = sheet.getRow(1)
+        headerRow.eachCell((cell, colNumber) => {
+            if (cell.value) {
+                headers[String(cell.value).toLowerCase().trim()] = colNumber
+            }
+        })
 
-            // Find column keys (case-insensitive and trimmed)
-            const getCol = (name: string) => Object.keys(row).find((k) => k.toLowerCase().trim() === name)
+        // Ensure required headers exist
+        const requiredHeaders = ["date", "veg_item"]
+        for (const req of requiredHeaders) {
+            if (!headers[req]) {
+                return NextResponse.json(
+                    { error: `Missing required column: ${req}` },
+                    { status: 400 }
+                )
+            }
+        }
 
-            const dateKey = getCol("date")
-            const vegKey = getCol("veg_item")
-            const nonvegKey = getCol("nonveg_item")
-            const sideKey = getCol("side_beverage")
-            const notesKey = getCol("notes")
-            const dayKey = getCol("day")
+        // Process data rows (starting from row 2)
+        // using a standard for loop to handle async/await cleanly
+        for (let rowNum = 2; rowNum <= sheet.rowCount; rowNum++) {
+            const row = sheet.getRow(rowNum)
 
-            if (!dateKey || !row[dateKey]) {
+            // Skip empty rows
+            let isEmpty = true
+            row.eachCell(() => { isEmpty = false })
+            if (isEmpty) continue
+
+            const rawDate = row.getCell(headers["date"]).value
+            const rawVegItem = row.getCell(headers["veg_item"]).value
+
+            if (!rawDate) {
                 errors.push({ row: rowNum, error: "Missing date" })
                 continue
             }
 
-            if (!vegKey || !row[vegKey]) {
+            if (!rawVegItem) {
                 errors.push({ row: rowNum, error: "Missing veg_item" })
                 continue
             }
 
             // Parse date
             let parsedDate: Date
-            const rawDate = row[dateKey]
 
-            if (typeof rawDate === "number") {
-                // Excel serial date number
+            if (rawDate instanceof Date) {
+                // ExcelJS often parses dates to JS Date objects automatically
+                parsedDate = rawDate
+            } else if (typeof rawDate === "number") {
+                // If it's stored as an Excel serial date, ExcelJS sometimes returns it as a float or int if it doesn't recognize the cell format
+                // 25569 is Jan 1, 1970
                 parsedDate = new Date((rawDate - 25569) * 86400 * 1000)
-            } else {
+            } else if (typeof rawDate === "string") {
+                // Might be a parsed string from the file
                 parsedDate = new Date(rawDate)
+            } else if (typeof rawDate === "object" && rawDate !== null && 'result' in rawDate) {
+                // Handle formula results that might return a Date
+                const result = (rawDate as any).result
+                parsedDate = result instanceof Date ? result : new Date(result)
+            } else {
+                errors.push({ row: rowNum, error: `Invalid date format: ${JSON.stringify(rawDate)}` })
+                continue
             }
 
             if (isNaN(parsedDate.getTime())) {
@@ -89,13 +119,31 @@ export async function POST(request: NextRequest) {
                 continue
             }
 
+            // Ensure we are storing it at midnight local time
             parsedDate.setHours(0, 0, 0, 0)
 
-            const vegItem = String(row[vegKey]).trim()
-            const nonvegItem = nonvegKey && row[nonvegKey] ? String(row[nonvegKey]).trim() : null
-            const sideBeverage = sideKey && row[sideKey] ? String(row[sideKey]).trim() : null
-            const notes = notesKey && row[notesKey] ? String(row[notesKey]).trim() : null
-            const day = dayKey && row[dayKey] ? String(row[dayKey]).trim() : null
+            // Helper to extract value since cell.value can be an object (rich text, formula, etc.)
+            const extractStringValue = (colName: string): string | null => {
+                const colIdx = headers[colName]
+                if (!colIdx) return null
+
+                const val = row.getCell(colIdx).value
+
+                if (val === null || val === undefined) return null
+                if (typeof val === 'object' && 'richText' in val) {
+                    return (val as any).richText.map((rt: any) => rt.text).join('')
+                }
+                if (typeof val === 'object' && 'result' in val) {
+                    return String((val as any).result)
+                }
+                return String(val).trim()
+            }
+
+            const vegItem = extractStringValue("veg_item") || ""
+            const nonvegItem = extractStringValue("nonveg_item")
+            const sideBeverage = extractStringValue("side_beverage")
+            const notes = extractStringValue("notes")
+            const day = extractStringValue("day")
 
             // Upsert into database
             await prisma.menu.upsert({
@@ -146,3 +194,4 @@ export async function POST(request: NextRequest) {
         )
     }
 }
+
