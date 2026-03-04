@@ -69,7 +69,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 }
                 u.id = token.employeeId as string
                 u.employeeCode = token.employeeCode as string
-                u.role = token.role as string
+                u.role = token.role as "EMPLOYEE" | "OPS"
                 u.officeId = token.officeId as string
                 u.officeName = token.officeName as string
             }
