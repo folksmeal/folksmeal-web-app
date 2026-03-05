@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { signOut } from "next-auth/react"
+import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -44,6 +44,14 @@ interface Stats {
     optedOut: number
     vegCount: number
     nonvegCount: number
+}
+
+interface ManagedOffice {
+    id: string
+    name: string
+    company: {
+        name: string
+    }
 }
 
 interface OpsDashboardProps {
@@ -140,8 +148,64 @@ export function OpsDashboard({ officeName }: OpsDashboardProps) {
         await signOut({ callbackUrl: "/ops" })
     }, [])
 
+    const { update } = useSession() // NEW: Grab the update function
+    const [managedOffices, setManagedOffices] = useState<ManagedOffice[]>([])
+    const [isSwitching, setIsSwitching] = useState(false)
+    const [showSwitcher, setShowSwitcher] = useState(false)
+
+    // Fetch managed offices
+    useEffect(() => {
+        const fetchOffices = async () => {
+            try {
+                const res = await fetch('/api/ops/managed-offices')
+                if (res.ok) {
+                    const data = await res.json()
+                    setManagedOffices(data.offices || [])
+                }
+            } catch (err) {
+                console.error("Failed to fetch managed offices", err)
+            }
+        }
+        fetchOffices()
+    }, [])
+
+    const handleSwitchOffice = async (officeId: string) => {
+        setIsSwitching(true)
+        setShowSwitcher(false)
+        try {
+            // 1. Tell backend to validate the switch
+            const res = await fetch('/api/ops/switch-company', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ officeId })
+            })
+
+            if (!res.ok) throw new Error("Failed to switch office")
+
+            const data = await res.json()
+
+            // 2. Trigger NextAuth JWT token update with new data payload
+            await update({ newOffice: data.newOffice })
+
+            // 3. Force reload to completely refresh server components (page.tsx) and clear all states
+            window.location.reload()
+
+        } catch (error) {
+            console.error("Switch failed", error)
+            setIsSwitching(false)
+        }
+    }
+
     return (
         <div className="min-h-screen bg-background">
+            {/* Full screen loading overlay while switching */}
+            {isSwitching && (
+                <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="mt-4 text-sm font-medium text-muted-foreground">Switching context...</p>
+                </div>
+            )}
+
             {/* Header */}
             <header className="border-b border-border bg-card">
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
@@ -156,13 +220,54 @@ export function OpsDashboard({ officeName }: OpsDashboardProps) {
                         />
                         {/* Divider line */}
                         <div className="h-8 w-px bg-border max-sm:hidden" />
-                        {/* Client Company Badge */}
-                        <div className="hidden h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 sm:flex">
-                            <Building className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-semibold text-primary">
-                                {officeName}
-                            </span>
-                        </div>
+
+                        {/* Client Company Badge / Switcher */}
+                        {managedOffices.length > 1 ? (
+                            <Popover open={showSwitcher} onOpenChange={setShowSwitcher}>
+                                <PopoverTrigger asChild>
+                                    <button className="hidden h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 transition-colors hover:bg-primary/20 sm:flex">
+                                        <Building className="h-4 w-4 text-primary" />
+                                        <span className="text-sm font-semibold text-primary">
+                                            {officeName}
+                                        </span>
+                                        <RefreshCw className="h-3.5 w-3.5 text-primary opacity-70" />
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] p-2" align="start">
+                                    <div className="mb-2 px-2 pb-2 pt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground border-b border-border">
+                                        Switch Office Context
+                                    </div>
+                                    <div className="flex max-h-[300px] flex-col gap-1 overflow-y-auto">
+                                        {managedOffices.map((office) => {
+                                            const isActive = officeName === `${office.company.name} - ${office.name}`
+                                            return (
+                                                <button
+                                                    key={office.id}
+                                                    onClick={() => !isActive && handleSwitchOffice(office.id)}
+                                                    disabled={isActive || isSwitching}
+                                                    className={cn(
+                                                        "flex w-full flex-col items-start gap-1 rounded-md px-3 py-2 text-sm transition-colors",
+                                                        isActive
+                                                            ? "bg-primary/10 text-primary cursor-default"
+                                                            : "hover:bg-muted text-foreground"
+                                                    )}
+                                                >
+                                                    <span className="font-semibold">{office.company.name}</span>
+                                                    <span className="text-xs opacity-80">{office.name}</span>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        ) : (
+                            <div className="hidden h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 sm:flex">
+                                <Building className="h-4 w-4 text-primary" />
+                                <span className="text-sm font-semibold text-primary">
+                                    {officeName}
+                                </span>
+                            </div>
+                        )}
                     </div>
                     <Button
                         variant="outline"
@@ -173,12 +278,53 @@ export function OpsDashboard({ officeName }: OpsDashboardProps) {
                     </Button>
                 </div>
                 <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
-                    <div className="flex h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4">
-                        <Building className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-semibold text-primary">
-                            {officeName}
-                        </span>
-                    </div>
+                    {/* Mobile Client Company Badge / Switcher */}
+                    {managedOffices.length > 1 ? (
+                        <Popover open={showSwitcher} onOpenChange={setShowSwitcher}>
+                            <PopoverTrigger asChild>
+                                <button className="flex w-full h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 transition-colors hover:bg-primary/20">
+                                    <Building className="h-4 w-4 text-primary" />
+                                    <span className="text-sm font-semibold text-primary truncate max-w-[200px]">
+                                        {officeName}
+                                    </span>
+                                    <RefreshCw className="h-3.5 w-3.5 text-primary opacity-70" />
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[calc(100vw-48px)] p-2" align="center">
+                                <div className="mb-2 px-2 pb-2 pt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground border-b border-border">
+                                    Switch Office Context
+                                </div>
+                                <div className="flex max-h-[300px] flex-col gap-1 overflow-y-auto">
+                                    {managedOffices.map((office) => {
+                                        const isActive = officeName === `${office.company.name} - ${office.name}`
+                                        return (
+                                            <button
+                                                key={office.id}
+                                                onClick={() => !isActive && handleSwitchOffice(office.id)}
+                                                disabled={isActive || isSwitching}
+                                                className={cn(
+                                                    "flex w-full flex-col items-start gap-1 rounded-md px-3 py-2 text-sm transition-colors",
+                                                    isActive
+                                                        ? "bg-primary/10 text-primary cursor-default"
+                                                        : "hover:bg-muted text-foreground"
+                                                )}
+                                            >
+                                                <span className="font-semibold">{office.company.name}</span>
+                                                <span className="text-xs opacity-80">{office.name}</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    ) : (
+                        <div className="flex w-full h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4">
+                            <Building className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-semibold text-primary truncate max-w-[200px]">
+                                {officeName}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </header>
 

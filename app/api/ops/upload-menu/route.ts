@@ -31,6 +31,28 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        // 1. Validate File Size (Max 5MB)
+        const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+        if (file.size > MAX_FILE_SIZE) {
+            return NextResponse.json(
+                { error: "File exceeds the maximum limit of 5MB" },
+                { status: 400 }
+            )
+        }
+
+        // 2. Validate MIME Type
+        const allowedMimeTypes = [
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+            "application/vnd.ms-excel" // .xls
+        ]
+
+        if (!allowedMimeTypes.includes(file.type)) {
+            return NextResponse.json(
+                { error: "Invalid file type. Only Excel files (.xlsx, .xls) are allowed." },
+                { status: 400 }
+            )
+        }
+
         const arrayBuffer = await file.arrayBuffer()
         const workbook = new ExcelJS.Workbook()
         await workbook.xlsx.load(arrayBuffer)

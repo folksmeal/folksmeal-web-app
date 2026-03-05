@@ -18,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                 const employee = await prisma.employee.findUnique({
                     where: { employeeCode: credentials.employeeCode as string },
-                    include: { office: true },
+                    include: { office: true, company: true },
                 })
 
                 if (!employee) return null
@@ -34,9 +34,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     id: employee.id,
                     name: employee.name,
                     email: employee.employeeCode,
-                    role: employee.role,
+                    employeeCode: employee.employeeCode,
+                    role: employee.role as string,
                     officeId: employee.officeId,
                     officeName: employee.office.name,
+                    officeTimezone: employee.office.timezone,
+                    companyId: employee.companyId,
+                    companyName: employee.company.name,
                 }
             },
         }),
@@ -49,29 +53,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         signIn: "/",
     },
     callbacks: {
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
+            // Initial sign in
             if (user) {
-                token.employeeId = user.id
-                token.employeeCode = user.email
-                token.role = (user as { role: string }).role
-                token.officeId = (user as { officeId: string }).officeId
-                token.officeName = (user as { officeName: string }).officeName
+                const u = user
+                token.employeeId = u.id
+                token.employeeCode = u.employeeCode
+                token.role = u.role
+                token.officeId = u.officeId
+                token.officeName = u.officeName
+                token.officeTimezone = u.officeTimezone
+                token.companyId = u.companyId
+                token.companyName = u.companyName
+            }
+            // Company Switcher Override
+            if (trigger === "update" && session && session.newOffice) {
+                token.officeId = session.newOffice.officeId
+                token.officeName = session.newOffice.officeName
+                token.companyId = session.newOffice.companyId
+                token.companyName = session.newOffice.companyName
+                token.officeTimezone = session.newOffice.officeTimezone
             }
             return token
         },
         async session({ session, token }) {
             if (session.user) {
-                const u = session.user as typeof session.user & {
-                    employeeCode: string
-                    role: string
-                    officeId: string
-                    officeName: string
-                }
+                const u = session.user
                 u.id = token.employeeId as string
                 u.employeeCode = token.employeeCode as string
-                u.role = token.role as "EMPLOYEE" | "OPS"
+                u.role = token.role as string
                 u.officeId = token.officeId as string
                 u.officeName = token.officeName as string
+                u.officeTimezone = token.officeTimezone as string
+                u.companyId = token.companyId as string
+                u.companyName = token.companyName as string
             }
             return session
         },

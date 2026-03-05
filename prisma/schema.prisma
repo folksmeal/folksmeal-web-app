@@ -23,16 +23,33 @@ enum SelectionStatus {
 enum EmployeeRole {
   EMPLOYEE
   OPS
+  ORG_ADMIN
+  SUPERADMIN
 }
 
 // ─── Models ──────────────────────────────────────────────────────────
 
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  domain    String?  @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  offices   Office[]
+  employees Employee[]
+
+  @@map("companies")
+}
+
 model Office {
   id         String   @id @default(cuid())
+  companyId  String   @map("company_id")
   name       String
   cutoffTime String   @default("18:00") @map("cutoff_time") // HH:MM format (24h)
+  timezone   String   @default("UTC") // Store IANA timezone
   createdAt  DateTime @default(now()) @map("created_at")
 
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   employees Employee[]
   menus     Menu[]
 
@@ -41,6 +58,7 @@ model Office {
 
 model Employee {
   id                String         @id @default(cuid())
+  companyId         String         @map("company_id")
   name              String
   employeeCode      String         @unique @map("employee_code")
   password          String         // bcrypt hash
@@ -49,7 +67,8 @@ model Employee {
   role              EmployeeRole   @default(EMPLOYEE)
   createdAt         DateTime       @default(now()) @map("created_at")
 
-  office         Office          @relation(fields: [officeId], references: [id])
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  office         Office          @relation(fields: [officeId], references: [id], onDelete: Cascade)
   mealSelections MealSelection[]
 
   @@map("employees")
@@ -58,14 +77,14 @@ model Employee {
 model Menu {
   id           String   @id @default(cuid())
   officeId     String   @map("office_id")
-  date         DateTime @db.Date
+  date         DateTime @db.Date // Stored as midnight UTC, but interpreted via Office timezone
   day          String?
   vegItem      String   @map("veg_item")
   nonvegItem   String?  @map("nonveg_item")
   sideBeverage String?  @map("side_beverage")
   notes        String?
 
-  office Office @relation(fields: [officeId], references: [id])
+  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
 
   @@unique([officeId, date])
   @@map("menus")
@@ -79,7 +98,7 @@ model MealSelection {
   preference MealPreference? // null when opted out
   updatedAt  DateTime        @updatedAt @map("updated_at")
 
-  employee Employee @relation(fields: [employeeId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, date])
   @@map("meal_selections")

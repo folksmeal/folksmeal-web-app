@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ["bcryptjs"],
+  serverExternalPackages: ["bcryptjs", "exceljs"],
   images: {
     unoptimized: true,
   },

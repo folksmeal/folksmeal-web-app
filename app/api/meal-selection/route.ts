@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getTomorrowMidnightInTimezone, isPastCutoffInTimezone } from "@/lib/utils/time"
+import { z } from "zod"
+
+const mealSelectionSchema = z.object({
+    status: z.enum(["OPT_IN", "OPT_OUT"]),
+    preference: z.enum(["VEG", "NONVEG"]).nullable().optional(),
+}).refine(
+    (data) => {
+        if (data.status === "OPT_IN" && !data.preference) {
+            return false
+        }
+        return true
+    },
+    {
+        message: "Preference (VEG/NONVEG) is required when opting in.",
+        path: ["preference"],
+    }
+)
 
 // Returns the employee's current selection for tomorrow.
 
@@ -11,9 +29,9 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const tomorrow = new Date()
-        tomorrow.setDate(tomorrow.getDate() + 1)
-        tomorrow.setHours(0, 0, 0, 0)
+        const sessionUser = session.user
+        const timezone = sessionUser.officeTimezone || "UTC"
+        const tomorrow = getTomorrowMidnightInTimezone(timezone)
 
         const selection = await prisma.mealSelection.findUnique({
             where: {
@@ -57,24 +75,18 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { status, preference } = body
+        const parsed = mealSelectionSchema.safeParse(body)
 
-
-        if (!status || !["OPT_IN", "OPT_OUT"].includes(status)) {
+        if (!parsed.success) {
             return NextResponse.json(
-                { error: "Invalid status. Must be OPT_IN or OPT_OUT." },
+                { error: "Invalid payload.", details: parsed.error.format() },
                 { status: 400 }
             )
         }
 
-        if (status === "OPT_IN" && (!preference || !["VEG", "NONVEG"].includes(preference))) {
-            return NextResponse.json(
-                { error: "Invalid preference. Must be VEG or NONVEG when opting in." },
-                { status: 400 }
-            )
-        }
+        const { status, preference } = parsed.data
 
-        const { officeId } = session.user as { officeId: string }
+        const { officeId } = session.user
 
 
         const office = await prisma.office.findUnique({
@@ -88,12 +100,9 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const [cutoffH, cutoffM] = office.cutoffTime.split(":").map(Number)
-        const now = new Date()
-        const currentHour = now.getHours()
-        const currentMinute = now.getMinutes()
+        const timezone = office.timezone || "UTC"
 
-        if (currentHour > cutoffH || (currentHour === cutoffH && currentMinute >= cutoffM)) {
+        if (isPastCutoffInTimezone(office.cutoffTime, timezone)) {
             return NextResponse.json(
                 {
                     error: `Cutoff time (${office.cutoffTime}) has passed. Selection is locked.`,
@@ -104,9 +113,7 @@ export async function POST(request: NextRequest) {
         }
 
 
-        const tomorrow = new Date()
-        tomorrow.setDate(tomorrow.getDate() + 1)
-        tomorrow.setHours(0, 0, 0, 0)
+        const tomorrow = getTomorrowMidnightInTimezone(timezone)
 
         if (status === "OPT_IN") {
             const menu = await prisma.menu.findUnique({

@@ -1,32 +1,36 @@
-import { EmployeeRole } from "@prisma/client"
+import { DefaultSession } from "next-auth"
 
-// Extend NextAuth types to include our custom fields
 declare module "next-auth" {
+    /**
+     * Returned by `useSession`, `auth`, `getSession` and received as a prop on the `SessionProvider` React Context
+     */
     interface Session {
         user: {
             id: string
-            name: string
-            email: string
             employeeCode: string
-            role: EmployeeRole
+            role: string
             officeId: string
             officeName: string
+            officeTimezone: string
+            companyId: string
+            companyName: string
+        } & DefaultSession["user"]
+        newOffice?: {
+            officeId: string
+            officeName: string
+            companyId: string
+            companyName: string
+            officeTimezone: string
         }
     }
 
     interface User {
-        role: EmployeeRole
-        officeId: string
-        officeName: string
-    }
-}
-
-declare module "next-auth/jwt" {
-    interface JWT {
-        employeeId: string
         employeeCode: string
-        role: EmployeeRole
+        role: string
         officeId: string
         officeName: string
+        officeTimezone: string
+        companyId: string
+        companyName: string
     }
 }

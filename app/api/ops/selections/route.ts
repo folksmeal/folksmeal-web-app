@@ -13,10 +13,12 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        if ((session.user as { role: string }).role !== "OPS") {
+        if (session.user.role !== "OPS") {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 })
         }
 
+
+        const sessionUser = session.user
 
         const { searchParams } = new URL(request.url)
         const dateParam = searchParams.get("date")
@@ -32,7 +34,12 @@ export async function GET(request: NextRequest) {
 
 
         const selections = await prisma.mealSelection.findMany({
-            where: { date: targetDate },
+            where: {
+                date: targetDate,
+                employee: {
+                    companyId: sessionUser.companyId,
+                },
+            },
             include: {
                 employee: {
                     include: { office: true },
