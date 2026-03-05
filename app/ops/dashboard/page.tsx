@@ -9,18 +9,18 @@ export default async function OpsDashboardPage() {
         redirect("/ops")
     }
 
-    if (session.user.role !== "OPS") {
+    const role = session.user.role as string
+    if (role !== "SUPERADMIN") {
         redirect("/ops")
     }
 
     const sessionUser = session.user
-    const companyName = sessionUser.companyName || "Company"
-    const officeName = sessionUser.officeName || "Office"
+    const locationName = `${sessionUser.companyName} - ${sessionUser.addressCity}`
 
     return (
         <OpsDashboard
-            userName={session.user.name || "Ops"}
-            officeName={`${companyName} - ${officeName}`}
+            userName={session.user.name || "Admin"}
+            companyName={locationName}
         />
     )
 }

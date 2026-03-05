@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Clock, Check, X, LogOut, Loader2, AlertCircle } from "lucide-react"
+import { Clock, Check, X, LogOut, Loader2, AlertCircle, Building } from "lucide-react"
 import { format, parseISO } from "date-fns"
 
 export type MealChoice = "VEG" | "NONVEG"
@@ -31,7 +31,8 @@ export interface ExistingSelection {
 
 interface MenuScreenProps {
   employeeCode: string
-  officeName: string
+  employeeName: string
+  companyName: string
   cutoffTime: string // "HH:MM"
   menu: MenuData | null
   existingSelection: ExistingSelection | null
@@ -56,7 +57,8 @@ function formatCutoff(cutoffTime: string) {
 }
 
 export function MenuScreen({
-  officeName,
+  employeeName,
+  companyName,
   cutoffTime,
   menu,
   existingSelection,
@@ -134,26 +136,27 @@ export function MenuScreen({
             />
             {/* Divider line */}
             <div className="h-8 w-px bg-border max-sm:hidden" />
-            {/* Client Company Badge */}
-            <div className="hidden h-8 items-center justify-center rounded-xl bg-secondary px-4 sm:flex">
-              <span className="text-sm font-medium text-secondary-foreground">
-                {officeName}
+            <div className="hidden h-10 items-center gap-2.5 rounded-xl border border-input bg-card px-4 sm:flex">
+              <Building className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">
+                {companyName}
               </span>
             </div>
           </div>
           <Button
             variant="outline"
             onClick={handleLogout}
-            aria-label="Sign out"
+            className="h-10 rounded-xl border-input bg-card px-5 font-semibold transition-all hover:bg-destructive/5 hover:text-destructive hover:border-destructive/30"
           >
             <LogOut className="h-3.5 w-3.5" />
-            <span>Sign Out</span>
+            Sign Out
           </Button>
         </div>
         <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
-          <div className="flex h-8 items-center justify-center rounded-xl bg-secondary px-4">
-            <span className="text-sm font-medium text-secondary-foreground">
-              {officeName}
+          <div className="flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-input bg-card px-4">
+            <Building className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground truncate max-w-[200px]">
+              {companyName}
             </span>
           </div>
         </div>
@@ -164,14 +167,14 @@ export function MenuScreen({
         <div className="flex flex-col gap-5">
           {/* Date and context */}
           <div>
-            <p className="text-xl font-medium uppercase tracking-wider text-muted-foreground">
-              {tomorrowLabel}
+            <p className="text-sm text-muted-foreground">
+              Welcome, <span className="font-medium text-foreground">{employeeName}</span>
             </p>
             <h1
-              className="uppercase mt-2 text-2xl font-semibold text-foreground"
+              className="mt-2 text-2xl font-semibold text-foreground"
               style={{ fontFamily: "var(--font-heading)" }}
             >
-              Select your meal preference for tomorrow
+              Select your meal preference for {tomorrowLabel}
             </h1>
           </div>
 

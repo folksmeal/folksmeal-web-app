@@ -14,11 +14,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        if ((session.user as { role: string }).role !== "OPS") {
+        const role = (session.user as { role: string }).role
+        if (role !== "SUPERADMIN") {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 })
         }
 
-        const { officeId } = session.user as { officeId: string }
+        const { addressId } = session.user as { addressId: string }
 
 
         const formData = await request.formData()
@@ -169,8 +170,8 @@ export async function POST(request: NextRequest) {
             // Upsert into database
             await prisma.menu.upsert({
                 where: {
-                    officeId_date: {
-                        officeId,
+                    addressId_date: {
+                        addressId,
                         date: parsedDate,
                     },
                 },
@@ -182,7 +183,7 @@ export async function POST(request: NextRequest) {
                     notes,
                 },
                 create: {
-                    officeId,
+                    addressId,
                     date: parsedDate,
                     day,
                     vegItem,

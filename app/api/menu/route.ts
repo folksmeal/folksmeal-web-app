@@ -10,7 +10,7 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const { officeId } = session.user as { officeId: string }
+        const { addressId } = session.user as { addressId: string }
 
         // Tomorrow's date (midnight, no time component)
         const tomorrow = new Date()
@@ -19,8 +19,8 @@ export async function GET() {
 
         const menu = await prisma.menu.findUnique({
             where: {
-                officeId_date: {
-                    officeId,
+                addressId_date: {
+                    addressId,
                     date: tomorrow,
                 },
             },

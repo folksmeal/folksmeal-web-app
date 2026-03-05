@@ -9,28 +9,28 @@ declare module "next-auth" {
             id: string
             employeeCode: string
             role: string
-            officeId: string
-            officeName: string
-            officeTimezone: string
             companyId: string
             companyName: string
+            addressId: string
+            addressCity: string
+            locationTimezone: string
         } & DefaultSession["user"]
-        newOffice?: {
-            officeId: string
-            officeName: string
+        newLocation?: {
             companyId: string
             companyName: string
-            officeTimezone: string
+            addressId: string
+            addressCity: string
+            locationTimezone: string
         }
     }
 
     interface User {
         employeeCode: string
         role: string
-        officeId: string
-        officeName: string
-        officeTimezone: string
         companyId: string
         companyName: string
+        addressId: string
+        addressCity: string
+        locationTimezone: string
     }
 }

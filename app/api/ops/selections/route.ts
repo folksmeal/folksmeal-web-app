@@ -13,12 +13,14 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        if (session.user.role !== "OPS") {
+        const role = session.user.role as string
+        if (role !== "SUPERADMIN") {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 })
         }
 
 
         const sessionUser = session.user
+        const { addressId } = sessionUser
 
         const { searchParams } = new URL(request.url)
         const dateParam = searchParams.get("date")
@@ -37,12 +39,15 @@ export async function GET(request: NextRequest) {
             where: {
                 date: targetDate,
                 employee: {
-                    companyId: sessionUser.companyId,
+                    addressId: addressId,
                 },
             },
             include: {
                 employee: {
-                    include: { office: true },
+                    include: {
+                        company: true,
+                        address: true,
+                    },
                 },
             },
             orderBy: { employee: { name: "asc" } },
@@ -65,7 +70,7 @@ export async function GET(request: NextRequest) {
         const rows = selections.map((s) => ({
             employeeName: s.employee.name,
             employeeCode: s.employee.employeeCode,
-            office: s.employee.office.name,
+            company: `${s.employee.company.name} - ${s.employee.address.city}`,
             status: s.status,
             preference: s.preference,
             date: s.date.toISOString().split("T")[0],

@@ -17,6 +17,8 @@ import {
     RefreshCw,
     CalendarDays,
     Building,
+    Check,
+    ChevronRight,
 } from "lucide-react"
 import { MenuUploader } from "@/components/ops/menu-uploader"
 import { format, parseISO } from "date-fns"
@@ -27,11 +29,19 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
 
 interface SelectionRow {
     employeeName: string
     employeeCode: string
-    office: string
+    company: string
     status: string
     preference: string | null
     date: string
@@ -46,20 +56,19 @@ interface Stats {
     nonvegCount: number
 }
 
-interface ManagedOffice {
+interface ManagedCompany {
     id: string
     name: string
-    company: {
-        name: string
-    }
+    companyName: string
+    addressCity: string
 }
 
 interface OpsDashboardProps {
     userName: string
-    officeName: string
+    companyName: string
 }
 
-export function OpsDashboard({ officeName }: OpsDashboardProps) {
+export function OpsDashboard({ companyName }: OpsDashboardProps) {
     const [date, setDate] = useState(() => {
         const d = new Date()
         d.setDate(d.getDate() + 1)
@@ -101,7 +110,7 @@ export function OpsDashboard({ officeName }: OpsDashboardProps) {
         const headers = [
             "Employee Name",
             "Employee ID",
-            "Office",
+            "Company",
             "Opt Status",
             "Veg/NonVeg",
             "Date",
@@ -111,7 +120,7 @@ export function OpsDashboard({ officeName }: OpsDashboardProps) {
         const csvRows = rows.map((r) => [
             r.employeeName,
             r.employeeCode,
-            r.office,
+            r.company,
             r.status === "OPT_IN" ? "Opted In" : "Opted Out",
             r.preference || "-",
             format(parseISO(r.date), "dd MMM yyyy"),
@@ -148,28 +157,28 @@ export function OpsDashboard({ officeName }: OpsDashboardProps) {
         await signOut({ callbackUrl: "/ops" })
     }, [])
 
-    const { update } = useSession() // NEW: Grab the update function
-    const [managedOffices, setManagedOffices] = useState<ManagedOffice[]>([])
+    const { update } = useSession()
+    const [managedCompanies, setManagedCompanies] = useState<ManagedCompany[]>([])
     const [isSwitching, setIsSwitching] = useState(false)
     const [showSwitcher, setShowSwitcher] = useState(false)
 
-    // Fetch managed offices
+    // Fetch managed companies
     useEffect(() => {
-        const fetchOffices = async () => {
+        const fetchCompanies = async () => {
             try {
-                const res = await fetch('/api/ops/managed-offices')
+                const res = await fetch('/api/ops/managed-companies')
                 if (res.ok) {
                     const data = await res.json()
-                    setManagedOffices(data.offices || [])
+                    setManagedCompanies(data.companies || [])
                 }
             } catch (err) {
-                console.error("Failed to fetch managed offices", err)
+                console.error("Failed to fetch managed companies", err)
             }
         }
-        fetchOffices()
+        fetchCompanies()
     }, [])
 
-    const handleSwitchOffice = async (officeId: string) => {
+    const handleSwitchCompany = async (companyId: string) => {
         setIsSwitching(true)
         setShowSwitcher(false)
         try {
@@ -177,15 +186,15 @@ export function OpsDashboard({ officeName }: OpsDashboardProps) {
             const res = await fetch('/api/ops/switch-company', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ officeId })
+                body: JSON.stringify({ companyId })
             })
 
-            if (!res.ok) throw new Error("Failed to switch office")
+            if (!res.ok) throw new Error("Failed to switch company")
 
             const data = await res.json()
 
             // 2. Trigger NextAuth JWT token update with new data payload
-            await update({ newOffice: data.newOffice })
+            await update({ newLocation: data.newLocation })
 
             // 3. Force reload to completely refresh server components (page.tsx) and clear all states
             window.location.reload()
@@ -222,109 +231,77 @@ export function OpsDashboard({ officeName }: OpsDashboardProps) {
                         <div className="h-8 w-px bg-border max-sm:hidden" />
 
                         {/* Client Company Badge / Switcher */}
-                        {managedOffices.length > 1 ? (
+                        {managedCompanies.length > 1 ? (
                             <Popover open={showSwitcher} onOpenChange={setShowSwitcher}>
                                 <PopoverTrigger asChild>
-                                    <button className="hidden h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 transition-colors hover:bg-primary/20 sm:flex">
-                                        <Building className="h-4 w-4 text-primary" />
-                                        <span className="text-sm font-semibold text-primary">
-                                            {officeName}
-                                        </span>
-                                        <RefreshCw className="h-3.5 w-3.5 text-primary opacity-70" />
+                                    <button className="flex h-10 cursor-pointer items-center justify-between gap-3 rounded-xl border border-input bg-card px-4 py-2 transition-all hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                        <div className="flex items-center gap-2.5">
+                                            <Building className="h-4 w-4 text-muted-foreground" />
+                                            <span className="max-w-[140px] truncate text-sm font-semibold text-foreground sm:max-w-[200px]">
+                                                {companyName}
+                                            </span>
+                                        </div>
+                                        <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
                                     </button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-[300px] p-2" align="start">
-                                    <div className="mb-2 px-2 pb-2 pt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground border-b border-border">
-                                        Switch Office Context
-                                    </div>
-                                    <div className="flex max-h-[300px] flex-col gap-1 overflow-y-auto">
-                                        {managedOffices.map((office) => {
-                                            const isActive = officeName === `${office.company.name} - ${office.name}`
-                                            return (
-                                                <button
-                                                    key={office.id}
-                                                    onClick={() => !isActive && handleSwitchOffice(office.id)}
-                                                    disabled={isActive || isSwitching}
-                                                    className={cn(
-                                                        "flex w-full flex-col items-start gap-1 rounded-md px-3 py-2 text-sm transition-colors",
-                                                        isActive
-                                                            ? "bg-primary/10 text-primary cursor-default"
-                                                            : "hover:bg-muted text-foreground"
-                                                    )}
-                                                >
-                                                    <span className="font-semibold">{office.company.name}</span>
-                                                    <span className="text-xs opacity-80">{office.name}</span>
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
+                                <PopoverContent className="w-[300px] p-0 shadow-xl" align="start">
+                                    <Command className="rounded-xl border-none">
+                                        <CommandInput placeholder="Search location..." className="h-11 border-none focus:ring-0" />
+                                        <CommandList className="max-h-[320px] p-1.5">
+                                            <CommandEmpty className="py-6 text-xs text-muted-foreground">No location found.</CommandEmpty>
+                                            <CommandGroup heading="Select Location">
+                                                {managedCompanies.map((company) => {
+                                                    const isActive = companyName === company.name
+                                                    return (
+                                                        <CommandItem
+                                                            key={company.id}
+                                                            onSelect={() => {
+                                                                if (!isActive) handleSwitchCompany(company.id)
+                                                            }}
+                                                            disabled={isSwitching}
+                                                            className={cn(
+                                                                "group flex cursor-pointer items-center justify-between rounded-xl px-3.5 py-3 transition-all text-foreground",
+                                                                isActive ? "bg-primary/15 font-semibold text-primary shadow-sm" : "hover:bg-accent/50"
+                                                            )}
+                                                        >
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="text-sm font-semibold tracking-tight">{company.companyName}</span>
+                                                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+                                                                    {company.addressCity}
+                                                                </span>
+                                                            </div>
+                                                            {isActive ? (
+                                                                <Check className="h-4 w-4 text-primary" strokeWidth={3} />
+                                                            ) : (
+                                                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 group-hover:translate-x-0.5" />
+                                                            )}
+                                                        </CommandItem>
+                                                    )
+                                                })}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
                                 </PopoverContent>
                             </Popover>
                         ) : (
-                            <div className="hidden h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 sm:flex">
-                                <Building className="h-4 w-4 text-primary" />
-                                <span className="text-sm font-semibold text-primary">
-                                    {officeName}
-                                </span>
+                            <div className="flex h-10 items-center justify-between gap-3 rounded-xl border border-input bg-card px-4 py-2">
+                                <div className="flex items-center gap-2.5">
+                                    <Building className="h-4 w-4 text-muted-foreground" />
+                                    <span className="max-w-[140px] truncate text-sm font-semibold text-foreground sm:max-w-[200px]">
+                                        {companyName}
+                                    </span>
+                                </div>
                             </div>
                         )}
                     </div>
                     <Button
                         variant="outline"
                         onClick={handleLogout}
+                        className="h-10 rounded-xl border-input bg-card px-5 font-semibold transition-all hover:bg-destructive/5 hover:text-destructive hover:border-destructive/30"
                     >
                         <LogOut className="h-3.5 w-3.5" />
-                        <span>Sign Out</span>
+                        Sign Out
                     </Button>
-                </div>
-                <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
-                    {/* Mobile Client Company Badge / Switcher */}
-                    {managedOffices.length > 1 ? (
-                        <Popover open={showSwitcher} onOpenChange={setShowSwitcher}>
-                            <PopoverTrigger asChild>
-                                <button className="flex w-full h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 transition-colors hover:bg-primary/20">
-                                    <Building className="h-4 w-4 text-primary" />
-                                    <span className="text-sm font-semibold text-primary truncate max-w-[200px]">
-                                        {officeName}
-                                    </span>
-                                    <RefreshCw className="h-3.5 w-3.5 text-primary opacity-70" />
-                                </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[calc(100vw-48px)] p-2" align="center">
-                                <div className="mb-2 px-2 pb-2 pt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground border-b border-border">
-                                    Switch Office Context
-                                </div>
-                                <div className="flex max-h-[300px] flex-col gap-1 overflow-y-auto">
-                                    {managedOffices.map((office) => {
-                                        const isActive = officeName === `${office.company.name} - ${office.name}`
-                                        return (
-                                            <button
-                                                key={office.id}
-                                                onClick={() => !isActive && handleSwitchOffice(office.id)}
-                                                disabled={isActive || isSwitching}
-                                                className={cn(
-                                                    "flex w-full flex-col items-start gap-1 rounded-md px-3 py-2 text-sm transition-colors",
-                                                    isActive
-                                                        ? "bg-primary/10 text-primary cursor-default"
-                                                        : "hover:bg-muted text-foreground"
-                                                )}
-                                            >
-                                                <span className="font-semibold">{office.company.name}</span>
-                                                <span className="text-xs opacity-80">{office.name}</span>
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                    ) : (
-                        <div className="flex w-full h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4">
-                            <Building className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-semibold text-primary truncate max-w-[200px]">
-                                {officeName}
-                            </span>
-                        </div>
-                    )}
                 </div>
             </header>
 
@@ -460,7 +437,7 @@ export function OpsDashboard({ officeName }: OpsDashboardProps) {
                                             Employee ID
                                         </th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                            Office
+                                            Company
                                         </th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                                             Opt Status
@@ -505,7 +482,7 @@ export function OpsDashboard({ officeName }: OpsDashboardProps) {
                                                     {row.employeeCode}
                                                 </td>
                                                 <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                                                    {row.office}
+                                                    {row.company}
                                                 </td>
                                                 <td className="whitespace-nowrap px-4 py-3">
                                                     <span

@@ -4,37 +4,58 @@
  */
 
 /**
- * Returns a new Date object representing "tomorrow at midnight" 
+ * Returns a new Date object representing "tomorrow at midnight" UTC
  * relative to the provided IANA timezone string.
  * This ensures that a global server correctly evaluates "tomorrow" for a local office.
  */
-export function getTomorrowMidnightInTimezone(timezone: string = "UTC"): Date {
-    // Current date/time in the target timezone
-    const nowStr = new Date().toLocaleString("en-US", { timeZone: timezone })
-    const localNow = new Date(nowStr)
+export function getTomorrowMidnightInTimezone(timezone: string = "Asia/Kolkata"): Date {
+    const now = new Date()
 
-    // Add 1 day
-    localNow.setDate(localNow.getDate() + 1)
+    // Get components in target timezone
+    const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: timezone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+    })
 
-    // Set to midnight locally
-    localNow.setHours(0, 0, 0, 0)
+    const parts = formatter.formatToParts(now)
+    const getPart = (type: string) => parts.find(p => p.type === type)?.value
 
-    // We return this standard JS Date. When stored in Postgres @db.Date, 
-    // Prisma will store it as YYYY-MM-DD representing that local midnight.
-    return localNow
+    const year = parseInt(getPart('year')!)
+    const month = parseInt(getPart('month')!) - 1 // JS months are 0-indexed
+    const day = parseInt(getPart('day')!)
+
+    // Create "today" at midnight UTC in that timezone
+    const localDate = new Date(Date.UTC(year, month, day))
+
+    // Add 1 day to get "tomorrow"
+    localDate.setUTCDate(localDate.getUTCDate() + 1)
+
+    return localDate
 }
 
 /**
  * Checks if the current time in the given timezone has surpassed the cutoff "HH:MM".
  */
-export function isPastCutoffInTimezone(cutoffTime: string, timezone: string = "UTC"): boolean {
-    const nowStr = new Date().toLocaleString("en-US", { timeZone: timezone })
-    const localNow = new Date(nowStr)
+export function isPastCutoffInTimezone(cutoffTime: string, timezone: string = "Asia/Kolkata"): boolean {
+    const now = new Date()
+
+    // Get hours and minutes in target timezone
+    const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: timezone,
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+    })
+
+    const parts = formatter.formatToParts(now)
+    const getPart = (type: string) => parts.find(p => p.type === type)?.value
+
+    const currentHour = parseInt(getPart('hour')!)
+    const currentMinute = parseInt(getPart('minute')!)
 
     const [cutoffH, cutoffM] = cutoffTime.split(":").map(Number)
-
-    const currentHour = localNow.getHours()
-    const currentMinute = localNow.getMinutes()
 
     if (currentHour > cutoffH || (currentHour === cutoffH && currentMinute >= cutoffM)) {
         return true

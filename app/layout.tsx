@@ -10,7 +10,7 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" })
 export const metadata: Metadata = {
   title: "FolksMeal - Corporate Meal Selection",
   description:
-    "Simple internal office meal selection tool for employees. Choose your meal preference for tomorrow.",
+    "Simple internal corporate meal selection tool for employees. Choose your meal preference for tomorrow.",
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png",

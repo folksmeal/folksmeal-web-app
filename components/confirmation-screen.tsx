@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { CheckCircle2, XCircle, ArrowLeft, LogOut } from "lucide-react"
+import { CheckCircle2, XCircle, ArrowLeft, LogOut, Building } from "lucide-react"
 import { format, parseISO } from "date-fns"
 
 interface ConfirmationScreenProps {
   employeeCode: string
-  officeName: string
+  companyName: string
   status: "OPT_IN" | "OPT_OUT"
   preference: "VEG" | "NONVEG" | null
   updatedAt: string
@@ -58,7 +58,7 @@ function formatTimestamp(iso: string) {
 }
 
 export function ConfirmationScreen({
-  officeName,
+  companyName,
   status,
   preference,
   updatedAt,
@@ -93,9 +93,10 @@ export function ConfirmationScreen({
             {/* Divider line */}
             <div className="h-8 w-px bg-border max-sm:hidden" />
             {/* Client Company Badge */}
-            <div className="hidden h-8 items-center justify-center rounded-xl bg-secondary px-4 sm:flex">
-              <span className="text-sm font-medium text-secondary-foreground">
-                {officeName}
+            <div className="hidden h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 sm:flex">
+              <Building className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">
+                {companyName}
               </span>
             </div>
           </div>
@@ -109,9 +110,10 @@ export function ConfirmationScreen({
           </Button>
         </div>
         <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
-          <div className="flex h-8 items-center justify-center rounded-xl bg-secondary px-4">
-            <span className="text-sm font-medium text-secondary-foreground">
-              {officeName}
+          <div className="flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-primary/10 px-4">
+            <Building className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-primary truncate max-w-[200px]">
+              {companyName}
             </span>
           </div>
         </div>

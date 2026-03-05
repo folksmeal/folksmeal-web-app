@@ -5,9 +5,11 @@ import { OpsLoginScreen } from "@/components/ops/ops-login-screen"
 export default async function OpsLoginPage() {
     const session = await auth()
 
-    // Already authenticated as OPS → go to ops dashboard
-    if (session?.user && (session.user as { role: string }).role === "OPS") {
-        redirect("/ops/dashboard")
+    if (session?.user) {
+        const role = (session.user as { role: string }).role
+        if (role === "SUPERADMIN") {
+            redirect("/ops/dashboard")
+        }
     }
 
     return <OpsLoginScreen />

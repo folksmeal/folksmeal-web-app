@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 const SESSION_COOKIE = "authjs.session-token"
 const SECURE_SESSION_COOKIE = "__Secure-authjs.session-token"
 
-const OPS_ROLES = new Set(["OPS", "ORG_ADMIN", "SUPERADMIN"])
+
 
 const STATIC_ASSET_PREFIXES = [
     "/_next",
@@ -77,7 +77,7 @@ function handleOpsRouting(
 
     if (hasSession && !isPublicOpsPath) {
         const role = parseSessionRole(request)
-        if (role && !OPS_ROLES.has(role)) {
+        if (role && role !== "SUPERADMIN") {
             return buildRedirectResponse(request, loginTarget)
         }
     }

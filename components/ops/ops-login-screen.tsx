@@ -2,11 +2,12 @@
 
 import { useState } from "react"
 import { signIn } from "next-auth/react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Loader2, ShieldCheck } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 export function OpsLoginScreen() {
     const router = useRouter()
@@ -20,7 +21,7 @@ export function OpsLoginScreen() {
         setError(null)
 
         if (!employeeId.trim()) {
-            setError("Please enter your Ops ID.")
+            setError("Please enter your Admin ID.")
             return
         }
         if (!password.trim()) {
@@ -55,9 +56,14 @@ export function OpsLoginScreen() {
             <div className="w-full max-w-sm">
                 {/* Header */}
                 <div className="mb-10 flex flex-col items-center gap-3">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
-                        <ShieldCheck className="h-7 w-7 text-primary" />
-                    </div>
+                    <Image
+                        src="/logo-large.png"
+                        alt="FolksMeal"
+                        width={180}
+                        height={46}
+                        className="h-10 w-auto"
+                        priority
+                    />
                     <div className="text-center">
                         <h1
                             className="text-xl font-semibold text-foreground"
@@ -66,7 +72,7 @@ export function OpsLoginScreen() {
                             FolksMeal Operations
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Ops dashboard login
+                            Admin dashboard login
                         </p>
                     </div>
                 </div>
@@ -75,15 +81,15 @@ export function OpsLoginScreen() {
                 <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                     <div className="flex flex-col gap-1.5">
                         <Label
-                            htmlFor="ops-id"
+                            htmlFor="admin-id"
                             className="text-xs font-medium text-muted-foreground"
                         >
-                            Ops ID
+                            Admin ID
                         </Label>
                         <Input
-                            id="ops-id"
+                            id="admin-id"
                             type="text"
-                            placeholder="e.g. OPS-001"
+                            placeholder="e.g. SUPER-001"
                             value={employeeId}
                             onChange={(e) => setEmployeeId(e.target.value)}
                             className="h-11 bg-card"
@@ -128,7 +134,7 @@ export function OpsLoginScreen() {
                                 Signing in...
                             </>
                         ) : (
-                            "Sign In to Ops"
+                            "Sign In"
                         )}
                     </Button>
                 </form>

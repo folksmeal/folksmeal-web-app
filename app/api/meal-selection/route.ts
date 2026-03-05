@@ -30,7 +30,7 @@ export async function GET() {
         }
 
         const sessionUser = session.user
-        const timezone = sessionUser.officeTimezone || "UTC"
+        const timezone = sessionUser.locationTimezone || "Asia/Kolkata"
         const tomorrow = getTomorrowMidnightInTimezone(timezone)
 
         const selection = await prisma.mealSelection.findUnique({
@@ -86,26 +86,25 @@ export async function POST(request: NextRequest) {
 
         const { status, preference } = parsed.data
 
-        const { officeId } = session.user
+        const { addressId } = session.user
 
-
-        const office = await prisma.office.findUnique({
-            where: { id: officeId },
+        const address = await prisma.companyAddress.findUnique({
+            where: { id: addressId },
         })
 
-        if (!office) {
+        if (!address) {
             return NextResponse.json(
-                { error: "Office not found" },
+                { error: "Location not found" },
                 { status: 404 }
             )
         }
 
-        const timezone = office.timezone || "UTC"
+        const timezone = address.timezone || "Asia/Kolkata"
 
-        if (isPastCutoffInTimezone(office.cutoffTime, timezone)) {
+        if (isPastCutoffInTimezone(address.cutoffTime, timezone)) {
             return NextResponse.json(
                 {
-                    error: `Cutoff time (${office.cutoffTime}) has passed. Selection is locked.`,
+                    error: `Cutoff time (${address.cutoffTime}) has passed. Selection is locked.`,
                     code: "CUTOFF_PASSED",
                 },
                 { status: 403 }
@@ -118,8 +117,8 @@ export async function POST(request: NextRequest) {
         if (status === "OPT_IN") {
             const menu = await prisma.menu.findUnique({
                 where: {
-                    officeId_date: {
-                        officeId,
+                    addressId_date: {
+                        addressId,
                         date: tomorrow,
                     },
                 },

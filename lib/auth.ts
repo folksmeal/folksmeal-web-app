@@ -18,7 +18,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                 const employee = await prisma.employee.findUnique({
                     where: { employeeCode: credentials.employeeCode as string },
-                    include: { office: true, company: true },
+                    include: {
+                        company: true,
+                        address: true,
+                    },
                 })
 
                 if (!employee) return null
@@ -36,11 +39,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     email: employee.employeeCode,
                     employeeCode: employee.employeeCode,
                     role: employee.role as string,
-                    officeId: employee.officeId,
-                    officeName: employee.office.name,
-                    officeTimezone: employee.office.timezone,
                     companyId: employee.companyId,
                     companyName: employee.company.name,
+                    addressId: employee.addressId,
+                    addressCity: employee.address.city,
+                    locationTimezone: employee.address.timezone,
                 }
             },
         }),
@@ -60,19 +63,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.employeeId = u.id
                 token.employeeCode = u.employeeCode
                 token.role = u.role
-                token.officeId = u.officeId
-                token.officeName = u.officeName
-                token.officeTimezone = u.officeTimezone
                 token.companyId = u.companyId
                 token.companyName = u.companyName
+                token.addressId = u.addressId
+                token.addressCity = u.addressCity
+                token.locationTimezone = u.locationTimezone
             }
-            // Company Switcher Override
-            if (trigger === "update" && session && session.newOffice) {
-                token.officeId = session.newOffice.officeId
-                token.officeName = session.newOffice.officeName
-                token.companyId = session.newOffice.companyId
-                token.companyName = session.newOffice.companyName
-                token.officeTimezone = session.newOffice.officeTimezone
+            // Context Switcher Override
+            if (trigger === "update" && session && session.newLocation) {
+                token.companyId = session.newLocation.companyId
+                token.companyName = session.newLocation.companyName
+                token.addressId = session.newLocation.addressId
+                token.addressCity = session.newLocation.addressCity
+                token.locationTimezone = session.newLocation.locationTimezone
             }
             return token
         },
@@ -82,11 +85,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 u.id = token.employeeId as string
                 u.employeeCode = token.employeeCode as string
                 u.role = token.role as string
-                u.officeId = token.officeId as string
-                u.officeName = token.officeName as string
-                u.officeTimezone = token.officeTimezone as string
                 u.companyId = token.companyId as string
                 u.companyName = token.companyName as string
+                u.addressId = token.addressId as string
+                u.addressCity = token.addressCity as string
+                u.locationTimezone = token.locationTimezone as string
             }
             return session
         },

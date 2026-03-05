@@ -22,71 +22,71 @@ enum SelectionStatus {
 
 enum EmployeeRole {
   EMPLOYEE
-  OPS
-  ORG_ADMIN
   SUPERADMIN
 }
 
 // ─── Models ──────────────────────────────────────────────────────────
 
 model Company {
-  id        String   @id @default(cuid())
-  name      String
-  domain    String?  @unique
-  createdAt DateTime @default(now()) @map("created_at")
+  id        String           @id @default(cuid())
+  name      String           // e.g. "FolksMeal"
+  domain    String?
+  createdAt DateTime         @default(now()) @map("created_at")
 
-  offices   Office[]
+  addresses CompanyAddress[]
   employees Employee[]
 
   @@map("companies")
 }
 
-model Office {
-  id         String   @id @default(cuid())
-  companyId  String   @map("company_id")
-  name       String
-  cutoffTime String   @default("18:00") @map("cutoff_time") // HH:MM format (24h)
-  timezone   String   @default("UTC") // Store IANA timezone
-  createdAt  DateTime @default(now()) @map("created_at")
+model CompanyAddress {
+  id         String     @id @default(cuid())
+  companyId  String     @map("company_id")
+  city       String     // e.g. "Noida"
+  state      String?    // e.g. "Uttar Pradesh"
+  address    String?    // Full address
+  cutoffTime String     @default("18:00") @map("cutoff_time")
+  timezone   String     @default("Asia/Kolkata")
+  createdAt  DateTime   @default(now()) @map("created_at")
 
-  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  employees Employee[]
-  menus     Menu[]
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employees  Employee[]
+  menus      Menu[]
 
-  @@map("offices")
+  @@map("company_addresses")
 }
 
 model Employee {
   id                String         @id @default(cuid())
   companyId         String         @map("company_id")
+  addressId         String         @map("address_id")
   name              String
   employeeCode      String         @unique @map("employee_code")
-  password          String         // bcrypt hash
-  officeId          String         @map("office_id")
+  password          String
   defaultPreference MealPreference @default(VEG) @map("default_preference")
   role              EmployeeRole   @default(EMPLOYEE)
   createdAt         DateTime       @default(now()) @map("created_at")
 
-  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  office         Office          @relation(fields: [officeId], references: [id], onDelete: Cascade)
-  mealSelections MealSelection[]
+  company           Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  address           CompanyAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  selections        MealSelection[]
 
   @@map("employees")
 }
 
 model Menu {
-  id           String   @id @default(cuid())
-  officeId     String   @map("office_id")
-  date         DateTime @db.Date // Stored as midnight UTC, but interpreted via Office timezone
+  id           String         @id @default(cuid())
+  addressId    String         @map("address_id")
+  date         DateTime       @db.Date
   day          String?
-  vegItem      String   @map("veg_item")
-  nonvegItem   String?  @map("nonveg_item")
-  sideBeverage String?  @map("side_beverage")
+  vegItem      String         @map("veg_item")
+  nonvegItem   String?        @map("nonveg_item")
+  sideBeverage String?        @map("side_beverage")
   notes        String?
 
-  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  address      CompanyAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
 
-  @@unique([officeId, date])
+  @@unique([addressId, date])
   @@map("menus")
 }
 

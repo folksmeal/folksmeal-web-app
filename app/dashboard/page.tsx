@@ -16,23 +16,23 @@ export default async function DashboardPage({
         redirect("/")
     }
 
-    const { officeId, employeeCode, officeName, officeTimezone, companyName } = session.user
+    const { addressId, employeeCode, companyName, addressCity, locationTimezone } = session.user
 
 
-    const office = await prisma.office.findUnique({
-        where: { id: officeId },
+    const address = await prisma.companyAddress.findUnique({
+        where: { id: addressId },
     })
 
-    const cutoffTime = office?.cutoffTime || "18:00"
-    const timezone = office?.timezone || officeTimezone || "UTC"
+    const cutoffTime = address?.cutoffTime || "18:00"
+    const timezone = address?.timezone || locationTimezone || "Asia/Kolkata"
 
 
     const tomorrow = getTomorrowMidnightInTimezone(timezone)
 
     const menu = await prisma.menu.findUnique({
         where: {
-            officeId_date: {
-                officeId,
+            addressId_date: {
+                addressId,
                 date: tomorrow,
             },
         },
@@ -79,13 +79,14 @@ export default async function DashboardPage({
 
     const params = await searchParams
     const justSubmitted = params.submitted === "true"
-    const fullOfficeName = `${companyName} - ${officeName}`
+
+    const fullLocationName = `${companyName} - ${addressCity}`
 
     if (justSubmitted && existingSelection) {
         return (
             <ConfirmationScreen
                 employeeCode={employeeCode}
-                officeName={fullOfficeName}
+                companyName={fullLocationName}
                 status={existingSelection.status}
                 preference={existingSelection.preference}
                 updatedAt={existingSelection.updatedAt}
@@ -96,7 +97,8 @@ export default async function DashboardPage({
     return (
         <MenuScreen
             employeeCode={employeeCode}
-            officeName={fullOfficeName}
+            employeeName={session.user.name || "Employee"}
+            companyName={fullLocationName}
             cutoffTime={cutoffTime}
             menu={menuData}
             existingSelection={existingSelection}
