@@ -2,10 +2,47 @@ import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
     reactStrictMode: true,
+
+    poweredByHeader: false,
+    compress: true,
+    generateEtags: true,
+
     serverExternalPackages: ["bcryptjs", "exceljs"],
+
     images: {
         unoptimized: true,
     },
+
+    typescript: {
+        ignoreBuildErrors: false,
+    },
+
+    logging: {
+        fetches: {
+            fullUrl: true,
+            hmrRefreshes: false,
+        },
+        incomingRequests: {
+            ignore: [/\/_next\//, /\/favicon\.ico/],
+        },
+    },
+
+    experimental: {
+        serverMinification: true,
+        optimizePackageImports: [
+            "lucide-react",
+            "date-fns",
+            "recharts",
+            "@radix-ui/react-icons",
+        ],
+    },
+
+    compiler: {
+        removeConsole: process.env.NODE_ENV === "production"
+            ? { exclude: ["error", "warn"] }
+            : false,
+    },
+
     async headers() {
         return [
             {
@@ -20,30 +57,61 @@ const nextConfig: NextConfig = {
                         value: "DENY",
                     },
                     {
+                        key: "X-XSS-Protection",
+                        value: "1; mode=block",
+                    },
+                    {
                         key: "Referrer-Policy",
                         value: "strict-origin-when-cross-origin",
                     },
                     {
                         key: "Strict-Transport-Security",
-                        value: "max-age=31536000; includeSubDomains; preload",
+                        value: "max-age=63072000; includeSubDomains; preload",
                     },
                     {
                         key: "Permissions-Policy",
                         value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
                     },
                     {
-                        key: "X-XSS-Protection",
-                        value: "1; mode=block",
-                    }
+                        key: "X-DNS-Prefetch-Control",
+                        value: "on",
+                    },
+                    {
+                        key: "Content-Security-Policy",
+                        value: [
+                            "default-src 'self'",
+                            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
+                            "style-src 'self' 'unsafe-inline'",
+                            "img-src 'self' data: blob: https:",
+                            "font-src 'self' data:",
+                            "connect-src 'self' https://va.vercel-scripts.com https://*.supabase.com",
+                            "frame-ancestors 'none'",
+                            "base-uri 'self'",
+                            "form-action 'self'",
+                        ].join("; "),
+                    },
+                ],
+            },
+            {
+                source: "/_next/static/(.*)",
+                headers: [
+                    {
+                        key: "Cache-Control",
+                        value: "public, max-age=31536000, immutable",
+                    },
+                ],
+            },
+            {
+                source: "/images/(.*)",
+                headers: [
+                    {
+                        key: "Cache-Control",
+                        value: "public, max-age=86400, stale-while-revalidate=604800",
+                    },
                 ],
             },
         ]
     },
-    poweredByHeader: false,
-    compress: true,
-    typescript: {
-        ignoreBuildErrors: false,
-    }
 }
 
 export default nextConfig

@@ -102,10 +102,6 @@ function handleEmployeeRouting(
         return buildRedirectResponse(request, "/")
     }
 
-    if (hasSession && isPublicPath) {
-        return buildRedirectResponse(request, "/dashboard")
-    }
-
     return NextResponse.next()
 }
 
