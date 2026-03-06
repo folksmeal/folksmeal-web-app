@@ -1,1 +1,363 @@
-"use client"import { useState, useEffect, useCallback } from "react"import Image from "next/image"import { signOut, useSession } from "next-auth/react"import { Button } from "@/components/ui/button"import { Separator } from "@/components/ui/separator"import {    LogOut,    Download,    Upload,    Users,    Leaf,    Drumstick,    XCircle,    Loader2,    RefreshCw,    CalendarDays,    Building,    Check,    ChevronRight,} from "lucide-react"import { MenuUploader } from "@/components/ops/menu-uploader"import { format, parseISO } from "date-fns"import { Calendar } from "@/components/ui/calendar"import {    Popover,    PopoverContent,    PopoverTrigger,} from "@/components/ui/popover"import { cn } from "@/lib/utils"import {    Command,    CommandEmpty,    CommandGroup,    CommandInput,    CommandItem,    CommandList,} from "@/components/ui/command"interface SelectionRow {    employeeName: string    employeeCode: string    company: string    status: string    preference: string | null    date: string    updatedAt: string}interface Stats {    total: number    optedIn: number    optedOut: number    vegCount: number    nonvegCount: number}interface ManagedCompany {    id: string    name: string    companyName: string    addressCity: string}interface OpsDashboardProps {    userName: string    companyName: string}export function OpsDashboard({ companyName }: OpsDashboardProps) {    const [date, setDate] = useState(() => {        const d = new Date()        d.setDate(d.getDate() + 1)        return d.toISOString().split("T")[0]    })    const [rows, setRows] = useState<SelectionRow[]>([])    const [stats, setStats] = useState<Stats>({        total: 0,        optedIn: 0,        optedOut: 0,        vegCount: 0,        nonvegCount: 0,    })    const [loading, setLoading] = useState(true)    const [showUploader, setShowUploader] = useState(false)    const fetchData = useCallback(async () => {        setLoading(true)        try {            const res = await fetch(`/api/ops/selections?date=${date}`)            if (!res.ok) throw new Error("Failed to fetch")            const data = await res.json()            setRows(data.rows)            setStats(data.stats)        } catch (error) {            console.error("Failed to fetch selections:", error)        } finally {            setLoading(false)        }    }, [date])    useEffect(() => {        fetchData()    }, [fetchData])    const handleExportCSV = useCallback(() => {        if (!rows.length) return        const headers = [            "Employee Name",            "Employee ID",            "Company",            "Opt Status",            "Veg/NonVeg",            "Date",            "Last Updated",        ]        const csvRows = rows.map((r) => [            r.employeeName,            r.employeeCode,            r.company,            r.status === "OPT_IN" ? "Opted In" : "Opted Out",            r.preference || "-",            format(parseISO(r.date), "dd MMM yyyy"),            format(parseISO(r.updatedAt), "dd MMM yyyy, hh:mm a"),        ])        csvRows.push([])        csvRows.push(["--- SUMMARY ---"])        csvRows.push(["Total Selections", String(stats.total)])        csvRows.push(["Opted In", String(stats.optedIn)])        csvRows.push(["Veg Count", String(stats.vegCount)])        csvRows.push(["Non-Veg Count", String(stats.nonvegCount)])        csvRows.push(["Opted Out", String(stats.optedOut)])        const csv = [headers, ...csvRows]            .map((row) =>                (row as string[])                    .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)                    .join(",")            )            .join("\n")        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })        const url = URL.createObjectURL(blob)        const a = document.createElement("a")        a.href = url        a.download = `folksmeal-prep-sheet-${date}.csv`        a.click()        URL.revokeObjectURL(url)    }, [rows, stats, date])    const handleLogout = useCallback(async () => {        await signOut({ callbackUrl: "/ops" })    }, [])    const { update } = useSession()    const [managedCompanies, setManagedCompanies] = useState<ManagedCompany[]>([])    const [isSwitching, setIsSwitching] = useState(false)    const [showSwitcher, setShowSwitcher] = useState(false)    useEffect(() => {        const fetchCompanies = async () => {            try {                const res = await fetch('/api/ops/managed-companies')                if (res.ok) {                    const data = await res.json()                    setManagedCompanies(data.companies || [])                }            } catch (err) {                console.error("Failed to fetch managed companies", err)            }        }        fetchCompanies()    }, [])    const handleSwitchCompany = async (companyId: string) => {        setIsSwitching(true)        setShowSwitcher(false)        try {            const res = await fetch('/api/ops/switch-company', {                method: 'POST',                headers: { 'Content-Type': 'application/json' },                body: JSON.stringify({ companyId })            })            if (!res.ok) throw new Error("Failed to switch company")            const data = await res.json()            await update({ newLocation: data.newLocation })            window.location.reload()        } catch (error) {            console.error("Switch failed", error)            setIsSwitching(false)        }    }    return (        <div className="min-h-screen bg-background">            {}            {isSwitching && (                <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">                    <Loader2 className="h-8 w-8 animate-spin text-primary" />                    <p className="mt-4 text-sm font-medium text-muted-foreground">Switching context...</p>                </div>            )}            {}            <header className="border-b border-border bg-card">                <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">                    <div className="flex items-center gap-3">                        <Image                            src="/logo-large.png"                            alt="FolksMeal"                            width={130}                            height={34}                            className="h-8 w-auto"                            priority                        />                        {}                        <div className="h-8 w-px bg-border max-sm:hidden" />                        {}                        {managedCompanies.length > 1 ? (                            <Popover open={showSwitcher} onOpenChange={setShowSwitcher}>                                <PopoverTrigger asChild>                                    <button className="flex h-10 cursor-pointer items-center justify-between gap-3 rounded-xl border border-input bg-card px-4 py-2 transition-all hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20">                                        <div className="flex items-center gap-2.5">                                            <Building className="h-4 w-4 text-muted-foreground" />                                            <span className="max-w-[140px] truncate text-sm font-semibold text-foreground sm:max-w-[200px]">                                                {companyName}                                            </span>                                        </div>                                        <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />                                    </button>                                </PopoverTrigger>                                <PopoverContent className="w-[300px] p-0 shadow-xl" align="start">                                    <Command className="rounded-xl border-none">                                        <CommandInput placeholder="Search location..." className="h-11 border-none focus:ring-0" />                                        <CommandList className="max-h-[320px] p-1.5">                                            <CommandEmpty className="py-6 text-xs text-muted-foreground">No location found.</CommandEmpty>                                            <CommandGroup heading="Select Location">                                                {managedCompanies.map((company) => {                                                    const isActive = companyName === company.name                                                    return (                                                        <CommandItem                                                            key={company.id}                                                            onSelect={() => {                                                                if (!isActive) handleSwitchCompany(company.id)                                                            }}                                                            disabled={isSwitching}                                                            className={cn(                                                                "group flex cursor-pointer items-center justify-between rounded-xl px-3.5 py-3 transition-all text-foreground",                                                                isActive ? "bg-primary/15 font-semibold text-primary shadow-sm" : "hover:bg-accent/50"                                                            )}                                                        >                                                            <div className="flex flex-col gap-0.5">                                                                <span className="text-sm font-semibold tracking-tight">{company.companyName}</span>                                                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">                                                                    {company.addressCity}                                                                </span>                                                            </div>                                                            {isActive ? (                                                                <Check className="h-4 w-4 text-primary" strokeWidth={3} />                                                            ) : (                                                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 group-hover:translate-x-0.5" />                                                            )}                                                        </CommandItem>                                                    )                                                })}                                            </CommandGroup>                                        </CommandList>                                    </Command>                                </PopoverContent>                            </Popover>                        ) : (                            <div className="flex h-10 items-center justify-between gap-3 rounded-xl border border-input bg-card px-4 py-2">                                <div className="flex items-center gap-2.5">                                    <Building className="h-4 w-4 text-muted-foreground" />                                    <span className="max-w-[140px] truncate text-sm font-semibold text-foreground sm:max-w-[200px]">                                        {companyName}                                    </span>                                </div>                            </div>                        )}                    </div>                    <Button                        variant="outline"                        onClick={handleLogout}                        className="h-10 rounded-xl border-input bg-card px-5 font-semibold transition-all hover:bg-destructive/5 hover:text-destructive hover:border-destructive/30"                    >                        <LogOut className="h-3.5 w-3.5" />                        Sign Out                    </Button>                </div>            </header>            <main className="mx-auto max-w-7xl px-6 py-6">                <div className="flex flex-col gap-6">                    {}                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">                        <div className="flex items-center gap-3">                            <Popover>                                <PopoverTrigger asChild>                                    <Button                                        variant="outline"                                        className={cn(                                            "w-[160px] justify-start text-left font-normal bg-card rounded-xl",                                            !date && "text-muted-foreground"                                        )}                                    >                                        <CalendarDays className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />                                        {date ? format(parseISO(date), "dd MMM yyyy") : <span>Pick a date</span>}                                    </Button>                                </PopoverTrigger>                                <PopoverContent className="w-auto p-0 rounded-xl overflow-hidden" align="start">                                    <Calendar                                        mode="single"                                        selected={parseISO(date)}                                        onSelect={(val) => {                                            if (val) {                                                const d = new Date(val)                                                d.setMinutes(d.getMinutes() - d.getTimezoneOffset())                                                setDate(d.toISOString().split("T")[0])                                            }                                        }}                                        initialFocus                                        className="rounded-xl"                                    />                                </PopoverContent>                            </Popover>                            <Button                                variant="outline"                                onClick={fetchData}                                disabled={loading}                            >                                <RefreshCw                                    className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}                                />                                Refresh                            </Button>                        </div>                        <div className="flex items-center gap-2">                            <Button                                variant="outline"                                onClick={() => setShowUploader(!showUploader)}                            >                                <Upload className="h-3.5 w-3.5" />                                Upload Menu                            </Button>                            <Button                                onClick={handleExportCSV}                                disabled={!rows.length}                            >                                <Download className="h-3.5 w-3.5" />                                Export CSV                            </Button>                        </div>                    </div>                    {}                    {showUploader && (                        <MenuUploader onClose={() => setShowUploader(false)} />                    )}                    {}                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">                        <div className="rounded-lg border border-border bg-card p-4">                            <div className="flex items-center gap-2">                                <Users className="h-4 w-4 text-primary" />                                <p className="text-xs font-medium text-muted-foreground">                                    Total Opted In                                </p>                            </div>                            <p className="mt-2 text-2xl font-bold text-foreground">                                {stats.optedIn}                            </p>                        </div>                        <div className="rounded-lg border border-border bg-card p-4">                            <div className="flex items-center gap-2">                                <Leaf className="h-4 w-4 text-veg" />                                <p className="text-xs font-medium text-muted-foreground">                                    Veg Count                                </p>                            </div>                            <p className="mt-2 text-2xl font-bold text-foreground">                                {stats.vegCount}                            </p>                        </div>                        <div className="rounded-lg border border-border bg-card p-4">                            <div className="flex items-center gap-2">                                <Drumstick className="h-4 w-4 text-nonveg" />                                <p className="text-xs font-medium text-muted-foreground">                                    Non-Veg Count                                </p>                            </div>                            <p className="mt-2 text-2xl font-bold text-foreground">                                {stats.nonvegCount}                            </p>                        </div>                        <div className="rounded-lg border border-border bg-card p-4">                            <div className="flex items-center gap-2">                                <XCircle className="h-4 w-4 text-muted-foreground" />                                <p className="text-xs font-medium text-muted-foreground">                                    Opted Out                                </p>                            </div>                            <p className="mt-2 text-2xl font-bold text-foreground">                                {stats.optedOut}                            </p>                        </div>                    </div>                    <Separator />                    {}                    <div className="rounded-lg border border-border bg-card">                        <div className="overflow-x-auto">                            <table className="w-full text-sm">                                <thead>                                    <tr className="border-b border-border bg-muted/50">                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">                                            Employee Name                                        </th>                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">                                            Employee ID                                        </th>                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">                                            Company                                        </th>                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">                                            Opt Status                                        </th>                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">                                            Veg/NonVeg                                        </th>                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">                                            Date                                        </th>                                    </tr>                                </thead>                                <tbody className="divide-y divide-border">                                    {loading ? (                                        <tr>                                            <td colSpan={6} className="px-4 py-12 text-center">                                                <div className="flex items-center justify-center gap-2 text-muted-foreground">                                                    <Loader2 className="h-4 w-4 animate-spin" />                                                    Loading...                                                </div>                                            </td>                                        </tr>                                    ) : rows.length === 0 ? (                                        <tr>                                            <td                                                colSpan={6}                                                className="px-4 py-12 text-center text-sm text-muted-foreground"                                            >                                                No selections found for {format(parseISO(date), "dd MMM yyyy")}                                            </td>                                        </tr>                                    ) : (                                        rows.map((row, i) => (                                            <tr                                                key={i}                                                className="transition-colors hover:bg-muted/30"                                            >                                                <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground">                                                    {row.employeeName}                                                </td>                                                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">                                                    {row.employeeCode}                                                </td>                                                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">                                                    {row.company}                                                </td>                                                <td className="whitespace-nowrap px-4 py-3">                                                    <span                                                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${row.status === "OPT_IN"                                                            ? "bg-primary/10 text-primary"                                                            : "bg-muted text-muted-foreground"                                                            }`}                                                    >                                                        {row.status === "OPT_IN" ? "Opted In" : "Opted Out"}                                                    </span>                                                </td>                                                <td className="whitespace-nowrap px-4 py-3">                                                    {row.preference ? (                                                        <div className="flex items-center gap-1.5">                                                            <span                                                                className={`inline-flex h-3 w-3 items-center justify-center rounded-sm border-2 ${row.preference === "VEG"                                                                    ? "border-veg"                                                                    : "border-nonveg"                                                                    }`}                                                            >                                                                <span                                                                    className={`h-1.5 w-1.5 rounded-full ${row.preference === "VEG"                                                                        ? "bg-veg"                                                                        : "bg-nonveg"                                                                        }`}                                                                />                                                            </span>                                                            <span className="text-xs text-muted-foreground">                                                                {row.preference === "VEG" ? "Veg" : "Non-Veg"}                                                            </span>                                                        </div>                                                    ) : (                                                        <span className="text-xs text-muted-foreground">                                                            —                                                        </span>                                                    )}                                                </td>                                                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">                                                    {format(parseISO(row.date), "dd MMM yyyy")}                                                </td>                                            </tr>                                        ))                                    )}                                </tbody>                            </table>                        </div>                    </div>                </div>            </main >        </div >    )}
+"use client"
+import { useState, useCallback } from "react"
+import Image from "next/image"
+import { signOut } from "next-auth/react"
+import useSWR from "swr"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import {
+    LogOut,
+    Download,
+    Upload,
+    Users,
+    Leaf,
+    Drumstick,
+    XCircle,
+    Loader2,
+    CalendarDays,
+} from "lucide-react"
+import { MenuUploader } from "@/components/ops/menu-uploader"
+import { format, parseISO } from "date-fns"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
+import { CompanySwitcher, type ManagedCompany } from "@/components/ops/company-switcher"
+
+interface SelectionRow {
+    employeeName: string
+    employeeCode: string
+    company: string
+    status: string
+    preference: string | null
+    date: string
+    updatedAt: string
+}
+
+interface Stats {
+    total: number
+    optedIn: number
+    optedOut: number
+    vegCount: number
+    nonvegCount: number
+}
+
+interface OpsDashboardProps {
+    userName: string
+    companyName: string
+    initialDate: string
+    initialRows: SelectionRow[]
+    initialStats: Stats
+    initialManagedCompanies: ManagedCompany[]
+}
+
+const emptyStats: Stats = { total: 0, optedIn: 0, optedOut: 0, vegCount: 0, nonvegCount: 0 }
+
+export function OpsDashboard({
+    companyName,
+    initialDate,
+    initialRows,
+    initialStats,
+    initialManagedCompanies,
+}: OpsDashboardProps) {
+    const [date, setDate] = useState(initialDate)
+    const [showUploader, setShowUploader] = useState(false)
+    const [managedCompanies] = useState<ManagedCompany[]>(initialManagedCompanies)
+
+    const fetcher = (url: string) => fetch(url).then(res => res.json())
+
+    const { data, error, isLoading } = useSWR(
+        `/api/ops/selections?date=${date}`,
+        fetcher,
+        {
+            fallbackData: date === initialDate
+                ? { rows: initialRows, stats: initialStats }
+                : undefined,
+            refreshInterval: 10000,
+            revalidateOnFocus: true,
+        }
+    )
+
+    const rows: SelectionRow[] = data?.rows ?? []
+    const stats: Stats = data?.stats ?? emptyStats
+    const showSkeletons = !data && isLoading
+
+    const handleExportCSV = useCallback(() => {
+        if (!rows.length) return
+        const headers = [
+            "Employee Name",
+            "Employee ID",
+            "Company",
+            "Opt Status",
+            "Veg/NonVeg",
+            "Date",
+            "Last Updated",
+        ]
+        const csvRows = rows.map((r) => [
+            r.employeeName,
+            r.employeeCode,
+            r.company,
+            r.status === "OPT_IN" ? "Opted In" : "Opted Out",
+            r.preference || "-",
+            format(parseISO(r.date), "dd MMM yyyy"),
+            format(parseISO(r.updatedAt), "dd MMM yyyy, hh:mm a"),
+        ])
+        csvRows.push([])
+        csvRows.push(["--- SUMMARY ---"])
+        csvRows.push(["Total Selections", String(stats.total)])
+        csvRows.push(["Opted In", String(stats.optedIn)])
+        csvRows.push(["Veg Count", String(stats.vegCount)])
+        csvRows.push(["Non-Veg Count", String(stats.nonvegCount)])
+        csvRows.push(["Opted Out", String(stats.optedOut)])
+        const csv = [headers, ...csvRows]
+            .map((row) =>
+                (row as string[])
+                    .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
+                    .join(",")
+            )
+            .join("\n")
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `folksmeal-prep-sheet-${date}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+    }, [rows, stats, date])
+
+    const handleLogout = useCallback(async () => {
+        await signOut({ callbackUrl: "/ops" })
+    }, [])
+
+    return (
+        <div className="min-h-screen bg-background">
+            <header className="border-b border-border bg-card">
+                <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+                    <div className="flex items-center gap-3">
+                        <Image
+                            src="/logo-large.png"
+                            alt="FolksMeal"
+                            width={130}
+                            height={34}
+                            className="h-8 w-auto"
+                            priority
+                        />
+                        <div className="h-8 w-px bg-border max-sm:hidden" />
+                        <CompanySwitcher
+                            currentCompanyName={companyName}
+                            managedCompanies={managedCompanies}
+                        />
+                    </div>
+                    <Button
+                        variant="outline"
+                        onClick={handleLogout}
+                        className="h-10 rounded-xl border-input bg-card px-5 font-semibold transition-all hover:bg-destructive/5 hover:text-destructive hover:border-destructive/30"
+                    >
+                        <LogOut className="h-3.5 w-3.5" />
+                        Sign Out
+                    </Button>
+                </div>
+            </header>
+            <main className="mx-auto max-w-7xl px-6 py-6">
+                <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            "w-[160px] justify-start text-left font-normal bg-card rounded-xl",
+                                            !date && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarDays className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                                        {date ? format(parseISO(date), "dd MMM yyyy") : <span>Pick a date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 rounded-xl overflow-hidden" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={parseISO(date)}
+                                        onSelect={(val) => {
+                                            if (val) {
+                                                const d = new Date(val)
+                                                d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+                                                setDate(d.toISOString().split("T")[0])
+                                            }
+                                        }}
+                                        initialFocus
+                                        className="rounded-xl"
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowUploader(!showUploader)}
+                            >
+                                <Upload className="h-3.5 w-3.5" />
+                                Upload Menu
+                            </Button>
+                            <Button
+                                onClick={handleExportCSV}
+                                disabled={!rows.length}
+                            >
+                                <Download className="h-3.5 w-3.5" />
+                                Export CSV
+                            </Button>
+                        </div>
+                    </div>
+
+                    {showUploader && (
+                        <MenuUploader onClose={() => setShowUploader(false)} />
+                    )}
+
+                    {error && (
+                        <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+                            <XCircle className="h-5 w-5 text-destructive" />
+                            <p className="text-sm text-destructive">
+                                Failed to fetch live updates. Using cached data.
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {[
+                            { label: "Total Opted In", icon: Users, color: "text-primary", value: stats.optedIn },
+                            { label: "Veg Count", icon: Leaf, color: "text-veg", value: stats.vegCount },
+                            { label: "Non-Veg Count", icon: Drumstick, color: "text-nonveg", value: stats.nonvegCount },
+                            { label: "Opted Out", icon: XCircle, color: "text-muted-foreground", value: stats.optedOut },
+                        ].map((stat, i) => (
+                            <div key={i} className="rounded-lg border border-border bg-card p-4 h-[100px] flex flex-col justify-between">
+                                <div className="flex items-center gap-2">
+                                    <stat.icon className={cn("h-4 w-4", stat.color)} />
+                                    <p className="text-xs font-medium text-muted-foreground">
+                                        {stat.label}
+                                    </p>
+                                </div>
+                                {showSkeletons ? (
+                                    <Skeleton className="h-8 w-16" />
+                                ) : (
+                                    <p className="text-2xl font-bold text-foreground">
+                                        {stat.value}
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <Separator />
+
+                    <div className="rounded-lg border border-border bg-card">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-border bg-muted/50">
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                            Employee Name
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                            Employee ID
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                            Company
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                            Opt Status
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                            Veg/NonVeg
+                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                            Date
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {showSkeletons ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <tr key={`skeleton-${i}`} className="border-b border-border last:border-0">
+                                                <td className="px-4 py-4"><Skeleton className="h-4 w-32" /></td>
+                                                <td className="px-4 py-4"><Skeleton className="h-4 w-24" /></td>
+                                                <td className="px-4 py-4"><Skeleton className="h-4 w-40" /></td>
+                                                <td className="px-4 py-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
+                                                <td className="px-4 py-4"><Skeleton className="h-4 w-28" /></td>
+                                                <td className="px-4 py-4"><Skeleton className="h-4 w-24" /></td>
+                                            </tr>
+                                        ))
+                                    ) : rows.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                colSpan={6}
+                                                className="px-4 py-12 text-center text-sm text-muted-foreground"
+                                            >
+                                                No selections found for {format(parseISO(date), "dd MMM yyyy")}
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        rows.map((row, i) => (
+                                            <tr
+                                                key={i}
+                                                className="transition-colors hover:bg-muted/30"
+                                            >
+                                                <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground">
+                                                    {row.employeeName}
+                                                </td>
+                                                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                                                    {row.employeeCode}
+                                                </td>
+                                                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                                                    {row.company}
+                                                </td>
+                                                <td className="whitespace-nowrap px-4 py-3">
+                                                    <span
+                                                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${row.status === "OPT_IN"
+                                                            ? "bg-primary/10 text-primary"
+                                                            : "bg-muted text-muted-foreground"
+                                                            }`}
+                                                    >
+                                                        {row.status === "OPT_IN" ? "Opted In" : "Opted Out"}
+                                                    </span>
+                                                </td>
+                                                <td className="whitespace-nowrap px-4 py-3">
+                                                    {row.preference ? (
+                                                        <div className="inline-flex items-center gap-2">
+                                                            <span
+                                                                className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 ${row.preference === "VEG"
+                                                                    ? "border-veg"
+                                                                    : "border-nonveg"
+                                                                    }`}
+                                                            >
+                                                                <span
+                                                                    className={`block h-2 w-2 rounded-full ${row.preference === "VEG"
+                                                                        ? "bg-veg"
+                                                                        : "bg-nonveg"
+                                                                        }`}
+                                                                />
+                                                            </span>
+                                                            <span className="text-xs leading-none text-muted-foreground">
+                                                                {row.preference === "VEG" ? "Veg" : "Non-Veg"}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground">
+                                                            —
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                                                    {format(parseISO(row.date), "dd MMM yyyy")}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    )
+}
