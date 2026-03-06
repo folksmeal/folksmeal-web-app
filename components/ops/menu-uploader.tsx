@@ -1,193 +1,1 @@
-"use client"
-
-import { useState, useCallback, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import {
-    Upload,
-    X,
-    FileSpreadsheet,
-    Check,
-    AlertCircle,
-    Loader2,
-} from "lucide-react"
-import { format, parseISO } from "date-fns"
-
-interface MenuUploaderProps {
-    onClose: () => void
-}
-
-interface UploadResult {
-    success: boolean
-    processed: number
-    errors: number
-    results?: { date: string; vegItem: string; nonvegItem: string | null }[]
-    errorDetails?: { row: number; error: string }[]
-    error?: string
-}
-
-export function MenuUploader({ onClose }: MenuUploaderProps) {
-    const fileInputRef = useRef<HTMLInputElement>(null)
-    const [selectedFile, setSelectedFile] = useState<File | null>(null)
-    const [uploading, setUploading] = useState(false)
-    const [result, setResult] = useState<UploadResult | null>(null)
-
-    const handleFileSelect = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) => {
-            const file = e.target.files?.[0]
-            if (file) {
-                setSelectedFile(file)
-                setResult(null)
-            }
-        },
-        []
-    )
-
-    const handleUpload = useCallback(async () => {
-        if (!selectedFile) return
-
-        setUploading(true)
-        setResult(null)
-
-        try {
-            const formData = new FormData()
-            formData.append("file", selectedFile)
-
-            const res = await fetch("/api/ops/upload-menu", {
-                method: "POST",
-                body: formData,
-            })
-
-            const data = await res.json()
-            setResult(data)
-        } catch {
-            setResult({ success: false, processed: 0, errors: 1, error: "Upload failed. Please try again." })
-        } finally {
-            setUploading(false)
-        }
-    }, [selectedFile])
-
-    return (
-        <div className="rounded-lg border border-border bg-card p-5">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-semibold text-foreground">
-                        Upload Weekly Menu
-                    </h3>
-                </div>
-                <Button
-                    variant="ghost"
-                    onClick={onClose}
-                    aria-label="Close"
-                >
-                    <X className="h-4 w-4" />
-                </Button>
-            </div>
-
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                Upload an Excel file (.xlsx) with columns:{" "}
-                <strong>Date</strong> and <strong>Menu</strong>.
-                The Menu column should have comma-separated values — first item is veg,
-                second is non-veg (optional).
-            </p>
-
-            <div className="mt-4 flex flex-col gap-3">
-                {/* File picker */}
-                <div className="flex items-center gap-3">
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".xlsx,.xls"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                    />
-                    <Button
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                    >
-                        <Upload className="h-3.5 w-3.5" />
-                        Choose File
-                    </Button>
-                    {selectedFile && (
-                        <span className="text-xs text-muted-foreground">
-                            {selectedFile.name}
-                        </span>
-                    )}
-                </div>
-
-                {/* Upload button */}
-                {selectedFile && !result?.success && (
-                    <Button
-                        onClick={handleUpload}
-                        disabled={uploading}
-                        className="w-fit"
-                    >
-                        {uploading ? (
-                            <>
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                Uploading...
-                            </>
-                        ) : (
-                            <>
-                                <Upload className="h-3.5 w-3.5" />
-                                Upload & Process
-                            </>
-                        )}
-                    </Button>
-                )}
-
-                {/* Results */}
-                {result && (
-                    <div
-                        className={`rounded-lg border px-4 py-3 ${result.success
-                            ? "border-primary/20 bg-primary/5"
-                            : "border-destructive/30 bg-destructive/5"
-                            }`}
-                    >
-                        {result.success ? (
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                    <Check className="h-4 w-4 text-primary" />
-                                    <p className="text-xs font-medium text-foreground">
-                                        Successfully processed {result.processed} menu
-                                        {result.processed !== 1 ? "s" : ""}
-                                    </p>
-                                </div>
-                                {result.results && result.results.length > 0 && (
-                                    <div className="ml-6 text-xs text-muted-foreground">
-                                        {result.results.map((r, i) => (
-                                            <p key={i}>
-                                                {format(parseISO(r.date), "dd MMM yyyy")}: {r.vegItem}
-                                                {r.nonvegItem ? ` | ${r.nonvegItem}` : " (veg only)"}
-                                            </p>
-                                        ))}
-                                    </div>
-                                )}
-                                {result.errors > 0 && result.errorDetails && (
-                                    <div className="ml-6 mt-1 text-xs text-destructive">
-                                        <p className="font-medium">
-                                            {result.errors} error{result.errors !== 1 ? "s" : ""}:
-                                        </p>
-                                        {result.errorDetails.map((e, i) => (
-                                            <p key={i}>
-                                                Row {e.row}: {e.error}
-                                            </p>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4 text-destructive" />
-                                <p className="text-xs text-destructive">
-                                    {result.error || "Upload failed"}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-        </div>
-    )
-}
+"use client"import { useState, useCallback, useRef } from "react"import { Button } from "@/components/ui/button"import {    Upload,    X,    FileSpreadsheet,    Check,    AlertCircle,    Loader2,} from "lucide-react"import { format, parseISO } from "date-fns"interface MenuUploaderProps {    onClose: () => void}interface UploadResult {    success: boolean    processed: number    errors: number    results?: { date: string; vegItem: string; nonvegItem: string | null }[]    errorDetails?: { row: number; error: string }[]    error?: string}export function MenuUploader({ onClose }: MenuUploaderProps) {    const fileInputRef = useRef<HTMLInputElement>(null)    const [selectedFile, setSelectedFile] = useState<File | null>(null)    const [uploading, setUploading] = useState(false)    const [result, setResult] = useState<UploadResult | null>(null)    const handleFileSelect = useCallback(        (e: React.ChangeEvent<HTMLInputElement>) => {            const file = e.target.files?.[0]            if (file) {                setSelectedFile(file)                setResult(null)            }        },        []    )    const handleUpload = useCallback(async () => {        if (!selectedFile) return        setUploading(true)        setResult(null)        try {            const formData = new FormData()            formData.append("file", selectedFile)            const res = await fetch("/api/ops/upload-menu", {                method: "POST",                body: formData,            })            const data = await res.json()            setResult(data)        } catch {            setResult({ success: false, processed: 0, errors: 1, error: "Upload failed. Please try again." })        } finally {            setUploading(false)        }    }, [selectedFile])    return (        <div className="rounded-lg border border-border bg-card p-5">            <div className="flex items-center justify-between">                <div className="flex items-center gap-2">                    <FileSpreadsheet className="h-4 w-4 text-primary" />                    <h3 className="text-sm font-semibold text-foreground">                        Upload Weekly Menu                    </h3>                </div>                <Button                    variant="ghost"                    onClick={onClose}                    aria-label="Close"                >                    <X className="h-4 w-4" />                </Button>            </div>            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">                Upload an Excel file (.xlsx) with columns:{" "}                <strong>Date</strong> and <strong>Menu</strong>.                The Menu column should have comma-separated values — first item is veg,                second is non-veg (optional).            </p>            <div className="mt-4 flex flex-col gap-3">                {}                <div className="flex items-center gap-3">                    <input                        ref={fileInputRef}                        type="file"                        accept=".xlsx,.xls"                        onChange={handleFileSelect}                        className="hidden"                    />                    <Button                        variant="outline"                        onClick={() => fileInputRef.current?.click()}                        disabled={uploading}                    >                        <Upload className="h-3.5 w-3.5" />                        Choose File                    </Button>                    {selectedFile && (                        <span className="text-xs text-muted-foreground">                            {selectedFile.name}                        </span>                    )}                </div>                {}                {selectedFile && !result?.success && (                    <Button                        onClick={handleUpload}                        disabled={uploading}                        className="w-fit"                    >                        {uploading ? (                            <>                                <Loader2 className="h-3.5 w-3.5 animate-spin" />                                Uploading...                            </>                        ) : (                            <>                                <Upload className="h-3.5 w-3.5" />                                Upload & Process                            </>                        )}                    </Button>                )}                {}                {result && (                    <div                        className={`rounded-lg border px-4 py-3 ${result.success                            ? "border-primary/20 bg-primary/5"                            : "border-destructive/30 bg-destructive/5"                            }`}                    >                        {result.success ? (                            <div className="flex flex-col gap-2">                                <div className="flex items-center gap-2">                                    <Check className="h-4 w-4 text-primary" />                                    <p className="text-xs font-medium text-foreground">                                        Successfully processed {result.processed} menu                                        {result.processed !== 1 ? "s" : ""}                                    </p>                                </div>                                {result.results && result.results.length > 0 && (                                    <div className="ml-6 text-xs text-muted-foreground">                                        {result.results.map((r, i) => (                                            <p key={i}>                                                {format(parseISO(r.date), "dd MMM yyyy")}: {r.vegItem}                                                {r.nonvegItem ? ` | ${r.nonvegItem}` : " (veg only)"}                                            </p>                                        ))}                                    </div>                                )}                                {result.errors > 0 && result.errorDetails && (                                    <div className="ml-6 mt-1 text-xs text-destructive">                                        <p className="font-medium">                                            {result.errors} error{result.errors !== 1 ? "s" : ""}:                                        </p>                                        {result.errorDetails.map((e, i) => (                                            <p key={i}>                                                Row {e.row}: {e.error}                                            </p>                                        ))}                                    </div>                                )}                            </div>                        ) : (                            <div className="flex items-center gap-2">                                <AlertCircle className="h-4 w-4 text-destructive" />                                <p className="text-xs text-destructive">                                    {result.error || "Upload failed"}                                </p>                            </div>                        )}                    </div>                )}            </div>        </div>    )}

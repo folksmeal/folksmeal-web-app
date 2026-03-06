@@ -1,98 +1,1 @@
-import NextAuth from "next-auth"
-import Credentials from "next-auth/providers/credentials"
-import bcrypt from "bcryptjs"
-import { prisma } from "@/lib/prisma"
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-    providers: [
-        Credentials({
-            name: "Employee Login",
-            credentials: {
-                employeeCode: { label: "Employee ID", type: "text" },
-                password: { label: "Password", type: "password" },
-            },
-            async authorize(credentials) {
-                if (!credentials?.employeeCode || !credentials?.password) {
-                    return null
-                }
-
-                const employee = await prisma.employee.findUnique({
-                    where: { employeeCode: credentials.employeeCode as string },
-                    include: {
-                        company: true,
-                        address: true,
-                    },
-                })
-
-                if (!employee) return null
-
-                const isValid = await bcrypt.compare(
-                    credentials.password as string,
-                    employee.password
-                )
-
-                if (!isValid) return null
-
-                return {
-                    id: employee.id,
-                    name: employee.name,
-                    email: employee.employeeCode,
-                    employeeCode: employee.employeeCode,
-                    role: employee.role as string,
-                    companyId: employee.companyId,
-                    companyName: employee.company.name,
-                    addressId: employee.addressId,
-                    addressCity: employee.address.city,
-                    locationTimezone: employee.address.timezone,
-                }
-            },
-        }),
-    ],
-    session: {
-        strategy: "jwt",
-        maxAge: 24 * 60 * 60, // 24 hours
-    },
-    pages: {
-        signIn: "/",
-    },
-    callbacks: {
-        async jwt({ token, user, trigger, session }) {
-            // Initial sign in
-            if (user) {
-                const u = user
-                token.employeeId = u.id
-                token.employeeCode = u.employeeCode
-                token.role = u.role
-                token.companyId = u.companyId
-                token.companyName = u.companyName
-                token.addressId = u.addressId
-                token.addressCity = u.addressCity
-                token.locationTimezone = u.locationTimezone
-            }
-            // Context Switcher Override
-            if (trigger === "update" && session && session.newLocation) {
-                token.companyId = session.newLocation.companyId
-                token.companyName = session.newLocation.companyName
-                token.addressId = session.newLocation.addressId
-                token.addressCity = session.newLocation.addressCity
-                token.locationTimezone = session.newLocation.locationTimezone
-            }
-            return token
-        },
-        async session({ session, token }) {
-            if (session.user) {
-                const u = session.user
-                u.id = token.employeeId as string
-                u.employeeCode = token.employeeCode as string
-                u.role = token.role as string
-                u.companyId = token.companyId as string
-                u.companyName = token.companyName as string
-                u.addressId = token.addressId as string
-                u.addressCity = token.addressCity as string
-                u.locationTimezone = token.locationTimezone as string
-            }
-            return session
-        },
-    },
-    trustHost: true,
-})
+import NextAuth from "next-auth"import Credentials from "next-auth/providers/credentials"import bcrypt from "bcryptjs"import { prisma } from "@/lib/prisma"export const { handlers, auth, signIn, signOut } = NextAuth({    providers: [        Credentials({            name: "Employee Login",            credentials: {                employeeCode: { label: "Employee ID", type: "text" },                password: { label: "Password", type: "password" },            },            async authorize(credentials) {                if (!credentials?.employeeCode || !credentials?.password) {                    return null                }                const employee = await prisma.employee.findUnique({                    where: { employeeCode: credentials.employeeCode as string },                    include: {                        company: true,                        address: true,                    },                })                if (!employee) return null                const isValid = await bcrypt.compare(                    credentials.password as string,                    employee.password                )                if (!isValid) return null                return {                    id: employee.id,                    name: employee.name,                    email: employee.employeeCode,                    employeeCode: employee.employeeCode,                    role: employee.role as string,                    companyId: employee.companyId,                    companyName: employee.company.name,                    addressId: employee.addressId,                    addressCity: employee.address.city,                    locationTimezone: employee.address.timezone,                }            },        }),    ],    session: {        strategy: "jwt",        maxAge: 24 * 60 * 60,     },    pages: {        signIn: "/",    },    callbacks: {        async jwt({ token, user, trigger, session }) {            if (user) {                const u = user                token.employeeId = u.id                token.employeeCode = u.employeeCode                token.role = u.role                token.companyId = u.companyId                token.companyName = u.companyName                token.addressId = u.addressId                token.addressCity = u.addressCity                token.locationTimezone = u.locationTimezone            }            if (trigger === "update" && session && session.newLocation) {                token.companyId = session.newLocation.companyId                token.companyName = session.newLocation.companyName                token.addressId = session.newLocation.addressId                token.addressCity = session.newLocation.addressCity                token.locationTimezone = session.newLocation.locationTimezone            }            return token        },        async session({ session, token }) {            if (session.user) {                const u = session.user                u.id = token.employeeId as string                u.employeeCode = token.employeeCode as string                u.role = token.role as string                u.companyId = token.companyId as string                u.companyName = token.companyName as string                u.addressId = token.addressId as string                u.addressCity = token.addressCity as string                u.locationTimezone = token.locationTimezone as string            }            return session        },    },    trustHost: true,})

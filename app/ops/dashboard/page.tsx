@@ -1,26 +1,1 @@
-import { auth } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import { OpsDashboard } from "@/components/ops/ops-dashboard"
-
-export default async function OpsDashboardPage() {
-    const session = await auth()
-
-    if (!session?.user) {
-        redirect("/ops")
-    }
-
-    const role = session.user.role as string
-    if (role !== "SUPERADMIN") {
-        redirect("/ops")
-    }
-
-    const sessionUser = session.user
-    const locationName = `${sessionUser.companyName} - ${sessionUser.addressCity}`
-
-    return (
-        <OpsDashboard
-            userName={session.user.name || "Admin"}
-            companyName={locationName}
-        />
-    )
-}
+import { auth } from "@/lib/auth"import { redirect } from "next/navigation"import { OpsDashboard } from "@/components/ops/ops-dashboard"export default async function OpsDashboardPage() {    const session = await auth()    if (!session?.user) {        redirect("/ops")    }    const role = session.user.role as string    if (role !== "SUPERADMIN") {        redirect("/ops")    }    const sessionUser = session.user    const locationName = `${sessionUser.companyName} - ${sessionUser.addressCity}`    return (        <OpsDashboard            userName={session.user.name || "Admin"}            companyName={locationName}        />    )}
