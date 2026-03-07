@@ -11,6 +11,7 @@ import { format, parseISO } from "date-fns"
 interface ConfirmationScreenProps {
   employeeCode: string
   companyName: string
+  companyIcon?: string | null
   status: "OPT_IN" | "OPT_OUT"
   preference: "VEG" | "NONVEG" | null
   updatedAt: string
@@ -95,8 +96,8 @@ function StarRating({ mealDate, existingRating }: { mealDate: string; existingRa
           >
             <Star
               className={`h-7 w-7 transition-colors ${star <= (hoveredStar || rating)
-                  ? "fill-amber-400 text-amber-400"
-                  : "text-muted-foreground/30"
+                ? "fill-amber-400 text-amber-400"
+                : "text-muted-foreground/30"
                 }`}
             />
           </button>
@@ -138,6 +139,7 @@ function StarRating({ mealDate, existingRating }: { mealDate: string; existingRa
 
 export function ConfirmationScreen({
   companyName,
+  companyIcon,
   status,
   preference,
   updatedAt,
@@ -172,7 +174,11 @@ export function ConfirmationScreen({
             />
             <div className="h-8 w-px bg-border max-sm:hidden" />
             <div className="hidden h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 sm:flex">
-              <Building className="h-4 w-4 text-primary" />
+              {companyIcon ? (
+                <img src={companyIcon} alt={companyName} className="h-4 w-4 object-contain" />
+              ) : (
+                <Building className="h-4 w-4 text-primary" />
+              )}
               <span className="text-sm font-semibold text-primary">
                 {companyName}
               </span>
@@ -189,7 +195,11 @@ export function ConfirmationScreen({
         </div>
         <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
           <div className="flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-primary/10 px-4">
-            <Building className="h-4 w-4 text-primary" />
+            {companyIcon ? (
+              <img src={companyIcon} alt={companyName} className="h-4 w-4 object-contain" />
+            ) : (
+              <Building className="h-4 w-4 text-primary" />
+            )}
             <span className="text-sm font-semibold text-primary truncate max-w-[200px]">
               {companyName}
             </span>

@@ -20,11 +20,12 @@ export default async function DashboardPage({
         addressId: string;
         employeeCode: string;
         companyName: string;
+        companyIcon?: string | null;
         addressCity: string;
         locationTimezone: string;
     }
 
-    const { id, addressId, employeeCode, companyName, addressCity, locationTimezone } = session.user as AuthenticatedUser
+    const { id, addressId, employeeCode, companyName, companyIcon, addressCity, locationTimezone } = session.user as AuthenticatedUser
 
     const timezone = locationTimezone || "Asia/Kolkata"
     const tomorrow = getTomorrowMidnightInTimezone(timezone)
@@ -95,6 +96,7 @@ export default async function DashboardPage({
             <ConfirmationScreen
                 employeeCode={employeeCode}
                 companyName={fullLocationName}
+                companyIcon={companyIcon}
                 status={existingSelection.status}
                 preference={existingSelection.preference}
                 updatedAt={existingSelection.updatedAt}
@@ -109,6 +111,7 @@ export default async function DashboardPage({
             employeeCode={employeeCode}
             employeeName={session.user.name || "Employee"}
             companyName={fullLocationName}
+            companyIcon={companyIcon}
             timezone={timezone}
             cutoffTime={cutoffTime}
             menu={menuData}

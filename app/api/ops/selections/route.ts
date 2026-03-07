@@ -11,7 +11,16 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url)
         const dateParam = searchParams.get("date")
-        const addressId = (searchParams.get("addressId") || user.addressId) as string | undefined
+        let addressId = (searchParams.get("addressId") || user.addressId) as string | undefined
+
+        if (user.role === "SUPERADMIN" && !addressId) {
+            const firstAddress = await prisma.companyAddress.findFirst({
+                orderBy: { createdAt: "asc" },
+            })
+            if (firstAddress) addressId = firstAddress.id
+        }
+
+        const whereClauseAddress = addressId ? { addressId } : {}
 
         let targetDate: Date
         if (dateParam) {
@@ -28,7 +37,7 @@ export async function GET(request: NextRequest) {
             prisma.mealSelection.findMany({
                 where: {
                     date: targetDate,
-                    employee: addressId ? { addressId } : {},
+                    employee: whereClauseAddress,
                 },
                 include: {
                     employee: {
@@ -39,7 +48,7 @@ export async function GET(request: NextRequest) {
             }),
             prisma.employee.findMany({
                 where: {
-                    ...(addressId ? { addressId } : {}),
+                    ...whereClauseAddress,
                     selections: {
                         none: { date: targetDate },
                     },

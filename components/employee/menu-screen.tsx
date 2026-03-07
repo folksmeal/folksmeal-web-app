@@ -31,6 +31,7 @@ interface MenuScreenProps {
   employeeCode: string
   employeeName: string
   companyName: string
+  companyIcon?: string | null
   timezone: string
   cutoffTime: string
   menu: MenuData | null
@@ -50,6 +51,7 @@ function formatCutoff(cutoffTime: string) {
 export function MenuScreen({
   employeeName,
   companyName,
+  companyIcon,
   timezone,
   cutoffTime,
   menu,
@@ -119,7 +121,11 @@ export function MenuScreen({
             { }
             <div className="h-8 w-px bg-border max-sm:hidden" />
             <div className="hidden h-10 items-center gap-2.5 rounded-xl border border-input bg-card px-4 sm:flex">
-              <Building className="h-4 w-4 text-muted-foreground" />
+              {companyIcon ? (
+                <img src={companyIcon} alt={companyName} className="h-5 w-5 object-contain" />
+              ) : (
+                <Building className="h-4 w-4 text-muted-foreground" />
+              )}
               <span className="text-sm font-semibold text-foreground">
                 {companyName}
               </span>
@@ -136,7 +142,11 @@ export function MenuScreen({
         </div>
         <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
           <div className="flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-input bg-card px-4">
-            <Building className="h-4 w-4 text-muted-foreground" />
+            {companyIcon ? (
+              <img src={companyIcon} alt={companyName} className="h-5 w-5 object-contain" />
+            ) : (
+              <Building className="h-4 w-4 text-muted-foreground" />
+            )}
             <span className="text-sm font-semibold text-foreground truncate max-w-[200px]">
               {companyName}
             </span>
@@ -144,21 +154,28 @@ export function MenuScreen({
         </div>
       </header>
       { }
-      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-6">
-        <div className="flex flex-col gap-5">
+      <main
+        className={`mx-auto w-full max-w-7xl flex-1 px-6 py-6 ${menu?.isWorkingDay === false ? "flex flex-col justify-center items-center" : ""
+          }`}
+      >
+        <div className={`flex flex-col gap-5 w-full ${menu?.isWorkingDay === false ? "max-w-md" : ""}`}>
           { }
-          <div>
-            <p className="text-sm text-muted-foreground">
+          {/* Header */}
+          <div className={menu?.isWorkingDay === false ? "text-center mb-2" : ""}>
+            <p className={`${menu?.isWorkingDay === false ? "text-2xl pb-2" : "text-xl"} text-muted-foreground`}>
               Welcome, <span className="font-medium text-foreground">{employeeName}</span>
             </p>
-            <h1
-              className="mt-2 text-2xl font-semibold text-foreground"
-              style={{ fontFamily: "var(--font-heading)" }}
-            >
-              Select your meal preference for {tomorrowLabel}
-            </h1>
+            {menu?.isWorkingDay !== false && (
+              <h1
+                className="mt-2 text-2xl font-semibold text-foreground"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                Select your meal preference for {tomorrowLabel}
+              </h1>
+            )}
           </div>
-          { }
+
+          {/* Loading State */}
           {!menu && (
             <div className="flex flex-col gap-5">
               <Skeleton className="h-14 w-full rounded-lg" />
@@ -175,53 +192,46 @@ export function MenuScreen({
             </div>
           )}
 
-          {menu && !menu.available && (
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg sm:max-w-md mx-auto w-full transition-all duration-300 hover:shadow-xl mt-6">
-              {menu.isWorkingDay === false ? (
-                <>
-                  <div className="relative h-40 w-full bg-linear-to-r from-teal-400 to-emerald-500 flex items-center justify-center overflow-hidden">
-                    <div className="absolute inset-0 bg-black/10 mix-blend-overlay" />
-                    {/* Decorative Background Elements */}
-                    <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/20 blur-2xl" />
-                    <div className="absolute -bottom-12 -right-12 h-40 w-40 rounded-full bg-white/20 blur-2xl" />
-                    <div className="absolute bottom-4 left-4 text-6xl drop-shadow-lg opacity-80 wave-animation">🌴</div>
-                    <div className="relative z-10 text-center">
-                      <span className="text-5xl drop-shadow-xl inline-block hover:scale-110 transition-transform duration-300">🎉</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center gap-4 p-8 text-center bg-card">
-                    <h3 className="text-2xl font-bold tracking-tight text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-                      It's a Holiday!
-                    </h3>
-                    <div className="flex flex-col gap-2">
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Take a break and recharge! Meal selections are paused for <span className="font-semibold text-foreground">{tomorrowLabel}</span>.
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2 px-4 py-2 bg-muted/50 rounded-lg inline-block mx-auto border border-border/50">
-                        Enjoy your time off! We'll see you on the next working day.
-                      </p>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center gap-4 px-6 py-12 text-center">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 mb-2">
-                    <AlertCircle className="h-8 w-8 text-amber-500" />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <h3 className="text-xl font-semibold text-foreground">
-                      Menu Not Available
-                    </h3>
-                    <p className="text-sm text-muted-foreground max-w-[300px] mx-auto">
-                      No menu has been posted for {tomorrowLabel} yet. Please check back later.
-                    </p>
-                  </div>
+          {/* Holiday Card State */}
+          {menu && menu.isWorkingDay === false && (
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg sm:max-w-md mx-auto w-full transition-all duration-300 hover:shadow-xl">
+              <div className="flex flex-col items-center gap-4 p-8 text-center bg-card">
+                <h3 className="text-2xl font-bold tracking-tight text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+                  It's a Holiday!
+                </h3>
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Take a break and recharge! Meal selections are paused for <span className="font-semibold text-foreground">{tomorrowLabel}</span>.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2 px-4 py-2 bg-muted/50 rounded-lg inline-block mx-auto border border-border/50">
+                    Enjoy your time off! We'll see you on the next working day.
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
-          {menu && menu.available && (
+          {/* Menu Not Available State */}
+          {menu && menu.isWorkingDay !== false && !menu.available && (
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg sm:max-w-md mx-auto w-full transition-all duration-300 hover:shadow-xl mt-6">
+              <div className="flex flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 mb-2">
+                  <AlertCircle className="h-8 w-8 text-amber-500" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xl font-semibold text-foreground">
+                    Menu Not Available
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-[300px] mx-auto">
+                    No menu has been posted for {tomorrowLabel} yet. Please check back later.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Menu Available State */}
+          {menu && menu.isWorkingDay !== false && menu.available && (
             <>
               {!pastCutoff ? (
                 <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-white px-4 py-3">
@@ -247,7 +257,7 @@ export function MenuScreen({
                       Cutoff time ({cutoffLabel}) has passed
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      Selection is locked. Contact the cafeteria for assistance.
+                      Selection is locked. Contact support for assistance.
                     </p>
                   </div>
                 </div>

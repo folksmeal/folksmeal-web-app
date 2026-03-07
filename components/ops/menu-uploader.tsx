@@ -14,7 +14,7 @@ import {
 import { format, parseISO } from "date-fns"
 
 interface MenuUploaderProps {
-    onClose: () => void
+    onClose?: () => void
 }
 
 interface UploadResult {
@@ -95,15 +95,17 @@ export function MenuUploader({ onClose }: MenuUploaderProps) {
                         Upload Weekly Menu
                     </h3>
                 </div>
-                <Button
-                    variant="ghost"
-                    onClick={onClose}
-                    size="icon"
-                    className="h-8 w-8 rounded-full"
-                    aria-label="Close"
-                >
-                    <X className="h-4 w-4" />
-                </Button>
+                {onClose && (
+                    <Button
+                        variant="ghost"
+                        onClick={onClose}
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        aria-label="Close"
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
             </div>
 
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">

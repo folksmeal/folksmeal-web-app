@@ -12,6 +12,7 @@ import {
 const createCompanySchema = z.object({
     name: z.string().min(1, "Company name is required").max(100),
     domain: z.string().max(100).optional(),
+    icon: z.string().optional(),
 })
 
 const createAddressSchema = z.object({
@@ -28,6 +29,7 @@ const updateCompanySchema = z.object({
     id: z.string().min(1),
     name: z.string().min(1).max(100).optional(),
     domain: z.string().max(100).optional(),
+    icon: z.string().optional(),
 })
 
 const updateAddressSchema = z.object({
@@ -58,6 +60,7 @@ export async function GET() {
                 id: c.id,
                 name: c.name,
                 domain: c.domain,
+                icon: c.icon,
                 employeeCount: c._count.employees,
                 addresses: c.addresses.map((a) => ({
                     id: a.id,

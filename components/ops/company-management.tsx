@@ -22,6 +22,7 @@ interface Company {
     id: string
     name: string
     domain: string | null
+    icon: string | null
     employeeCount: number
     addresses: Address[]
 }
@@ -85,7 +86,11 @@ export function CompanyManagement() {
                         <div key={company.id} className="rounded-lg border border-border bg-card">
                             <div className="flex items-center justify-between border-b border-border px-5 py-4">
                                 <div className="flex items-center gap-3">
-                                    <Building2 className="h-5 w-5 text-primary" />
+                                    {company.icon ? (
+                                        <img src={company.icon} alt={company.name} className="h-5 w-5 object-contain" />
+                                    ) : (
+                                        <Building2 className="h-5 w-5 text-primary" />
+                                    )}
                                     <div>
                                         <p className="font-semibold text-foreground">{company.name}</p>
                                         <p className="text-xs text-muted-foreground">
@@ -169,6 +174,7 @@ function DeleteAddressButton({ id, onDelete }: { id: string; onDelete: () => voi
 function CompanyForm({ company, onSuccess }: { company: Company | null; onSuccess: () => void }) {
     const [name, setName] = useState(company?.name ?? "")
     const [domain, setDomain] = useState(company?.domain ?? "")
+    const [icon, setIcon] = useState(company?.icon ?? "")
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState("")
 
@@ -176,7 +182,7 @@ function CompanyForm({ company, onSuccess }: { company: Company | null; onSucces
         e.preventDefault()
         setSubmitting(true)
         setError("")
-        const body: Record<string, unknown> = { name, domain: domain || undefined }
+        const body: Record<string, unknown> = { name, domain: domain || undefined, icon: icon || undefined }
         if (company) body.id = company.id
         const res = await fetch("/api/ops/companies", { method: company ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
         if (res.ok) onSuccess()
@@ -188,6 +194,38 @@ function CompanyForm({ company, onSuccess }: { company: Company | null; onSucces
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2"><Label>Company Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} required /></div>
             <div className="flex flex-col gap-2"><Label>Domain (optional)</Label><Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="example.com" /></div>
+            <div className="flex flex-col gap-2">
+                <Label>Company Logo (Image)</Label>
+                <div className="flex items-center gap-4">
+                    {icon && (
+                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border bg-white flex items-center justify-center p-1">
+                            <img src={icon} alt="Preview" className="h-full w-full object-contain" />
+                        </div>
+                    )}
+                    <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                                if (file.size > 2 * 1024 * 1024) {
+                                    setError("Image must be smaller than 2MB")
+                                    return
+                                }
+                                const reader = new FileReader()
+                                reader.onloadend = () => setIcon(reader.result as string)
+                                reader.readAsDataURL(file)
+                            }
+                        }}
+                        className="flex-1 cursor-pointer"
+                    />
+                    {icon && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => setIcon("")}>
+                            Remove
+                        </Button>
+                    )}
+                </div>
+            </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2 justify-end">
                 <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>

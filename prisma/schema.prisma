@@ -36,6 +36,7 @@ model Company {
   id        String           @id @default(cuid())
   name      String           // e.g. "FolksMeal"
   domain    String?
+  icon      String?
   createdAt DateTime         @default(now()) @map("created_at")
 
   addresses CompanyAddress[]

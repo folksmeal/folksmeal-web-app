@@ -9,6 +9,7 @@ declare module "next-auth" {
         employeeCode?: string | null
         companyId?: string | null
         companyName?: string | null
+        companyIcon?: string | null
         addressId?: string | null
         addressCity?: string | null
         locationTimezone?: string | null
@@ -18,6 +19,7 @@ declare module "next-auth" {
         newLocation?: {
             companyId: string
             companyName: string
+            companyIcon?: string | null
             addressId: string
             addressCity: string
             locationTimezone: string
@@ -29,6 +31,7 @@ interface SessionUpdate {
     newLocation?: {
         companyId: string
         companyName: string
+        companyIcon?: string | null
         addressId: string
         addressCity: string
         locationTimezone: string
@@ -98,6 +101,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         role: "EMPLOYEE",
                         companyId: employee.companyId,
                         companyName: employee.company.name,
+                        companyIcon: employee.company.icon,
                         addressId: employee.addressId,
                         addressCity: employee.address.city,
                         locationTimezone: employee.address.timezone,
@@ -124,6 +128,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.role = user.role
                 token.companyId = user.companyId
                 token.companyName = user.companyName
+                token.companyIcon = user.companyIcon
                 token.addressId = user.addressId
                 token.addressCity = user.addressCity
                 token.locationTimezone = user.locationTimezone
@@ -133,6 +138,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 const newLoc = (session as SessionUpdate).newLocation!
                 token.companyId = newLoc.companyId
                 token.companyName = newLoc.companyName
+                token.companyIcon = newLoc.companyIcon
                 token.addressId = newLoc.addressId
                 token.addressCity = newLoc.addressCity
                 token.locationTimezone = newLoc.locationTimezone
@@ -147,6 +153,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 session.user.role = (token.role as string) || ""
                 session.user.companyId = (token.companyId as string) || null
                 session.user.companyName = (token.companyName as string) || null
+                session.user.companyIcon = (token.companyIcon as string) || null
                 session.user.addressId = (token.addressId as string) || null
                 session.user.addressCity = (token.addressCity as string) || null
                 session.user.locationTimezone = (token.locationTimezone as string) || null

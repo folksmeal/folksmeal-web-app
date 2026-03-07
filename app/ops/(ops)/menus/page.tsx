@@ -22,7 +22,7 @@ export default async function MenusPage() {
                 Menu Management
             </h1>
 
-            <MenuUploader onClose={() => { }} />
+            <MenuUploader />
 
             <div className="rounded-lg border border-border bg-card">
                 <div className="border-b border-border px-5 py-3">

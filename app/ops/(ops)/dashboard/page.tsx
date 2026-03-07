@@ -11,11 +11,22 @@ export default async function OpsDashboardPage() {
     const timezone = (sessionUser.locationTimezone as string) || "Asia/Kolkata"
     const targetDate = getTomorrowMidnightInTimezone(timezone)
 
+    let effectiveAddressId = sessionUser.addressId as string | undefined
+
+    if (!effectiveAddressId && sessionUser.role === "SUPERADMIN") {
+        const firstAddress = await prisma.companyAddress.findFirst({
+            orderBy: { createdAt: "asc" }
+        })
+        if (firstAddress) effectiveAddressId = firstAddress.id
+    }
+
+    const whereClauseAddress = effectiveAddressId ? { addressId: effectiveAddressId } : {}
+
     const [selections, allEmployees] = await Promise.all([
         prisma.mealSelection.findMany({
             where: {
                 date: targetDate,
-                employee: { addressId: (sessionUser.addressId as string) || undefined },
+                employee: whereClauseAddress,
             },
             include: {
                 employee: { include: { company: true, address: true } },
@@ -23,7 +34,7 @@ export default async function OpsDashboardPage() {
             orderBy: { employee: { name: "asc" } },
         }),
         prisma.employee.findMany({
-            where: { addressId: (sessionUser.addressId as string) || undefined },
+            where: whereClauseAddress,
             include: { company: true, address: true },
             orderBy: { name: "asc" },
         }),
