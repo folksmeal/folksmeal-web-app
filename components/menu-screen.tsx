@@ -20,6 +20,7 @@ export interface MenuData {
   sideBeverage: string | null
   notes: string | null
   available: boolean
+  isWorkingDay?: boolean
 }
 export interface ExistingSelection {
   status: "OPT_IN" | "OPT_OUT"
@@ -178,7 +179,9 @@ export function MenuScreen({
             <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
               <AlertCircle className="h-5 w-5 text-destructive" />
               <p className="text-sm text-destructive">
-                No menu has been set for {tomorrowLabel} yet. Please check back later.
+                {menu.isWorkingDay === false
+                  ? `${tomorrowLabel} is a non-working day.`
+                  : `No menu has been set for ${tomorrowLabel} yet. Please check back later.`}
               </p>
             </div>
           )}

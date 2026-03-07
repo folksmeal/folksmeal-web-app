@@ -1,1 +1,40 @@
-import { NextRequest, NextResponse } from "next/server"import { auth } from "@/lib/auth"import { prisma } from "@/lib/prisma"export async function POST(request: NextRequest) {    try {        const session = await auth()        if (!session?.user) {            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })        }        const role = session.user.role        if (role !== "SUPERADMIN") {            return NextResponse.json({ error: "Forbidden" }, { status: 403 })        }        const body = await request.json()        const { companyId: addressId } = body         if (!addressId) {            return NextResponse.json({ error: "Location ID is required" }, { status: 400 })        }        const address = await prisma.companyAddress.findUnique({            where: { id: addressId },            include: { company: true }        })        if (!address) {            return NextResponse.json({ error: "Location not found" }, { status: 404 })        }        return NextResponse.json({            success: true,            newLocation: {                companyId: address.companyId,                companyName: address.company.name,                addressId: address.id,                addressCity: address.city,                locationTimezone: address.timezone            }        })    } catch (error) {        console.error("[POST /api/ops/switch-company]", error)        return NextResponse.json(            { error: "Internal server error" },            { status: 500 }        )    }}
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { requireAdmin } from "@/lib/auth-helpers"
+
+export async function POST(request: NextRequest) {
+    try {
+        const user = await requireAdmin()
+        if (!user) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+        }
+        const body = await request.json()
+        const { companyId: addressId } = body
+        if (!addressId) {
+            return NextResponse.json({ error: "Location ID is required" }, { status: 400 })
+        }
+        const address = await prisma.companyAddress.findUnique({
+            where: { id: addressId },
+            include: { company: true }
+        })
+        if (!address) {
+            return NextResponse.json({ error: "Location not found" }, { status: 404 })
+        }
+        return NextResponse.json({
+            success: true,
+            newLocation: {
+                companyId: address.companyId,
+                companyName: address.company.name,
+                addressId: address.id,
+                addressCity: address.city,
+                locationTimezone: address.timezone
+            }
+        })
+    } catch (error) {
+        console.error("[POST /api/ops/switch-company]", error)
+        return NextResponse.json(
+            { error: "Internal server error" },
+            { status: 500 }
+        )
+    }
+}

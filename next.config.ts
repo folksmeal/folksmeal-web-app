@@ -9,9 +9,7 @@ const nextConfig: NextConfig = {
 
     serverExternalPackages: ["bcryptjs", "exceljs"],
 
-    images: {
-        unoptimized: true,
-    },
+
 
     typescript: {
         ignoreBuildErrors: false,
@@ -109,6 +107,23 @@ const nextConfig: NextConfig = {
                         value: "public, max-age=86400, stale-while-revalidate=604800",
                     },
                 ],
+            },
+        ]
+    },
+
+    async redirects() {
+        return [
+            {
+                source: "/ops",
+                has: [{ type: "host", value: "(?!ops\\.).*" }],
+                destination: "https://ops.folksmeal.com/",
+                permanent: true,
+            },
+            {
+                source: "/ops/:path*",
+                has: [{ type: "host", value: "(?!ops\\.).*" }],
+                destination: "https://ops.folksmeal.com/:path*",
+                permanent: true,
             },
         ]
     },

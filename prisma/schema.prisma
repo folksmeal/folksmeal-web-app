@@ -47,12 +47,14 @@ model CompanyAddress {
   address    String?    // Full address
   cutoffTime String     @default("18:00") @map("cutoff_time")
   timezone   String     @default("Asia/Kolkata")
+  workingDays Int[]     @default([1, 2, 3, 4, 5]) @map("working_days") // 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri
   createdAt  DateTime   @default(now()) @map("created_at")
 
   company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   employees  Employee[]
   menus      Menu[]
 
+  @@index([companyId])
   @@map("company_addresses")
 }
 
@@ -70,7 +72,10 @@ model Employee {
   company           Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   address           CompanyAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
   selections        MealSelection[]
+  ratings           MealRating[]
 
+  @@index([companyId])
+  @@index([addressId])
   @@map("employees")
 }
 
@@ -86,6 +91,7 @@ model Menu {
 
   address      CompanyAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
 
+  @@index([addressId])
   @@unique([addressId, date])
   @@map("menus")
 }
@@ -95,7 +101,7 @@ model MealSelection {
   employeeId String          @map("employee_id")
   date       DateTime        @db.Date
   status     SelectionStatus
-  preference MealPreference? // null when opted out
+  preference MealPreference?
   updatedAt  DateTime        @updatedAt @map("updated_at")
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
@@ -103,3 +109,18 @@ model MealSelection {
   @@unique([employeeId, date])
   @@map("meal_selections")
 }
+
+model MealRating {
+  id         String   @id @default(cuid())
+  employeeId String   @map("employee_id")
+  date       DateTime @db.Date
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@map("meal_ratings")
+}
+
