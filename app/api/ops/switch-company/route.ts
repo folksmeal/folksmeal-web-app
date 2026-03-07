@@ -1,40 +1,38 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth-helpers"
+import { z } from "zod"
+import { apiResponse, apiError, handleApiRequest, parseBody } from "@/lib/api-utils"
+
+const switchSchema = z.object({
+    companyId: z.string().min(1, "Location ID is required"),
+})
 
 export async function POST(request: NextRequest) {
-    try {
+    return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-        }
-        const body = await request.json()
-        const { companyId: addressId } = body
-        if (!addressId) {
-            return NextResponse.json({ error: "Location ID is required" }, { status: 400 })
-        }
+        if (!user) return apiError("Forbidden", 403)
+
+        const { companyId: addressId } = await parseBody(request, switchSchema)
+
         const address = await prisma.companyAddress.findUnique({
             where: { id: addressId },
-            include: { company: true }
+            include: { company: true },
         })
+
         if (!address) {
-            return NextResponse.json({ error: "Location not found" }, { status: 404 })
+            return apiError("Location not found", 404, "LOCATION_NOT_FOUND")
         }
-        return NextResponse.json({
+
+        return apiResponse({
             success: true,
             newLocation: {
                 companyId: address.companyId,
                 companyName: address.company.name,
                 addressId: address.id,
                 addressCity: address.city,
-                locationTimezone: address.timezone
-            }
+                locationTimezone: address.timezone,
+            },
         })
-    } catch (error) {
-        console.error("[POST /api/ops/switch-company]", error)
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        )
-    }
+    })
 }

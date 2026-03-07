@@ -1,88 +1,101 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth-helpers"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
+import {
+    apiResponse,
+    apiError,
+    handleApiRequest,
+    parseBody,
+} from "@/lib/api-utils"
 
 const createEmployeeSchema = z.object({
-    name: z.string().min(1).max(100),
-    employeeCode: z.string().min(1).max(50),
-    password: z.string().min(6),
-    defaultPreference: z.enum(["VEG", "NONVEG"]).optional(),
-    role: z.enum(["EMPLOYEE", "SUPERADMIN"]).optional(),
-    companyId: z.string().optional(),
-    addressId: z.string().optional(),
+    name: z.string().min(1, "Name is required").max(100),
+    employeeCode: z.string().min(1, "Employee code is required").max(50),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    defaultPreference: z.enum(["VEG", "NONVEG"]).optional().default("VEG"),
+    companyId: z.string().min(1, "Company ID is required"),
+    addressId: z.string().min(1, "Location ID is required"),
 })
 
 const updateEmployeeSchema = z.object({
-    id: z.string(),
+    id: z.string().min(1),
     name: z.string().min(1).max(100).optional(),
     employeeCode: z.string().min(1).max(50).optional(),
     password: z.string().min(6).optional(),
     defaultPreference: z.enum(["VEG", "NONVEG"]).optional(),
-    role: z.enum(["EMPLOYEE", "SUPERADMIN"]).optional(),
-    addressId: z.string().optional(),
+    addressId: z.string().min(1).optional(),
 })
 
 export async function GET(request: NextRequest) {
-    try {
+    return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-        }
+        if (!user) return apiError("Forbidden", 403)
 
         const { searchParams } = new URL(request.url)
-        const addressId = searchParams.get("addressId") || user.addressId
+        const queryAddressId = searchParams.get("addressId")
+        const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
+        const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50")))
+        const skip = (page - 1) * limit
 
-        const employees = await prisma.employee.findMany({
-            where: { addressId },
-            include: { company: true, address: true },
-            orderBy: { name: "asc" },
-        })
+        const where = queryAddressId ? { addressId: queryAddressId } : undefined
 
-        return NextResponse.json({
+        const [employees, total] = await Promise.all([
+            prisma.employee.findMany({
+                where,
+                include: { company: true, address: true },
+                orderBy: { name: "asc" },
+                skip,
+                take: limit,
+            }),
+            prisma.employee.count({ where }),
+        ])
+
+        return apiResponse({
             employees: employees.map((e) => ({
                 id: e.id,
                 name: e.name,
                 employeeCode: e.employeeCode,
                 defaultPreference: e.defaultPreference,
-                role: e.role,
                 companyId: e.companyId,
                 addressId: e.addressId,
                 companyName: e.company.name,
                 addressCity: e.address.city,
                 createdAt: e.createdAt.toISOString(),
             })),
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
         })
-    } catch (error) {
-        console.error("[GET /api/ops/employees]", error)
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-    }
+    })
 }
 
 export async function POST(request: NextRequest) {
-    try {
+    return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+        if (!user) return apiError("Forbidden", 403)
+
+        const { name, employeeCode, password, defaultPreference, companyId, addressId } =
+            await parseBody(request, createEmployeeSchema)
+
+        // Verify the company and address exist
+        const [company, address] = await Promise.all([
+            prisma.company.findUnique({ where: { id: companyId } }),
+            prisma.companyAddress.findUnique({ where: { id: addressId } }),
+        ])
+
+        if (!company) {
+            return apiError("Company not found", 404, "COMPANY_NOT_FOUND")
         }
-
-        const body = await request.json()
-        const parsed = createEmployeeSchema.safeParse(body)
-        if (!parsed.success) {
-            return NextResponse.json({ error: "Invalid payload", details: parsed.error.format() }, { status: 400 })
+        if (!address) {
+            return apiError("Location not found", 404, "ADDRESS_NOT_FOUND")
         }
-
-        const { name, employeeCode, password, defaultPreference, role, companyId, addressId } = parsed.data
-
-        // Enforce tenant boundary: admin can only create employees for their assigned address
-        if (addressId && addressId !== user.addressId) {
-            return NextResponse.json({ error: "Cannot create employee for a different location" }, { status: 403 })
-        }
-
-        const existing = await prisma.employee.findUnique({ where: { employeeCode } })
-        if (existing) {
-            return NextResponse.json({ error: "Employee code already exists" }, { status: 409 })
+        if (address.companyId !== companyId) {
+            return apiError("Location does not belong to the selected company", 400, "ADDRESS_COMPANY_MISMATCH")
         }
 
         const hashedPassword = await bcrypt.hash(password, 12)
@@ -92,47 +105,33 @@ export async function POST(request: NextRequest) {
                 name,
                 employeeCode,
                 password: hashedPassword,
-                defaultPreference: defaultPreference || "VEG",
-                role: role || "EMPLOYEE",
-                companyId: companyId || user.companyId,
-                addressId: addressId || user.addressId,
+                defaultPreference,
+                companyId,
+                addressId,
             },
         })
 
-        return NextResponse.json({ success: true, employee: { id: employee.id, name: employee.name, employeeCode: employee.employeeCode } })
-    } catch (error) {
-        console.error("[POST /api/ops/employees]", error)
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-    }
+        return apiResponse({
+            success: true,
+            employee: {
+                id: employee.id,
+                name: employee.name,
+                employeeCode: employee.employeeCode,
+            },
+        })
+    })
 }
 
 export async function PUT(request: NextRequest) {
-    try {
+    return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-        }
+        if (!user) return apiError("Forbidden", 403)
 
-        const body = await request.json()
-        const parsed = updateEmployeeSchema.safeParse(body)
-        if (!parsed.success) {
-            return NextResponse.json({ error: "Invalid payload", details: parsed.error.format() }, { status: 400 })
-        }
-
-        const { id, password, ...updateData } = parsed.data
+        const { id, password, ...updateData } = await parseBody(request, updateEmployeeSchema)
 
         const targetEmployee = await prisma.employee.findUnique({ where: { id } })
         if (!targetEmployee) {
-            return NextResponse.json({ error: "Employee not found" }, { status: 404 })
-        }
-
-        // Enforce tenant boundary: admin can only edit employees in their assigned location
-        if (targetEmployee.addressId !== user.addressId) {
-            return NextResponse.json({ error: "Forbidden: Employee belongs to a different location" }, { status: 403 })
-        }
-
-        if (updateData.addressId && updateData.addressId !== user.addressId) {
-            return NextResponse.json({ error: "Forbidden: Cannot move employee to a different location" }, { status: 403 })
+            return apiError("Employee not found", 404, "EMPLOYEE_NOT_FOUND")
         }
 
         const data: Record<string, unknown> = { ...updateData }
@@ -145,41 +144,30 @@ export async function PUT(request: NextRequest) {
             data,
         })
 
-        return NextResponse.json({ success: true, employee: { id: employee.id, name: employee.name } })
-    } catch (error) {
-        console.error("[PUT /api/ops/employees]", error)
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-    }
+        return apiResponse({
+            success: true,
+            employee: { id: employee.id, name: employee.name },
+        })
+    })
 }
 
 export async function DELETE(request: NextRequest) {
-    try {
+    return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-        }
+        if (!user) return apiError("Forbidden", 403)
 
         const { searchParams } = new URL(request.url)
         const id = searchParams.get("id")
         if (!id) {
-            return NextResponse.json({ error: "Employee ID required" }, { status: 400 })
+            return apiError("Employee ID is required", 400, "MISSING_ID")
         }
 
         const targetEmployee = await prisma.employee.findUnique({ where: { id } })
         if (!targetEmployee) {
-            return NextResponse.json({ error: "Employee not found" }, { status: 404 })
-        }
-
-        // Enforce tenant boundary: admin can only delete employees in their assigned location
-        if (targetEmployee.addressId !== user.addressId) {
-            return NextResponse.json({ error: "Forbidden: Employee belongs to a different location" }, { status: 403 })
+            return apiError("Employee not found", 404, "EMPLOYEE_NOT_FOUND")
         }
 
         await prisma.employee.delete({ where: { id } })
-
-        return NextResponse.json({ success: true })
-    } catch (error) {
-        console.error("[DELETE /api/ops/employees]", error)
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-    }
+        return apiResponse({ success: true })
+    })
 }

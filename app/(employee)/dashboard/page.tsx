@@ -1,8 +1,9 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { MenuScreen } from "@/components/menu-screen"
-import { ConfirmationScreen } from "@/components/confirmation-screen"
+import { MenuScreen } from "@/components/employee/menu-screen"
+import { ConfirmationScreen } from "@/components/employee/confirmation-screen"
 import { getTomorrowMidnightInTimezone } from "@/lib/utils/time"
+import { redirect } from "next/navigation"
 
 export default async function DashboardPage({
     searchParams,
@@ -10,9 +11,20 @@ export default async function DashboardPage({
     searchParams: Promise<{ submitted?: string }>
 }) {
     const session = await auth()
-    if (!session?.user) return null
+    if (!session?.user) redirect("/")
 
-    const { addressId, employeeCode, companyName, addressCity, locationTimezone } = session.user
+    interface AuthenticatedUser {
+        id: string;
+        name: string | null;
+        role: string;
+        addressId: string;
+        employeeCode: string;
+        companyName: string;
+        addressCity: string;
+        locationTimezone: string;
+    }
+
+    const { id, addressId, employeeCode, companyName, addressCity, locationTimezone } = session.user as AuthenticatedUser
 
     const timezone = locationTimezone || "Asia/Kolkata"
     const tomorrow = getTomorrowMidnightInTimezone(timezone)
@@ -25,7 +37,7 @@ export default async function DashboardPage({
             where: { addressId_date: { addressId, date: tomorrow } },
         }),
         prisma.mealSelection.findUnique({
-            where: { employeeId_date: { employeeId: session.user.id, date: tomorrow } },
+            where: { employeeId_date: { employeeId: id, date: tomorrow } },
         }),
     ])
 
@@ -40,7 +52,7 @@ export default async function DashboardPage({
             sideBeverage: menu.sideBeverage,
             notes: menu.notes,
             available: true,
-            isWorkingDay: address?.workingDays.includes(tomorrow.getUTCDay()) ?? true,
+            isWorkingDay: address?.workingDays.includes(tomorrow.getDay()) ?? true,
         }
         : {
             date: tomorrow.toISOString(),
@@ -50,7 +62,7 @@ export default async function DashboardPage({
             sideBeverage: null,
             notes: null,
             available: false,
-            isWorkingDay: address?.workingDays.includes(tomorrow.getUTCDay()) ?? true,
+            isWorkingDay: address?.workingDays.includes(tomorrow.getDay()) ?? true,
         }
 
     const existingSelection = selection
@@ -73,7 +85,7 @@ export default async function DashboardPage({
         const existingRating = await prisma.mealRating.findUnique({
             where: {
                 employeeId_date: {
-                    employeeId: session.user.id,
+                    employeeId: session.user.id as string,
                     date: new Date(todayStr + "T00:00:00.000Z"),
                 },
             },

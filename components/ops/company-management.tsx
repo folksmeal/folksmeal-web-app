@@ -26,12 +26,12 @@ interface Company {
     addresses: Address[]
 }
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+import { fetcher } from "@/lib/fetcher"
 
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 export function CompanyManagement() {
-    const { data, mutate, isLoading } = useSWR("/api/ops/companies", fetcher)
+    const { data, mutate, isLoading } = useSWR<{ companies: Company[] }>("/api/ops/companies", fetcher)
     const companies: Company[] = data?.companies ?? []
     const [companyDialogOpen, setCompanyDialogOpen] = useState(false)
     const [editingCompany, setEditingCompany] = useState<Company | null>(null)

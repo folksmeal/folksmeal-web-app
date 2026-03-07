@@ -1,11 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { NextRequest } from "next/server"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import {
   getTomorrowMidnightInTimezone,
   isPastCutoffInTimezone,
-} from "@/lib/utils/time";
-import { z } from "zod";
+} from "@/lib/utils/time"
+import { z } from "zod"
+import {
+  apiResponse,
+  apiError,
+  handleApiRequest,
+  parseBody,
+  ApiRequestError,
+} from "@/lib/api-utils"
 
 const mealSelectionSchema = z
   .object({
@@ -15,110 +22,92 @@ const mealSelectionSchema = z
   .refine(
     (data) => {
       if (data.status === "OPT_IN" && !data.preference) {
-        return false;
+        return false
       }
-      return true;
+      return true
     },
     {
       message: "Preference (VEG/NONVEG) is required when opting in.",
       path: ["preference"],
-    },
-  );
+    }
+  )
 
 export async function GET() {
-  try {
-    const session = await auth();
+  return handleApiRequest(async () => {
+    const session = await auth()
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", 401)
     }
-    const sessionUser = session.user;
-    const timezone = sessionUser.locationTimezone || "Asia/Kolkata";
-    const tomorrow = getTomorrowMidnightInTimezone(timezone);
+
+    const sessionUser = session.user
+    const timezone = sessionUser.locationTimezone || "Asia/Kolkata"
+    const tomorrow = getTomorrowMidnightInTimezone(timezone)
 
     const selection = await prisma.mealSelection.findUnique({
       where: {
         employeeId_date: {
-          employeeId: session.user.id,
+          employeeId: sessionUser.id!,
           date: tomorrow,
         },
       },
-    });
+    })
 
     if (!selection) {
-      return NextResponse.json({ selection: null });
+      return apiResponse({ selection: null })
     }
 
-    return NextResponse.json({
+    return apiResponse({
       selection: {
         status: selection.status,
         preference: selection.preference,
         updatedAt: selection.updatedAt.toISOString(),
       },
-    });
-  } catch (error) {
-    console.error("[GET /api/meal-selection]", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
-  }
+    })
+  })
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const session = await auth();
+  return handleApiRequest(async () => {
+    const session = await auth()
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", 401)
     }
 
-    const body = await request.json();
-    const parsed = mealSelectionSchema.safeParse(body);
+    const { status, preference } = await parseBody(request, mealSelectionSchema)
+    const { addressId } = session.user
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Invalid payload.", details: parsed.error.format() },
-        { status: 400 },
-      );
+    if (!addressId) {
+      throw new ApiRequestError("No location assigned to your account", 400, "NO_LOCATION")
     }
-
-    const { status, preference } = parsed.data;
-    const { addressId } = session.user;
 
     const address = await prisma.companyAddress.findUnique({
       where: { id: addressId },
-    });
+    })
 
     if (!address) {
-      return NextResponse.json(
-        { error: "Location not found" },
-        { status: 404 },
-      );
+      return apiError("Location not found", 404, "LOCATION_NOT_FOUND")
     }
 
-    const timezone = address.timezone || "Asia/Kolkata";
-    const tomorrow = getTomorrowMidnightInTimezone(timezone);
+    const timezone = address.timezone || "Asia/Kolkata"
+    const tomorrow = getTomorrowMidnightInTimezone(timezone)
 
     if (
       address.workingDays &&
-      !address.workingDays.includes(tomorrow.getUTCDay())
+      !address.workingDays.includes(tomorrow.getDay())
     ) {
-      return NextResponse.json(
-        {
-          error: "Tomorrow is a non-working day. Meal selection is disabled.",
-          code: "NON_WORKING_DAY",
-        },
-        { status: 403 },
-      );
+      return apiError(
+        "Tomorrow is a non-working day. Meal selection is disabled.",
+        403,
+        "NON_WORKING_DAY"
+      )
     }
 
     if (isPastCutoffInTimezone(address.cutoffTime, timezone)) {
-      return NextResponse.json(
-        {
-          error: `Cutoff time (${address.cutoffTime}) has passed. Selection is locked.`,
-          code: "CUTOFF_PASSED",
-        },
-        { status: 403 },
-      );
+      return apiError(
+        `Cutoff time (${address.cutoffTime}) has passed. Selection is locked.`,
+        403,
+        "CUTOFF_PASSED"
+      )
     }
 
     if (status === "OPT_IN") {
@@ -129,30 +118,25 @@ export async function POST(request: NextRequest) {
             date: tomorrow,
           },
         },
-      });
+      })
 
       if (!menu) {
-        return NextResponse.json(
-          { error: "No menu available for tomorrow.", code: "NO_MENU" },
-          { status: 400 },
-        );
+        return apiError("No menu available for tomorrow.", 400, "NO_MENU")
       }
 
       if (preference === "NONVEG" && !menu.nonvegItem) {
-        return NextResponse.json(
-          {
-            error: "Non-veg option is not available for tomorrow.",
-            code: "NONVEG_UNAVAILABLE",
-          },
-          { status: 400 },
-        );
+        return apiError(
+          "Non-veg option is not available for tomorrow.",
+          400,
+          "NONVEG_UNAVAILABLE"
+        )
       }
     }
 
     const selection = await prisma.mealSelection.upsert({
       where: {
         employeeId_date: {
-          employeeId: session.user.id,
+          employeeId: session.user.id!,
           date: tomorrow,
         },
       },
@@ -161,26 +145,20 @@ export async function POST(request: NextRequest) {
         preference: status === "OPT_IN" ? preference : null,
       },
       create: {
-        employeeId: session.user.id,
+        employeeId: session.user.id!,
         date: tomorrow,
         status,
         preference: status === "OPT_IN" ? preference : null,
       },
-    });
+    })
 
-    return NextResponse.json({
+    return apiResponse({
       success: true,
       selection: {
         status: selection.status,
         preference: selection.preference,
         updatedAt: selection.updatedAt.toISOString(),
       },
-    });
-  } catch (error) {
-    console.error("[POST /api/meal-selection]", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
-  }
+    })
+  })
 }

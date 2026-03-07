@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import {
     Download,
-    Upload,
     Users,
     Leaf,
     Drumstick,
@@ -14,7 +13,13 @@ import {
     AlertTriangle,
     Filter,
 } from "lucide-react"
-import { MenuUploader } from "@/components/ops/menu-uploader"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { format, parseISO } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -53,7 +58,7 @@ type StatusFilter = "all" | "opted_in" | "opted_out" | "no_selection"
 
 const emptyStats: Stats = { total: 0, optedIn: 0, optedOut: 0, vegCount: 0, nonvegCount: 0, totalEmployees: 0, missingInput: 0 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
+import { fetcher } from "@/lib/fetcher"
 
 export function OpsDashboard({
     initialDate,
@@ -61,10 +66,9 @@ export function OpsDashboard({
     initialStats,
 }: OpsDashboardProps) {
     const [date, setDate] = useState(initialDate)
-    const [showUploader, setShowUploader] = useState(false)
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
 
-    const { data, error, isLoading } = useSWR(
+    const { data, error, isLoading } = useSWR<{ rows: SelectionRow[]; stats: Stats }>(
         `/api/ops/selections?date=${date}`,
         fetcher,
         {
@@ -175,13 +179,6 @@ export function OpsDashboard({
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
-                        variant="outline"
-                        onClick={() => setShowUploader(!showUploader)}
-                    >
-                        <Upload className="h-3.5 w-3.5" />
-                        Upload Menu
-                    </Button>
-                    <Button
                         onClick={handleExportCSV}
                         disabled={!filteredRows.length}
                     >
@@ -191,9 +188,7 @@ export function OpsDashboard({
                 </div>
             </div>
 
-            {showUploader && (
-                <MenuUploader onClose={() => setShowUploader(false)} />
-            )}
+
 
             {error && (
                 <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
@@ -232,21 +227,26 @@ export function OpsDashboard({
 
             <Separator />
 
-            <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <div className="flex gap-1">
-                    {filterOptions.map((opt) => (
-                        <Button
-                            key={opt.value}
-                            variant={statusFilter === opt.value ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setStatusFilter(opt.value)}
-                            className="rounded-full text-xs"
-                        >
-                            {opt.label}
-                        </Button>
-                    ))}
+            <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    <Filter className="h-4 w-4" />
+                    <span className="text-xs font-medium">Filter by Status:</span>
                 </div>
+                <Select
+                    value={statusFilter}
+                    onValueChange={(val) => setStatusFilter(val as StatusFilter)}
+                >
+                    <SelectTrigger className="h-9 w-[180px] bg-card rounded-lg border-border">
+                        <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                        {filterOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="rounded-lg border border-border bg-card">

@@ -24,7 +24,7 @@ interface ReviewsData {
     reviews: Review[]
 }
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+import { fetcher } from "@/lib/fetcher"
 
 export function ReviewsDashboard() {
     const [days, setDays] = useState(30)

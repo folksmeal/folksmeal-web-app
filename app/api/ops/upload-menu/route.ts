@@ -1,50 +1,75 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth-helpers"
 import ExcelJS from "exceljs"
+import { apiResponse, apiError, handleApiRequest, ApiRequestError } from "@/lib/api-utils"
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const ALLOWED_MIME_TYPES = [
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+]
 
 export async function POST(request: NextRequest) {
-    try {
+    return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-        }
+        if (!user) return apiError("Forbidden", 403)
 
-        const { addressId } = user
         const formData = await request.formData()
-        const file = formData.get("file") as File
+        const file = formData.get("file") as File | null
+        const addressId = formData.get("addressId") as string | null
+
         if (!file) {
-            return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
+            throw new ApiRequestError("No file uploaded", 400, "NO_FILE")
+        }
+        if (!addressId) {
+            throw new ApiRequestError("Location ID (addressId) is required", 400, "MISSING_ADDRESS_ID")
         }
 
-        const MAX_FILE_SIZE = 5 * 1024 * 1024
+        // Validate the address exists
+        const address = await prisma.companyAddress.findUnique({ where: { id: addressId } })
+        if (!address) {
+            return apiError("Location not found", 404, "ADDRESS_NOT_FOUND")
+        }
+
         if (file.size > MAX_FILE_SIZE) {
-            return NextResponse.json({ error: "File exceeds the maximum limit of 5MB" }, { status: 400 })
+            throw new ApiRequestError("File exceeds the maximum limit of 5MB", 400, "FILE_TOO_LARGE")
         }
 
-        const allowedMimeTypes = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"]
-        if (!allowedMimeTypes.includes(file.type)) {
-            return NextResponse.json({ error: "Invalid file type. Only Excel files (.xlsx, .xls) are allowed." }, { status: 400 })
+        if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+            throw new ApiRequestError(
+                "Invalid file type. Only Excel files (.xlsx, .xls) are allowed.",
+                400,
+                "INVALID_FILE_TYPE"
+            )
         }
 
         const arrayBuffer = await file.arrayBuffer()
         const workbook = new ExcelJS.Workbook()
         await workbook.xlsx.load(arrayBuffer)
+
         const sheet = workbook.worksheets[0]
         if (!sheet || sheet.rowCount <= 1) {
-            return NextResponse.json({ error: "Excel file is empty or missing data rows" }, { status: 400 })
+            throw new ApiRequestError("Excel file is empty or missing data rows", 400, "EMPTY_FILE")
         }
 
         const results: { date: string; vegItem: string; nonvegItem: string | null; action: string }[] = []
         const errors: { row: number; error: string }[] = []
+
+        // Parse headers
         const headers: Record<string, number> = {}
         const headerRow = sheet.getRow(1)
         headerRow.eachCell((cell, colNumber) => {
-            if (cell.value) { headers[String(cell.value).toLowerCase().trim()] = colNumber }
+            if (cell.value) {
+                headers[String(cell.value).toLowerCase().trim()] = colNumber
+            }
         })
+
         const requiredHeaders = ["date", "veg_item"]
         for (const req of requiredHeaders) {
-            if (!headers[req]) { return NextResponse.json({ error: `Missing required column: ${req}` }, { status: 400 }) }
+            if (!headers[req]) {
+                throw new ApiRequestError(`Missing required column: ${req}`, 400, "MISSING_COLUMN")
+            }
         }
 
         // Prepare bulk upserts
@@ -72,10 +97,11 @@ export async function POST(request: NextRequest) {
             if (rawDate instanceof Date) {
                 parsedDate = rawDate
             } else if (typeof rawDate === "number") {
+                // Excel serial date number
                 parsedDate = new Date((rawDate - 25569) * 86400 * 1000)
             } else if (typeof rawDate === "string") {
                 parsedDate = new Date(rawDate)
-            } else if (typeof rawDate === "object" && rawDate !== null && 'result' in rawDate) {
+            } else if (typeof rawDate === "object" && rawDate !== null && "result" in rawDate) {
                 const result = (rawDate as { result: unknown }).result
                 parsedDate = result instanceof Date ? result : new Date(result as string | number)
             } else {
@@ -95,10 +121,12 @@ export async function POST(request: NextRequest) {
                 if (!colIdx) return null
                 const val = row.getCell(colIdx).value
                 if (val === null || val === undefined) return null
-                if (typeof val === 'object' && 'richText' in val) {
-                    return (val as { richText: { text: string }[] }).richText.map((rt) => rt.text).join('')
+                if (typeof val === "object" && "richText" in val) {
+                    return (val as { richText: { text: string }[] }).richText
+                        .map((rt) => rt.text)
+                        .join("")
                 }
-                if (typeof val === 'object' && 'result' in val) {
+                if (typeof val === "object" && "result" in val) {
                     return String((val as { result: unknown }).result)
                 }
                 return String(val).trim()
@@ -113,27 +141,10 @@ export async function POST(request: NextRequest) {
             upserts.push(
                 prisma.menu.upsert({
                     where: {
-                        addressId_date: {
-                            addressId,
-                            date: parsedDate,
-                        },
+                        addressId_date: { addressId, date: parsedDate },
                     },
-                    update: {
-                        day,
-                        vegItem,
-                        nonvegItem,
-                        sideBeverage,
-                        notes,
-                    },
-                    create: {
-                        addressId,
-                        date: parsedDate,
-                        day,
-                        vegItem,
-                        nonvegItem,
-                        sideBeverage,
-                        notes,
-                    },
+                    update: { day, vegItem, nonvegItem, sideBeverage, notes },
+                    create: { addressId, date: parsedDate, day, vegItem, nonvegItem, sideBeverage, notes },
                 })
             )
 
@@ -145,22 +156,16 @@ export async function POST(request: NextRequest) {
             })
         }
 
-        // Execute all upserts in a single transaction sequence
+        // Execute all upserts in a single transaction
         if (upserts.length > 0) {
             await prisma.$transaction(upserts)
         }
 
-        return NextResponse.json({
+        return apiResponse({
             success: true,
             processed: results.length,
             errors: errors.length,
             ...(errors.length > 0 && { errorDetails: errors }),
         })
-    } catch (error) {
-        console.error("[POST /api/ops/upload-menu]", error)
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        )
-    }
+    })
 }

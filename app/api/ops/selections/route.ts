@@ -1,24 +1,26 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth-helpers"
 import { getTomorrowMidnightInTimezone } from "@/lib/utils/time"
+import { apiResponse, apiError, handleApiRequest } from "@/lib/api-utils"
 
 export async function GET(request: NextRequest) {
-    try {
+    return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-        }
+        if (!user) return apiError("Forbidden", 403)
 
-        const { addressId } = user
         const { searchParams } = new URL(request.url)
         const dateParam = searchParams.get("date")
+        const addressId = (searchParams.get("addressId") || user.addressId) as string | undefined
 
         let targetDate: Date
         if (dateParam) {
             targetDate = new Date(dateParam + "T00:00:00.000Z")
+            if (isNaN(targetDate.getTime())) {
+                return apiError("Invalid date format", 400, "INVALID_DATE")
+            }
         } else {
-            const timezone = user.locationTimezone || "Asia/Kolkata"
+            const timezone = (user.locationTimezone as string) || "Asia/Kolkata"
             targetDate = getTomorrowMidnightInTimezone(timezone)
         }
 
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest) {
             prisma.mealSelection.findMany({
                 where: {
                     date: targetDate,
-                    employee: { addressId },
+                    employee: addressId ? { addressId } : {},
                 },
                 include: {
                     employee: {
@@ -37,11 +39,9 @@ export async function GET(request: NextRequest) {
             }),
             prisma.employee.findMany({
                 where: {
-                    addressId,
+                    ...(addressId ? { addressId } : {}),
                     selections: {
-                        none: {
-                            date: targetDate,
-                        },
+                        none: { date: targetDate },
                     },
                 },
                 include: { company: true, address: true },
@@ -49,27 +49,28 @@ export async function GET(request: NextRequest) {
             }),
         ])
 
+        const optedIn = selections.filter((s) => s.status === "OPT_IN")
+        const optedOut = selections.filter((s) => s.status === "OPT_OUT")
+
         const stats = {
             total: selections.length,
-            optedIn: selections.filter((s) => s.status === "OPT_IN").length,
-            optedOut: selections.filter((s) => s.status === "OPT_OUT").length,
-            vegCount: selections.filter(
-                (s) => s.status === "OPT_IN" && s.preference === "VEG"
-            ).length,
-            nonvegCount: selections.filter(
-                (s) => s.status === "OPT_IN" && s.preference === "NONVEG"
-            ).length,
+            optedIn: optedIn.length,
+            optedOut: optedOut.length,
+            vegCount: optedIn.filter((s) => s.preference === "VEG").length,
+            nonvegCount: optedIn.filter((s) => s.preference === "NONVEG").length,
             totalEmployees: selections.length + employeesWithoutSelection.length,
             missingInput: employeesWithoutSelection.length,
         }
+
+        const dateStr = targetDate.toISOString().split("T")[0]
 
         const selectionRows = selections.map((s) => ({
             employeeName: s.employee.name,
             employeeCode: s.employee.employeeCode,
             company: `${s.employee.company.name} - ${s.employee.address.city}`,
             status: s.status,
-            preference: s.preference,
-            date: s.date.toISOString().split("T")[0],
+            preference: s.preference || null,
+            date: dateStr,
             updatedAt: s.updatedAt.toISOString(),
         }))
 
@@ -77,22 +78,16 @@ export async function GET(request: NextRequest) {
             employeeName: e.name,
             employeeCode: e.employeeCode,
             company: `${e.company.name} - ${e.address.city}`,
-            status: "NO_SELECTION",
+            status: "NO_SELECTION" as const,
             preference: null,
-            date: targetDate.toISOString().split("T")[0],
+            date: dateStr,
             updatedAt: "",
         }))
 
-        return NextResponse.json({
-            date: targetDate.toISOString().split("T")[0],
+        return apiResponse({
+            date: dateStr,
             stats,
             rows: [...selectionRows, ...noSelectionRows],
         })
-    } catch (error) {
-        console.error("[GET /api/ops/selections]", error)
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        )
-    }
+    })
 }

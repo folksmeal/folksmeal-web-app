@@ -20,12 +20,17 @@ enum SelectionStatus {
   OPT_OUT
 }
 
-enum EmployeeRole {
-  EMPLOYEE
-  SUPERADMIN
-}
-
 // ─── Models ──────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
 
 model Company {
   id        String           @id @default(cuid())
@@ -66,7 +71,6 @@ model Employee {
   employeeCode      String         @unique @map("employee_code")
   password          String
   defaultPreference MealPreference @default(VEG) @map("default_preference")
-  role              EmployeeRole   @default(EMPLOYEE)
   createdAt         DateTime       @default(now()) @map("created_at")
 
   company           Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -92,6 +96,7 @@ model Menu {
   address      CompanyAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
 
   @@index([addressId])
+  @@index([date])
   @@unique([addressId, date])
   @@map("menus")
 }
@@ -102,10 +107,13 @@ model MealSelection {
   date       DateTime        @db.Date
   status     SelectionStatus
   preference MealPreference?
+  createdAt  DateTime        @default(now()) @map("created_at")
   updatedAt  DateTime        @updatedAt @map("updated_at")
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  @@index([date])
+  @@index([employeeId])
   @@unique([employeeId, date])
   @@map("meal_selections")
 }
@@ -120,7 +128,8 @@ model MealRating {
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  @@index([date])
+  @@index([employeeId])
   @@unique([employeeId, date])
   @@map("meal_ratings")
 }
-

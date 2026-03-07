@@ -11,5 +11,10 @@ export default async function EmployeeLayout({
         redirect("/")
     }
 
+    // Superadmins must not access employee routes — they have no addressId
+    if (session.user.role === "SUPERADMIN") {
+        redirect("/ops/dashboard")
+    }
+
     return <>{children}</>
 }

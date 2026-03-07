@@ -21,10 +21,10 @@ interface Employee {
     createdAt: string
 }
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+import { fetcher } from "@/lib/fetcher"
 
 export function UserManagement() {
-    const { data, mutate, isLoading } = useSWR("/api/ops/employees", fetcher)
+    const { data, mutate, isLoading } = useSWR<{ employees: Employee[] }>("/api/ops/employees", fetcher)
     const employees: Employee[] = data?.employees ?? []
     const [search, setSearch] = useState("")
     const [dialogOpen, setDialogOpen] = useState(false)

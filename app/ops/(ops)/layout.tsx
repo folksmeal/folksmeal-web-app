@@ -27,8 +27,6 @@ export default async function OpsAuthenticatedLayout({
     }
 
     const sessionUser = session.user
-    const locationName = `${sessionUser.companyName} - ${sessionUser.addressCity}`
-
     const locations = await getLocations()
 
     const managedCompanies = locations.map((loc) => ({
@@ -39,6 +37,14 @@ export default async function OpsAuthenticatedLayout({
         addressCity: loc.city,
         locationTimezone: loc.timezone,
     }))
+
+    let locationName = "Select Company"
+    if (sessionUser.companyName && sessionUser.addressCity) {
+        locationName = `${sessionUser.companyName} - ${sessionUser.addressCity}`
+    } else if (managedCompanies.length > 0) {
+        locationName = managedCompanies[0].name
+    }
+
 
     return (
         <div className="min-h-screen bg-background">

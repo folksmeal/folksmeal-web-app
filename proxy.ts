@@ -1,128 +1,176 @@
 import { NextRequest, NextResponse } from "next/server"
+
+// --- Constants ---
 const SESSION_COOKIE = "authjs.session-token"
 const SECURE_SESSION_COOKIE = "__Secure-authjs.session-token"
-const STATIC_ASSET_PREFIXES = [
-    "/_next",
-    "/images",
-    "/favicon.ico",
-] as const
+const STATIC_ASSET_PREFIXES = ["/_next", "/images", "/favicon.ico"] as const
 const AUTH_API_PREFIX = "/api/auth"
-const PUBLIC_EMPLOYEE_PATHS = new Set(["/", "/login"])
-const PUBLIC_OPS_PATHS = new Set(["/", "/login"])
+const API_PREFIX = "/api/"
+const PUBLIC_PATHS = new Set(["/", "/login"])
+
+// --- Rate Limiting ---
 const ipLimits = new Map<string, { count: number; windowStart: number }>()
 const RATE_LIMIT_WINDOW_MS = 60 * 1000
-const MAX_REQUESTS_PER_WINDOW = 100
-function checkRateLimit(ip: string): boolean {
+const MAX_IP_ENTRIES = 10_000
+let lastCleanup = Date.now()
+
+// Different limits for different route types
+const RATE_LIMITS: Record<string, number> = {
+    auth: 60,       // Auth endpoints: 60 req/min
+    mutation: 60,   // POST/PUT/DELETE: 60 req/min
+    read: 200,      // GET: 200 req/min
+}
+
+function cleanupExpiredEntries() {
     const now = Date.now()
-    const record = ipLimits.get(ip)
+    if (now - lastCleanup < 30_000) return
+    lastCleanup = now
+    for (const [ip, record] of ipLimits) {
+        if (now - record.windowStart >= RATE_LIMIT_WINDOW_MS) {
+            ipLimits.delete(ip)
+        }
+    }
+}
+
+function checkRateLimit(ip: string, bucket: string, limit: number): boolean {
+    cleanupExpiredEntries()
+    const key = `${ip}:${bucket}`
+    const now = Date.now()
+    const record = ipLimits.get(key)
     if (!record || now - record.windowStart >= RATE_LIMIT_WINDOW_MS) {
-        ipLimits.set(ip, { count: 1, windowStart: now })
+        if (ipLimits.size >= MAX_IP_ENTRIES) {
+            ipLimits.clear()
+        }
+        ipLimits.set(key, { count: 1, windowStart: now })
         return true
     }
-    if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    if (record.count >= limit) {
         return false
     }
     record.count += 1
     return true
 }
-function hasSessionCookie(request: NextRequest): boolean {
-    return (
-        request.cookies.has(SESSION_COOKIE) ||
-        request.cookies.has(SECURE_SESSION_COOKIE)
+
+function rateLimitResponse(): NextResponse {
+    return new NextResponse(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        {
+            status: 429,
+            headers: {
+                "Content-Type": "application/json",
+                "Retry-After": "60",
+            },
+        }
     )
 }
-function isStaticAsset(pathname: string): boolean {
-    for (const prefix of STATIC_ASSET_PREFIXES) {
-        if (pathname.startsWith(prefix)) return true
-    }
-    return pathname.includes(".")
-}
-function parseSessionRole(request: NextRequest): string | null {
-    const token =
+
+// --- Helpers ---
+function getSessionToken(request: NextRequest): string | undefined {
+    return (
         request.cookies.get(SESSION_COOKIE)?.value ||
         request.cookies.get(SECURE_SESSION_COOKIE)?.value
-    if (!token) return null
-    try {
-        const segments = token.split(".")
-        if (segments.length < 2) return null
-        const payload = JSON.parse(
-            Buffer.from(segments[1], "base64url").toString("utf-8")
-        )
-        return (payload.role as string) || null
-    } catch {
-        return null
-    }
+    )
 }
-function buildRedirectResponse(
-    request: NextRequest,
-    destination: string,
-    permanent = false
-): NextResponse {
+
+function isStaticAsset(pathname: string): boolean {
+    return (
+        STATIC_ASSET_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
+        pathname.includes(".")
+    )
+}
+
+function redirect(request: NextRequest, destination: string): NextResponse {
     const url = new URL(destination, request.url)
-    return NextResponse.redirect(url, permanent ? 308 : 307)
+    return NextResponse.redirect(url)
 }
+
+// --- Routing Handlers ---
 function handleOpsRouting(
     request: NextRequest,
     pathname: string,
-    isOpsSubdomain: boolean
+    isOpsSubdomain: boolean,
+    hasSession: boolean
 ): NextResponse {
     const opsPath = pathname.startsWith("/ops")
         ? pathname.replace(/^\/ops/, "") || "/"
         : pathname
+
     const loginTarget = isOpsSubdomain ? "/" : "/ops"
-    const isPublicOpsPath = PUBLIC_OPS_PATHS.has(opsPath)
-    const hasSession = hasSessionCookie(request)
-    if (!hasSession && !isPublicOpsPath) {
-        return buildRedirectResponse(request, loginTarget)
+    const isPublicPath = PUBLIC_PATHS.has(opsPath)
+
+    if (!hasSession && !isPublicPath) {
+        return redirect(request, loginTarget)
     }
-    if (hasSession && !isPublicOpsPath) {
-        const role = parseSessionRole(request)
-        if (role && role !== "SUPERADMIN") {
-            return buildRedirectResponse(request, loginTarget)
-        }
-    }
-    if (pathname.startsWith("/ops")) {
+
+    if (!isOpsSubdomain && pathname.startsWith("/ops")) {
         return NextResponse.next()
     }
+
     const url = request.nextUrl.clone()
     url.pathname = `/ops${opsPath}`
     return NextResponse.rewrite(url)
 }
+
 function handleEmployeeRouting(
     request: NextRequest,
-    pathname: string
+    pathname: string,
+    hasSession: boolean
 ): NextResponse {
-    const hasSession = hasSessionCookie(request)
-    const isPublicPath = PUBLIC_EMPLOYEE_PATHS.has(pathname)
+    const isPublicPath = PUBLIC_PATHS.has(pathname)
     if (!hasSession && !isPublicPath) {
-        return buildRedirectResponse(request, "/")
+        return redirect(request, "/")
     }
     return NextResponse.next()
 }
+
+// --- Main Proxy Entry ---
 export function proxy(request: NextRequest): NextResponse {
     const { pathname } = request.nextUrl
-    if (pathname.startsWith(AUTH_API_PREFIX)) {
-        const ip = request.headers.get("x-forwarded-for") ?? "unknown"
-        if (!checkRateLimit(ip)) {
-            return new NextResponse(
-                JSON.stringify({ error: "Too many requests. Please try again later." }),
-                { status: 429, headers: { "Content-Type": "application/json" } }
-            )
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
+
+    // 1. Rate Limiting for all API routes
+    if (pathname.startsWith(API_PREFIX)) {
+        // Auth endpoints get strictest limit
+        if (pathname.startsWith(AUTH_API_PREFIX)) {
+            if (!checkRateLimit(ip, "auth", RATE_LIMITS.auth)) {
+                return rateLimitResponse()
+            }
+            return NextResponse.next()
+        }
+
+        // All other API routes
+        const method = request.method
+        if (method === "GET") {
+            if (!checkRateLimit(ip, "read", RATE_LIMITS.read)) {
+                return rateLimitResponse()
+            }
+        } else {
+            // POST, PUT, DELETE, PATCH
+            if (!checkRateLimit(ip, "mutation", RATE_LIMITS.mutation)) {
+                return rateLimitResponse()
+            }
         }
         return NextResponse.next()
     }
+
+    // 2. Static Assets
     if (isStaticAsset(pathname)) {
         return NextResponse.next()
     }
+
+    // 3. Routing Logic
+    const token = getSessionToken(request)
+    const hasSession = !!token
     const hostname = request.headers.get("host") || ""
     const isOpsSubdomain = hostname.startsWith("ops.")
+
     if (isOpsSubdomain || pathname.startsWith("/ops")) {
-        return handleOpsRouting(request, pathname, isOpsSubdomain)
+        return handleOpsRouting(request, pathname, isOpsSubdomain, hasSession)
     }
-    return handleEmployeeRouting(request, pathname)
+
+    return handleEmployeeRouting(request, pathname, hasSession)
 }
+
 export const config = {
-    matcher: [
-        "/((?!_next/static|_next/image|favicon.ico).*)",
-    ],
+    matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 }

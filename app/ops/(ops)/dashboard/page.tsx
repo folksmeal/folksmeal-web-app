@@ -8,14 +8,14 @@ export default async function OpsDashboardPage() {
     if (!session?.user) return null
 
     const sessionUser = session.user
-    const timezone = sessionUser.locationTimezone || "Asia/Kolkata"
+    const timezone = (sessionUser.locationTimezone as string) || "Asia/Kolkata"
     const targetDate = getTomorrowMidnightInTimezone(timezone)
 
     const [selections, allEmployees] = await Promise.all([
         prisma.mealSelection.findMany({
             where: {
                 date: targetDate,
-                employee: { addressId: sessionUser.addressId },
+                employee: { addressId: (sessionUser.addressId as string) || undefined },
             },
             include: {
                 employee: { include: { company: true, address: true } },
@@ -23,7 +23,7 @@ export default async function OpsDashboardPage() {
             orderBy: { employee: { name: "asc" } },
         }),
         prisma.employee.findMany({
-            where: { addressId: sessionUser.addressId },
+            where: { addressId: (sessionUser.addressId as string) || undefined },
             include: { company: true, address: true },
             orderBy: { name: "asc" },
         }),
@@ -66,10 +66,17 @@ export default async function OpsDashboardPage() {
         updatedAt: "",
     }))
 
+    let companyName = "Global Platform"
+    if (sessionUser.companyName && sessionUser.addressCity) {
+        companyName = `${sessionUser.companyName} - ${sessionUser.addressCity}`
+    } else if (allEmployees.length > 0 && allEmployees[0].company) {
+        companyName = `${allEmployees[0].company.name} - ${allEmployees[0].address.city}`
+    }
+
     return (
         <OpsDashboard
             userName={sessionUser.name || "Admin"}
-            companyName={`${sessionUser.companyName} - ${sessionUser.addressCity}`}
+            companyName={companyName}
             initialDate={targetDate.toISOString().split("T")[0]}
             initialRows={[...selectionRows, ...noSelectionRows]}
             initialStats={stats}

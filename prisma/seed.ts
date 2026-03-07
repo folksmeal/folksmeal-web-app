@@ -1,12 +1,15 @@
-import { PrismaClient, MealPreference, EmployeeRole } from "@prisma/client"
+import { MealPreference } from "@prisma/client"
 import bcrypt from "bcryptjs"
+import { prisma } from "../lib/prisma"
 
-const prisma = new PrismaClient()
+const SEED_PASSWORD = process.env.SEED_PASSWORD || "password123"
 
 async function main() {
     console.log("🌱 Seeding database...")
-    const hashedPassword = await bcrypt.hash("password123", 12)
 
+    const hashedPassword = await bcrypt.hash(SEED_PASSWORD, 12)
+
+    // ─── Companies ────────────────────────────────────────────────
     const companyLearnApp = await prisma.company.upsert({
         where: { id: "company-learnapp" },
         update: {},
@@ -28,7 +31,7 @@ async function main() {
             address: "Sector 132, Noida",
             cutoffTime: "18:00",
             timezone: "Asia/Kolkata",
-            workingDays: [1, 2, 3, 4, 5]
+            workingDays: [1, 2, 3, 4, 5],
         },
     })
 
@@ -53,12 +56,26 @@ async function main() {
             address: "Lower Parel, Mumbai",
             cutoffTime: "17:30",
             timezone: "Asia/Kolkata",
-            workingDays: [1, 2, 3, 4, 5]
+            workingDays: [1, 2, 3, 4, 5],
         },
     })
 
-    console.log(`✅ Companies and Addresses seeded.`)
+    console.log("✅ Companies and Addresses seeded.")
 
+    // ─── Platform Admin ───────────────────────────────────────────
+    await prisma.user.upsert({
+        where: { email: "admin@folksmeal.com" },
+        update: {},
+        create: {
+            id: "super-001",
+            name: "Super Admin",
+            email: "admin@folksmeal.com",
+            password: hashedPassword,
+        },
+    })
+    console.log("✅ Platform Admin seeded")
+
+    // ─── Employees ────────────────────────────────────────────────
     const employees = [
         {
             id: "emp-001",
@@ -68,37 +85,6 @@ async function main() {
             employeeCode: "EMP-1001",
             password: hashedPassword,
             defaultPreference: MealPreference.VEG,
-            role: EmployeeRole.EMPLOYEE,
-        },
-        {
-            id: "emp-002",
-            companyId: companyLearnApp.id,
-            addressId: addrLearnAppNoida.id,
-            name: "Priya Patel",
-            employeeCode: "EMP-1002",
-            password: hashedPassword,
-            defaultPreference: MealPreference.NONVEG,
-            role: EmployeeRole.EMPLOYEE,
-        },
-        {
-            id: "emp-101",
-            companyId: companyAcme.id,
-            addressId: addrAcmeMumbai.id,
-            name: "Neha Gupta",
-            employeeCode: "EMP-2001",
-            password: hashedPassword,
-            defaultPreference: MealPreference.VEG,
-            role: EmployeeRole.EMPLOYEE,
-        },
-        {
-            id: "super-001",
-            companyId: companyLearnApp.id,
-            addressId: addrLearnAppNoida.id,
-            name: "Super Admin",
-            employeeCode: "SUPER-001",
-            password: hashedPassword,
-            defaultPreference: MealPreference.VEG,
-            role: EmployeeRole.SUPERADMIN,
         },
     ]
 
@@ -114,6 +100,7 @@ async function main() {
         console.log(`✅ Employee: ${emp.name} (${emp.employeeCode})`)
     }
 
+    // ─── Seed Menus ───────────────────────────────────────────────
     const vegItems = [
         "Paneer Butter Masala, Roti, Rice, Salad",
         "Dal Tadka, Seasonal Sabzi, Roti, Jeera Rice, Dessert",
@@ -142,7 +129,6 @@ async function main() {
             date.setHours(0, 0, 0, 0)
             const dayOfWeek = date.getDay()
 
-            // Only seed menus for working days
             if (addr.workingDays.includes(dayOfWeek)) {
                 await prisma.menu.upsert({
                     where: {
@@ -161,19 +147,13 @@ async function main() {
                 })
             }
         }
-        console.log(`✅ Menus seeded for: ${addr.city} (Working Days Only)`)
+        console.log(`✅ Menus seeded for: ${addr.city}`)
     }
 
     console.log("\n🎉 Seed complete!")
-    console.log("\n📋 Test credentials (password: password123 for all):")
-    console.log("  ┌─────────────────────────────────────────────────────────┐")
-    console.log("  │ Role         │ Code        │ Company     │ Notes       │")
-    console.log("  ├─────────────────────────────────────────────────────────┤")
-    console.log("  │ EMPLOYEE     │ EMP-1001    │ LearnApp    │             │")
-    console.log("  │ EMPLOYEE     │ EMP-1002    │ LearnApp    │             │")
-    console.log("  │ EMPLOYEE     │ EMP-2001    │ Acme Corp   │             │")
-    console.log("  │ SUPERADMIN   │ SUPER-001   │ LearnApp    │ Global admin│")
-    console.log("  └─────────────────────────────────────────────────────────┘")
+    console.log("\n📋 Credentials (set SEED_PASSWORD env var to override, default: password123):")
+    console.log("  Admin:    admin@folksmeal.com")
+    console.log("  Employee: EMP-1001")
 }
 
 main()

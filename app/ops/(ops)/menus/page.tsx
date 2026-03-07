@@ -8,7 +8,7 @@ export default async function MenusPage() {
     if (!session?.user) return null
 
     const menus = await prisma.menu.findMany({
-        where: { addressId: session.user.addressId },
+        where: { addressId: (session.user.addressId as string) || undefined },
         orderBy: { date: "desc" },
         take: 14,
     })

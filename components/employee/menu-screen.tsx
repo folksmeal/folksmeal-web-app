@@ -176,13 +176,48 @@ export function MenuScreen({
           )}
 
           {menu && !menu.available && (
-            <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
-              <AlertCircle className="h-5 w-5 text-destructive" />
-              <p className="text-sm text-destructive">
-                {menu.isWorkingDay === false
-                  ? `${tomorrowLabel} is a non-working day.`
-                  : `No menu has been set for ${tomorrowLabel} yet. Please check back later.`}
-              </p>
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg sm:max-w-md mx-auto w-full transition-all duration-300 hover:shadow-xl mt-6">
+              {menu.isWorkingDay === false ? (
+                <>
+                  <div className="relative h-40 w-full bg-linear-to-r from-teal-400 to-emerald-500 flex items-center justify-center overflow-hidden">
+                    <div className="absolute inset-0 bg-black/10 mix-blend-overlay" />
+                    {/* Decorative Background Elements */}
+                    <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/20 blur-2xl" />
+                    <div className="absolute -bottom-12 -right-12 h-40 w-40 rounded-full bg-white/20 blur-2xl" />
+                    <div className="absolute bottom-4 left-4 text-6xl drop-shadow-lg opacity-80 wave-animation">🌴</div>
+                    <div className="relative z-10 text-center">
+                      <span className="text-5xl drop-shadow-xl inline-block hover:scale-110 transition-transform duration-300">🎉</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center gap-4 p-8 text-center bg-card">
+                    <h3 className="text-2xl font-bold tracking-tight text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+                      It's a Holiday!
+                    </h3>
+                    <div className="flex flex-col gap-2">
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Take a break and recharge! Meal selections are paused for <span className="font-semibold text-foreground">{tomorrowLabel}</span>.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2 px-4 py-2 bg-muted/50 rounded-lg inline-block mx-auto border border-border/50">
+                        Enjoy your time off! We'll see you on the next working day.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 mb-2">
+                    <AlertCircle className="h-8 w-8 text-amber-500" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-xl font-semibold text-foreground">
+                      Menu Not Available
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-[300px] mx-auto">
+                      No menu has been posted for {tomorrowLabel} yet. Please check back later.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -227,10 +262,10 @@ export function MenuScreen({
               >
                 <Label
                   htmlFor="veg"
-                  className={`flex items-center gap-3.5 rounded-lg border p-4 transition-colors ${pastCutoff ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                  className={`group relative flex items-start gap-4 rounded-xl border-2 p-5 transition-all outline-none ${pastCutoff ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:shadow-md"
                     } ${selected === "VEG"
-                      ? "border-primary/40 bg-accent/10"
-                      : "border-border bg-card " + (!pastCutoff ? "hover:bg-secondary" : "")
+                      ? "border-veg bg-veg/5 ring-1 ring-veg/20"
+                      : `border-transparent bg-card shadow-sm ${!pastCutoff ? "hover:border-veg/30" : ""}`
                     }`}
                 >
                   <RadioGroupItem
@@ -264,12 +299,12 @@ export function MenuScreen({
 
                 <Label
                   htmlFor="nonveg"
-                  className={`flex items-center gap-3.5 rounded-lg border p-4 transition-colors ${!nonvegAvailable || pastCutoff
+                  className={`group relative flex items-start gap-4 rounded-xl border-2 p-5 transition-all outline-none ${!nonvegAvailable || pastCutoff
                     ? "cursor-not-allowed opacity-50"
-                    : "cursor-pointer"
+                    : "cursor-pointer hover:shadow-md"
                     } ${selected === "NONVEG"
-                      ? "border-primary/40 bg-accent/10"
-                      : "border-border bg-card " + (!pastCutoff && nonvegAvailable ? "hover:bg-secondary" : "")
+                      ? "border-nonveg bg-nonveg/5 ring-1 ring-nonveg/20"
+                      : `border-transparent bg-card shadow-sm ${(!pastCutoff && nonvegAvailable) ? "hover:border-nonveg/30" : ""}`
                     }`}
                 >
                   <RadioGroupItem
@@ -303,7 +338,6 @@ export function MenuScreen({
                   </div>
                 </Label>
               </RadioGroup>
-              <Separator />
 
               {menu?.notes && (
                 <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-3">

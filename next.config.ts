@@ -2,14 +2,11 @@ import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
     reactStrictMode: true,
-
     poweredByHeader: false,
     compress: true,
     generateEtags: true,
 
     serverExternalPackages: ["bcryptjs", "exceljs"],
-
-
 
     typescript: {
         ignoreBuildErrors: false,
@@ -112,6 +109,9 @@ const nextConfig: NextConfig = {
     },
 
     async redirects() {
+        if (process.env.NODE_ENV === "development") {
+            return []
+        }
         return [
             {
                 source: "/ops",
@@ -129,4 +129,9 @@ const nextConfig: NextConfig = {
     },
 }
 
-export default nextConfig
+export default async function config() {
+    const withBundleAnalyzer = (await import("@next/bundle-analyzer")).default({
+        enabled: process.env.ANALYZE === "true",
+    })
+    return withBundleAnalyzer(nextConfig)
+}
