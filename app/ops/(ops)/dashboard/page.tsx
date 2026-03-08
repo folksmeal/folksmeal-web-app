@@ -5,13 +5,27 @@ import { OpsDashboard } from "@/components/ops/ops-dashboard"
 
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
 
-export default async function OpsDashboardPage() {
+export default async function OpsDashboardPage({ searchParams }: { searchParams: Promise<{ date?: string, status?: string, page?: string }> }) {
     const session = await auth()
     if (!session?.user) return null
 
     const sessionUser = session.user
     const timezone = (sessionUser.locationTimezone as string) || "Asia/Kolkata"
-    const targetDate = getTomorrowMidnightInTimezone(timezone)
+
+    const params = await searchParams
+    let targetDate: Date;
+    if (params.date) {
+        targetDate = new Date(`${params.date}T00:00:00Z`);
+        if (isNaN(targetDate.getTime())) {
+            targetDate = getTomorrowMidnightInTimezone(timezone)
+        }
+    } else {
+        targetDate = getTomorrowMidnightInTimezone(timezone)
+    }
+
+    const statusParam = params.status || "all"
+    const page = Math.max(1, parseInt(params.page || "1"))
+    const limit = 15
 
     const effectiveAddressId = await getEffectiveAddressId(sessionUser)
 
@@ -73,6 +87,19 @@ export default async function OpsDashboardPage() {
         updatedAt: "",
     }))
 
+    const allRows = [...selectionRows, ...noSelectionRows]
+
+    const filteredRows = allRows.filter((row) => {
+        if (statusParam === "all") return true
+        if (statusParam === "opted_in") return row.status === "OPT_IN"
+        if (statusParam === "opted_out") return row.status === "OPT_OUT"
+        if (statusParam === "no_selection") return row.status === "NO_SELECTION"
+        return true
+    })
+
+    const totalRows = filteredRows.length
+    const paginatedRows = filteredRows.slice((page - 1) * limit, page * limit)
+
     let companyName = "Select Company"
     if (sessionUser.companyName && sessionUser.addressCity) {
         companyName = `${sessionUser.companyName} - ${sessionUser.addressCity}`
@@ -91,7 +118,8 @@ export default async function OpsDashboardPage() {
             userName={sessionUser.name || "Admin"}
             companyName={companyName}
             initialDate={targetDate.toISOString().split("T")[0]}
-            initialRows={[...selectionRows, ...noSelectionRows]}
+            initialRows={paginatedRows}
+            totalRows={totalRows}
             initialStats={stats}
         />
     )

@@ -42,25 +42,34 @@ const updateAddressSchema = z.object({
     workingDays: z.array(z.number().int().min(0).max(6)).optional(),
 })
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
         if (!user) return apiError("Forbidden", 403)
 
-        const companies = await prisma.company.findMany({
-            include: {
-                addresses: { orderBy: { city: "asc" } },
-                _count: { select: { employees: true } },
-            },
-            orderBy: { name: "asc" },
-        })
+        const { searchParams } = new URL(request.url)
+        const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
+        const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "5")))
+        const skip = (page - 1) * limit
+
+        const [companies, total] = await Promise.all([
+            prisma.company.findMany({
+                include: {
+                    addresses: { orderBy: { city: "asc" } },
+                    _count: { select: { employees: true } },
+                },
+                orderBy: { name: "asc" },
+                skip,
+                take: limit,
+            }),
+            prisma.company.count()
+        ])
 
         return apiResponse({
             companies: companies.map((c) => ({
                 id: c.id,
                 name: c.name,
                 domain: c.domain,
-                icon: c.icon,
                 employeeCount: c._count.employees,
                 addresses: c.addresses.map((a) => ({
                     id: a.id,
@@ -72,6 +81,12 @@ export async function GET() {
                     workingDays: a.workingDays,
                 })),
             })),
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
         })
     })
 }

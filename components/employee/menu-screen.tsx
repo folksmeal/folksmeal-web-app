@@ -122,7 +122,7 @@ export function MenuScreen({
             <div className="h-8 w-px bg-border max-sm:hidden" />
             <div className="hidden h-10 items-center gap-2.5 rounded-xl border border-input bg-card px-4 sm:flex">
               {companyIcon ? (
-                <img src={companyIcon} alt={companyName} className="h-5 w-5 object-contain" />
+                <Image src={companyIcon} alt={companyName} width={20} height={20} className="h-5 w-5 object-contain" />
               ) : (
                 <Building className="h-4 w-4 text-muted-foreground" />
               )}
@@ -143,7 +143,7 @@ export function MenuScreen({
         <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
           <div className="flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-input bg-card px-4">
             {companyIcon ? (
-              <img src={companyIcon} alt={companyName} className="h-5 w-5 object-contain" />
+              <Image src={companyIcon} alt={companyName} width={20} height={20} className="h-5 w-5 object-contain" />
             ) : (
               <Building className="h-4 w-4 text-muted-foreground" />
             )}

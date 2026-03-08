@@ -28,6 +28,7 @@ interface UploadResult {
 }
 
 export function MenuUploader({ addressId, onClose }: MenuUploaderProps) {
+    const { data: session } = useSession()
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [uploading, setUploading] = useState(false)

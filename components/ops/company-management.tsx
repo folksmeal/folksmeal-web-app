@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog"
 import { Plus, Pencil, Trash2, Loader2, Building2, MapPin } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
 import { PaginationFooter } from "@/components/ops/pagination-footer"
 
 interface Address {
@@ -23,7 +22,6 @@ interface Company {
     id: string
     name: string
     domain: string | null
-    icon: string | null
     employeeCount: number
     addresses: Address[]
 }
@@ -32,20 +30,43 @@ import { fetcher } from "@/lib/fetcher"
 
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-export function CompanyManagement() {
-    const { data, mutate, isLoading } = useSWR<{ companies: Company[] }>("/api/ops/companies", fetcher)
-    const companies: Company[] = data?.companies ?? []
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
+
+export function CompanyManagement({ initialCompanies, totalCompanies }: { initialCompanies: Company[], totalCompanies: number }) {
+    const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+
+    const pageParam = parseInt(searchParams.get("page") || "1")
+    const page = Math.max(1, pageParam)
+    const itemsPerPage = 5
+
+    const query = new URLSearchParams()
+    query.set("page", page.toString())
+    query.set("limit", itemsPerPage.toString())
+
+    const { data, mutate } = useSWR<{ companies: Company[], pagination?: { total: number } }>(
+        `/api/ops/companies?${query.toString()}`,
+        fetcher,
+        { fallbackData: { companies: initialCompanies, pagination: { total: totalCompanies } } }
+    )
+
+    const companies: Company[] = data?.companies ?? initialCompanies
+    const finalTotalCompanies = data?.pagination?.total ?? totalCompanies
+
     const [companyDialogOpen, setCompanyDialogOpen] = useState(false)
     const [editingCompany, setEditingCompany] = useState<Company | null>(null)
     const [addressDialogOpen, setAddressDialogOpen] = useState(false)
     const [editingAddress, setEditingAddress] = useState<{ address: Address; companyId: string } | null>(null)
     const [addAddressCompanyId, setAddAddressCompanyId] = useState<string | null>(null)
 
-    const [page, setPage] = useState(1)
-    const itemsPerPage = 5
+    const totalPages = Math.ceil(finalTotalCompanies / itemsPerPage)
 
-    const totalPages = Math.ceil(companies.length / itemsPerPage)
-    const paginatedCompanies = companies.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+    const handlePageChange = (newPage: number) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set("page", newPage.toString())
+        router.push(`${pathname}?${params.toString()}`, { scroll: false })
+    }
 
     return (
         <div className="flex flex-col flex-1 gap-6 min-h-0">
@@ -79,26 +100,18 @@ export function CompanyManagement() {
                 </DialogContent>
             </Dialog>
 
-            {isLoading ? (
-                <div className="space-y-4 overflow-auto flex-1">
-                    {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 w-full shrink-0" />)}
-                </div>
-            ) : companies.length === 0 ? (
+            {companies.length === 0 ? (
                 <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground flex-1">
                     No companies found
                 </div>
             ) : (
                 <div className="flex flex-col flex-1 min-h-0 rounded-lg border border-border bg-card overflow-hidden">
                     <div className="overflow-auto flex-1 flex flex-col bg-muted/30">
-                        {paginatedCompanies.map((company) => (
+                        {companies.map((company) => (
                             <div key={company.id} className="border-b border-border bg-card last:border-b-0">
                                 <div className="flex items-center justify-between border-b border-border px-5 py-4 shrink-0">
                                     <div className="flex items-center gap-3">
-                                        {company.icon ? (
-                                            <img src={company.icon} alt={company.name} className="h-5 w-5 object-contain" />
-                                        ) : (
-                                            <Building2 className="h-5 w-5 text-primary" />
-                                        )}
+                                        <Building2 className="h-5 w-5 text-primary" />
                                         <div>
                                             <p className="font-semibold text-foreground">{company.name}</p>
                                             <p className="text-xs text-muted-foreground">
@@ -145,8 +158,8 @@ export function CompanyManagement() {
                     <PaginationFooter
                         page={page}
                         totalPages={totalPages}
-                        onPageChange={setPage}
-                        totalItems={companies.length}
+                        onPageChange={handlePageChange}
+                        totalItems={finalTotalCompanies}
                     />
                 </div>
             )}
@@ -189,7 +202,6 @@ function DeleteAddressButton({ id, onDelete }: { id: string; onDelete: () => voi
 function CompanyForm({ company, onSuccess }: { company: Company | null; onSuccess: () => void }) {
     const [name, setName] = useState(company?.name ?? "")
     const [domain, setDomain] = useState(company?.domain ?? "")
-    const [icon, setIcon] = useState(company?.icon ?? "")
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState("")
 
@@ -197,7 +209,7 @@ function CompanyForm({ company, onSuccess }: { company: Company | null; onSucces
         e.preventDefault()
         setSubmitting(true)
         setError("")
-        const body: Record<string, unknown> = { name, domain: domain || undefined, icon: icon || undefined }
+        const body: Record<string, unknown> = { name, domain: domain || undefined }
         if (company) body.id = company.id
         const res = await fetch("/api/ops/companies", { method: company ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
         if (res.ok) onSuccess()
@@ -209,44 +221,12 @@ function CompanyForm({ company, onSuccess }: { company: Company | null; onSucces
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2"><Label>Company Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} required /></div>
             <div className="flex flex-col gap-2"><Label>Domain (optional)</Label><Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="example.com" /></div>
-            <div className="flex flex-col gap-2">
-                <Label>Company Logo (Image)</Label>
-                <div className="flex items-center gap-4">
-                    {icon && (
-                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border bg-white flex items-center justify-center p-1">
-                            <img src={icon} alt="Preview" className="h-full w-full object-contain" />
-                        </div>
-                    )}
-                    <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            if (file) {
-                                if (file.size > 2 * 1024 * 1024) {
-                                    setError("Image must be smaller than 2MB")
-                                    return
-                                }
-                                const reader = new FileReader()
-                                reader.onloadend = () => setIcon(reader.result as string)
-                                reader.readAsDataURL(file)
-                            }
-                        }}
-                        className="flex-1 cursor-pointer"
-                    />
-                    {icon && (
-                        <Button type="button" variant="outline" size="sm" onClick={() => setIcon("")}>
-                            Remove
-                        </Button>
-                    )}
-                </div>
-            </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2 justify-end">
                 <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
                 <Button type="submit" disabled={submitting}>{submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{company ? "Update" : "Create"}</Button>
             </div>
-        </form>
+        </form >
     )
 }
 

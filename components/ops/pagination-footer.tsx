@@ -5,8 +5,8 @@ import Link from "next/link"
 interface PaginationFooterProps {
     page: number
     totalPages: number
-    onPageChange?: (page: number) => void
-    hrefBuilder?: (page: number) => string
+    onPageChange?: (_page: number) => void
+    hrefBuilder?: (_page: number) => string
     totalItems?: number
 }
 

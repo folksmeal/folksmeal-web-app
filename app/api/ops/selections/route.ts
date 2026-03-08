@@ -11,6 +11,9 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url)
         const dateParam = searchParams.get("date")
+        const statusParam = searchParams.get("status") || "all"
+        const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
+        const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "15")))
 
         const queryAddressId = searchParams.get("addressId")
         const effectiveAddressId = queryAddressId || await getEffectiveAddressId(user)
@@ -88,10 +91,30 @@ export async function GET(request: NextRequest) {
             updatedAt: "",
         }))
 
+        const allRows = [...selectionRows, ...noSelectionRows]
+
+        const filteredRows = allRows.filter((row) => {
+            if (statusParam === "all") return true
+            if (statusParam === "opted_in") return row.status === "OPT_IN"
+            if (statusParam === "opted_out") return row.status === "OPT_OUT"
+            if (statusParam === "no_selection") return row.status === "NO_SELECTION"
+            return true
+        })
+
+        const total = filteredRows.length
+        const totalPages = Math.ceil(total / limit)
+        const paginatedRows = filteredRows.slice((page - 1) * limit, page * limit)
+
         return apiResponse({
             date: dateStr,
             stats,
-            rows: [...selectionRows, ...noSelectionRows],
+            rows: paginatedRows,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages,
+            }
         })
     })
 }

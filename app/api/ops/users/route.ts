@@ -16,14 +16,35 @@ const createUserSchema = z.object({
     password: z.string().min(6, "Password must be at least 6 characters"),
 })
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
         if (!user) return apiError("Forbidden", 403)
 
-        const users = await prisma.user.findMany({
-            orderBy: { name: "asc" },
-        })
+        const { searchParams } = new URL(request.url)
+        const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
+        const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "15")))
+        const skip = (page - 1) * limit
+        const search = searchParams.get("search") || ""
+
+        const where = {
+            ...(search ? {
+                OR: [
+                    { name: { contains: search, mode: "insensitive" as const } },
+                    { email: { contains: search, mode: "insensitive" as const } }
+                ]
+            } : {})
+        }
+
+        const [users, total] = await Promise.all([
+            prisma.user.findMany({
+                where,
+                orderBy: { name: "asc" },
+                skip,
+                take: limit,
+            }),
+            prisma.user.count({ where })
+        ])
 
         return apiResponse({
             users: users.map((u) => ({
@@ -32,6 +53,12 @@ export async function GET() {
                 email: u.email,
                 createdAt: u.createdAt.toISOString(),
             })),
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
         })
     })
 }

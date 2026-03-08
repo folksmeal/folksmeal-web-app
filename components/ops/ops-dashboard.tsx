@@ -1,5 +1,5 @@
 "use client"
-import { useState, useCallback } from "react"
+import { useCallback } from "react"
 import useSWR from "swr"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -52,6 +52,7 @@ interface OpsDashboardProps {
     companyName: string
     initialDate: string
     initialRows: SelectionRow[]
+    totalRows: number
     initialStats: Stats
 }
 
@@ -61,23 +62,36 @@ const emptyStats: Stats = { total: 0, optedIn: 0, optedOut: 0, vegCount: 0, nonv
 
 import { fetcher } from "@/lib/fetcher"
 
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
+
 export function OpsDashboard({
     initialDate,
     initialRows,
+    totalRows,
     initialStats,
 }: OpsDashboardProps) {
-    const [date, setDate] = useState(initialDate)
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
-    const [page, setPage] = useState(1)
+    const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+
+    const dateParam = searchParams.get("date")
+    const date = dateParam || initialDate
+
+    const statusFilter = (searchParams.get("status") || "all") as StatusFilter
+    const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1"))
     const itemsPerPage = 15
 
-    const { data, error, isLoading } = useSWR<{ rows: SelectionRow[]; stats: Stats }>(
-        `/api/ops/selections?date=${date}`,
+    const query = new URLSearchParams()
+    query.set("date", date)
+    query.set("status", statusFilter)
+    query.set("page", pageParam.toString())
+    query.set("limit", itemsPerPage.toString())
+
+    const { data, error, isLoading } = useSWR<{ rows: SelectionRow[]; stats: Stats; pagination?: { total: number } }>(
+        `/api/ops/selections?${query.toString()}`,
         fetcher,
         {
-            fallbackData: date === initialDate
-                ? { rows: initialRows, stats: initialStats }
-                : undefined,
+            fallbackData: { rows: initialRows, stats: initialStats, pagination: { total: totalRows } },
             refreshInterval: 10000,
             revalidateOnFocus: true,
         }
@@ -87,24 +101,31 @@ export function OpsDashboard({
     const stats: Stats = data?.stats ?? emptyStats
     const showSkeletons = !data && isLoading
 
-    const filteredRows = rows.filter((row) => {
-        if (statusFilter === "all") return true
-        if (statusFilter === "opted_in") return row.status === "OPT_IN"
-        if (statusFilter === "opted_out") return row.status === "OPT_OUT"
-        if (statusFilter === "no_selection") return row.status === "NO_SELECTION"
-        return true
-    })
+    const totalCount = data?.pagination?.total ?? totalRows
+    const totalPages = Math.ceil(totalCount / itemsPerPage)
 
-    const totalPages = Math.ceil(filteredRows.length / itemsPerPage)
-    const paginatedRows = filteredRows.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+    const handleDateChange = (newDate: string) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set("date", newDate)
+        params.set("page", "1")
+        router.push(`${pathname}?${params.toString()}`)
+    }
 
-    // Reset page on filter/date change
-    useCallback(() => {
-        setPage(1)
-    }, [statusFilter, date])
+    const handleStatusChange = (newStatus: StatusFilter) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set("status", newStatus)
+        params.set("page", "1")
+        router.push(`${pathname}?${params.toString()}`)
+    }
+
+    const handlePageChange = (p: number) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set("page", p.toString())
+        router.push(`${pathname}?${params.toString()}`)
+    }
 
     const handleExportCSV = useCallback(() => {
-        if (!filteredRows.length) return
+        if (!rows.length) return
         const headers = [
             "Employee Name",
             "Employee ID",
@@ -114,7 +135,7 @@ export function OpsDashboard({
             "Date",
             "Last Updated",
         ]
-        const csvRows = filteredRows.map((r) => [
+        const csvRows = rows.map((r) => [
             r.employeeName,
             r.employeeCode,
             r.company,
@@ -145,7 +166,7 @@ export function OpsDashboard({
         a.download = `folksmeal-prep-sheet-${date}.csv`
         a.click()
         URL.revokeObjectURL(url)
-    }, [filteredRows, stats, date])
+    }, [rows, stats, date])
 
     const filterOptions: { value: StatusFilter; label: string }[] = [
         { value: "all", label: "All Employees" },
@@ -179,7 +200,7 @@ export function OpsDashboard({
                                     if (val) {
                                         const d = new Date(val)
                                         d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
-                                        setDate(d.toISOString().split("T")[0])
+                                        handleDateChange(d.toISOString().split("T")[0])
                                     }
                                 }}
                                 initialFocus
@@ -191,7 +212,7 @@ export function OpsDashboard({
                 <div className="flex items-center gap-2">
                     <Button
                         onClick={handleExportCSV}
-                        disabled={!filteredRows.length}
+                        disabled={!rows.length}
                     >
                         <Download className="h-3.5 w-3.5" />
                         Export CSV
@@ -245,7 +266,7 @@ export function OpsDashboard({
                 </div>
                 <Select
                     value={statusFilter}
-                    onValueChange={(val) => setStatusFilter(val as StatusFilter)}
+                    onValueChange={(val) => handleStatusChange(val as StatusFilter)}
                 >
                     <SelectTrigger className="h-9 w-[180px] bg-card rounded-lg border-border">
                         <SelectValue placeholder="Select status" />
@@ -297,7 +318,7 @@ export function OpsDashboard({
                                         <td className="px-4 py-4"><Skeleton className="h-4 w-24" /></td>
                                     </tr>
                                 ))
-                            ) : filteredRows.length === 0 ? (
+                            ) : rows.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan={6}
@@ -307,7 +328,7 @@ export function OpsDashboard({
                                     </td>
                                 </tr>
                             ) : (
-                                paginatedRows.map((row, i) => (
+                                rows.map((row, i) => (
                                     <tr
                                         key={i}
                                         className="transition-colors hover:bg-muted/30"
@@ -367,10 +388,10 @@ export function OpsDashboard({
                     </table>
                 </div>
                 <PaginationFooter
-                    page={page}
+                    page={pageParam}
                     totalPages={totalPages}
-                    onPageChange={setPage}
-                    totalItems={filteredRows.length}
+                    onPageChange={handlePageChange}
+                    totalItems={totalCount}
                 />
             </div>
         </div>

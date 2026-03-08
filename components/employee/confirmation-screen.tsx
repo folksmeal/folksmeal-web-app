@@ -175,7 +175,7 @@ export function ConfirmationScreen({
             <div className="h-8 w-px bg-border max-sm:hidden" />
             <div className="hidden h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 sm:flex">
               {companyIcon ? (
-                <img src={companyIcon} alt={companyName} className="h-4 w-4 object-contain" />
+                <Image src={companyIcon} alt={companyName} width={16} height={16} className="h-4 w-4 object-contain" />
               ) : (
                 <Building className="h-4 w-4 text-primary" />
               )}
@@ -196,7 +196,7 @@ export function ConfirmationScreen({
         <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
           <div className="flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-primary/10 px-4">
             {companyIcon ? (
-              <img src={companyIcon} alt={companyName} className="h-4 w-4 object-contain" />
+              <Image src={companyIcon} alt={companyName} width={16} height={16} className="h-4 w-4 object-contain" />
             ) : (
               <Building className="h-4 w-4 text-primary" />
             )}

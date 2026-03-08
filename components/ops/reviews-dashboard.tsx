@@ -1,13 +1,10 @@
 "use client"
-import { useState } from "react"
 import useSWR from "swr"
 import { Star, MessageSquare } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { format, parseISO } from "date-fns"
 import { cn } from "@/lib/utils"
 import { PaginationFooter } from "@/components/ops/pagination-footer"
-import { useEffect } from "react"
 
 interface Review {
     id: string
@@ -24,26 +21,48 @@ interface ReviewsData {
     totalRatings: number
     distribution: { star: number; count: number }[]
     reviews: Review[]
+    pagination?: { total: number }
 }
 
 import { fetcher } from "@/lib/fetcher"
 
-export function ReviewsDashboard() {
-    const [days, setDays] = useState(30)
-    const { data, isLoading } = useSWR<ReviewsData>(`/api/ops/reviews?days=${days}`, fetcher)
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 
-    const [page, setPage] = useState(1)
+export function ReviewsDashboard({ initialDays, initialData }: { initialDays: number; initialData: ReviewsData }) {
+    const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+
+    const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1"))
     const itemsPerPage = 15
 
-    const reviews = data?.reviews ?? []
-    const totalPages = Math.ceil(reviews.length / itemsPerPage)
-    const paginatedReviews = reviews.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+    const query = new URLSearchParams()
+    query.set("days", initialDays.toString())
+    query.set("page", pageParam.toString())
+    query.set("limit", itemsPerPage.toString())
 
-    useEffect(() => {
-        setPage(1)
-    }, [days])
+    const { data } = useSWR<ReviewsData>(`/api/ops/reviews?${query.toString()}`, fetcher, { fallbackData: initialData })
+
+    const reviews = data?.reviews ?? []
+
+    // Total pages logic must use backend total, not reviews array length
+    const totalCount = data?.pagination?.total ?? initialData.totalRatings
+    const totalPages = Math.ceil(totalCount / itemsPerPage)
 
     const maxCount = data ? Math.max(...data.distribution.map(d => d.count), 1) : 1
+
+    const handleDaysChange = (d: number) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set("days", d.toString())
+        params.set("page", "1") // Reset page on filter change
+        router.push(`${pathname}?${params.toString()}`)
+    }
+
+    const handlePageChange = (p: number) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set("page", p.toString())
+        router.push(`${pathname}?${params.toString()}`)
+    }
 
     return (
         <div className="flex flex-col flex-1 gap-6 min-h-0">
@@ -55,10 +74,10 @@ export function ReviewsDashboard() {
                     {[7, 30, 90].map((d) => (
                         <Button
                             key={d}
-                            variant={days === d ? "default" : "outline"}
+                            variant={initialDays === d ? "default" : "outline"}
                             size="sm"
                             className="rounded-full text-xs"
-                            onClick={() => setDays(d)}
+                            onClick={() => handleDaysChange(d)}
                         >
                             {d} days
                         </Button>
@@ -68,42 +87,32 @@ export function ReviewsDashboard() {
 
             <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-lg border border-border bg-card p-6 flex flex-col items-center justify-center gap-2">
-                    {isLoading ? (
-                        <Skeleton className="h-12 w-20" />
-                    ) : (
-                        <>
-                            <div className="flex items-center gap-2">
-                                <Star className="h-8 w-8 fill-amber-400 text-amber-400" />
-                                <span className="text-4xl font-bold text-foreground">{data?.averageRating ?? 0}</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{data?.totalRatings ?? 0} ratings</p>
-                        </>
-                    )}
+                    <div className="flex items-center gap-2">
+                        <Star className="h-8 w-8 fill-amber-400 text-amber-400" />
+                        <span className="text-4xl font-bold text-foreground">{data?.averageRating ?? 0}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{data?.totalRatings ?? 0} ratings</p>
                 </div>
 
                 <div className="rounded-lg border border-border bg-card p-6">
                     <p className="text-sm font-medium text-foreground mb-3">Rating Distribution</p>
-                    {isLoading ? (
-                        <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-4 w-full" />)}</div>
-                    ) : (
-                        <div className="space-y-2">
-                            {[5, 4, 3, 2, 1].map((star) => {
-                                const entry = data?.distribution.find(d => d.star === star)
-                                const count = entry?.count ?? 0
-                                const pct = maxCount > 0 ? (count / maxCount) * 100 : 0
-                                return (
-                                    <div key={star} className="flex items-center gap-2">
-                                        <span className="w-3 text-xs text-muted-foreground">{star}</span>
-                                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                                            <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${pct}%` }} />
-                                        </div>
-                                        <span className="w-6 text-right text-xs text-muted-foreground">{count}</span>
+                    <div className="space-y-2">
+                        {[5, 4, 3, 2, 1].map((star) => {
+                            const entry = data?.distribution.find(d => d.star === star)
+                            const count = entry?.count ?? 0
+                            const pct = maxCount > 0 ? (count / maxCount) * 100 : 0
+                            return (
+                                <div key={star} className="flex items-center gap-2">
+                                    <span className="w-3 text-xs text-muted-foreground">{star}</span>
+                                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                                    <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                                        <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${pct}%` }} />
                                     </div>
-                                )
-                            })}
-                        </div>
-                    )}
+                                    <span className="w-6 text-right text-xs text-muted-foreground">{count}</span>
+                                </div>
+                            )
+                        })}
+                    </div>
                 </div>
             </div>
 
@@ -112,14 +121,10 @@ export function ReviewsDashboard() {
                     <p className="text-sm font-medium text-foreground">Recent Reviews</p>
                 </div>
                 <div className="divide-y divide-border overflow-auto flex-1">
-                    {isLoading ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                            <div key={i} className="px-5 py-4"><Skeleton className="h-4 w-full" /></div>
-                        ))
-                    ) : !data?.reviews.length ? (
+                    {!data?.reviews.length ? (
                         <div className="px-5 py-12 text-center text-sm text-muted-foreground">No reviews yet</div>
                     ) : (
-                        paginatedReviews.map((review) => (
+                        reviews.map((review: Review) => (
                             <div key={review.id} className="px-5 py-4 hover:bg-muted/30 transition-colors">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
@@ -146,10 +151,10 @@ export function ReviewsDashboard() {
                     )}
                 </div>
                 <PaginationFooter
-                    page={page}
+                    page={pageParam}
                     totalPages={totalPages}
-                    onPageChange={setPage}
-                    totalItems={reviews.length}
+                    onPageChange={handlePageChange}
+                    totalItems={totalCount}
                 />
             </div>
         </div>
