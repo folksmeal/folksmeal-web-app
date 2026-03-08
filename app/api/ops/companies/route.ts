@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
             companies: companies.map((c) => ({
                 id: c.id,
                 name: c.name,
+                icon: c.icon,
                 domain: c.domain,
                 employeeCount: c._count.employees,
                 addresses: c.addresses.map((a) => ({

@@ -1,5 +1,6 @@
 "use client"
 import { useState, useRef, useCallback, useEffect } from "react"
+import Image from "next/image"
 import useSWRInfinite from "swr/infinite"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -149,7 +150,19 @@ export function CompanyManagement({ initialCompanies, totalCompanies }: { initia
                         <div key={company.id} className="rounded-lg border border-border bg-card overflow-hidden">
                             <div className="flex items-center justify-between border-b border-border px-5 py-4">
                                 <div className="flex items-center gap-3">
-                                    <Building2 className="h-5 w-5 text-primary" />
+                                    <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/50 overflow-hidden">
+                                        {company.icon ? (
+                                            <Image
+                                                src={company.icon}
+                                                alt={company.name}
+                                                width={40}
+                                                height={40}
+                                                className="h-full w-full object-contain p-1"
+                                            />
+                                        ) : (
+                                            <Building2 className="h-5 w-5 text-primary" />
+                                        )}
+                                    </div>
                                     <div>
                                         <p className="font-semibold text-foreground">{company.name}</p>
                                         <p className="text-xs text-muted-foreground">
@@ -299,10 +312,17 @@ function CompanyForm({ company, onSuccess }: { company: Company | null; onSucces
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/50 transition-colors hover:border-primary/40 hover:bg-muted overflow-hidden"
+                        className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/50 transition-colors hover:border-primary/40 hover:bg-muted overflow-hidden"
                     >
                         {iconPreview ? (
-                            <img src={iconPreview} alt="Icon" className="h-full w-full object-contain p-1" />
+                            <Image
+                                src={iconPreview}
+                                alt="Icon"
+                                width={64}
+                                height={64}
+                                className="h-full w-full object-contain p-1"
+                                unoptimized
+                            />
                         ) : (
                             <Building2 className="h-6 w-6 text-muted-foreground" />
                         )}
