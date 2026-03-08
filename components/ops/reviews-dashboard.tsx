@@ -65,7 +65,7 @@ export function ReviewsDashboard({ initialDays, initialData }: { initialDays: nu
     }
 
     return (
-        <div className="flex flex-col flex-1 gap-6 min-h-0">
+        <div className="flex flex-col h-full gap-6 overflow-hidden">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
                 <h1 className="text-lg font-semibold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
                     Meal Reviews
@@ -75,8 +75,7 @@ export function ReviewsDashboard({ initialDays, initialData }: { initialDays: nu
                         <Button
                             key={d}
                             variant={initialDays === d ? "default" : "outline"}
-                            size="sm"
-                            className="rounded-full text-xs"
+                            className="rounded-full h-10 px-6 text-xs"
                             onClick={() => handleDaysChange(d)}
                         >
                             {d} days
@@ -116,46 +115,50 @@ export function ReviewsDashboard({ initialDays, initialData }: { initialDays: nu
                 </div>
             </div>
 
-            <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden shrink-0">
-                <div className="overflow-auto flex-1">
-                    <table className="w-full text-sm relative">
-                        <thead className="sticky top-0 bg-slate-50 z-10">
-                            <tr className="border-b border-border">
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Employee</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Rating</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Comment</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Date</th>
+            <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="shrink-0 border-b border-border bg-slate-50">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[25%]">Employee</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[20%]">Rating</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[40%]">Comment</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Date</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-border">
+                    </table>
+                </div>
+                <div className="overflow-auto flex-1">
+                    <table className="w-full text-sm table-fixed">
+                        <tbody>
                             {!data?.reviews.length ? (
                                 <tr><td colSpan={4} className="px-4 py-12 text-center text-sm text-muted-foreground">No reviews yet</td></tr>
                             ) : (
-                                reviews.map((review: Review) => (
-                                    <tr key={review.id} className="transition-colors hover:bg-muted/30">
-                                        <td className="whitespace-nowrap px-4 py-3">
-                                            <p className="font-medium text-foreground">{review.employeeName}</p>
-                                            <p className="text-xs text-muted-foreground">{review.employeeCode}</p>
+                                reviews.map((review: Review, i: number) => (
+                                    <tr key={review.id} className="transition-colors hover:bg-muted/30 border-b border-border">
+                                        <td className="truncate px-4 py-3 w-[25%]">
+                                            <p className="font-medium text-foreground truncate">{review.employeeName}</p>
+                                            <p className="text-[10px] text-muted-foreground truncate">{review.employeeCode}</p>
                                         </td>
-                                        <td className="whitespace-nowrap px-4 py-3">
+                                        <td className="whitespace-nowrap px-4 py-3 w-[20%]">
                                             <div className="flex items-center gap-1">
                                                 {[1, 2, 3, 4, 5].map((s) => (
-                                                    <Star key={s} className={cn("h-3.5 w-3.5", s <= review.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30")} />
+                                                    <Star key={s} className={cn("h-3 w-3", s <= review.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20")} />
                                                 ))}
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3 max-w-xs">
+                                        <td className="px-4 py-3 w-[40%]">
                                             {review.comment ? (
                                                 <div className="flex items-start gap-2">
-                                                    <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                                                    <p className="text-sm text-muted-foreground truncate">{review.comment}</p>
+                                                    <MessageSquare className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/70" />
+                                                    <p className="text-xs text-muted-foreground truncate">{review.comment}</p>
                                                 </div>
                                             ) : (
-                                                <span className="text-xs text-muted-foreground/50">—</span>
+                                                <span className="text-[10px] text-muted-foreground/40">—</span>
                                             )}
                                         </td>
-                                        <td className="whitespace-nowrap px-4 py-3 text-muted-foreground text-xs">
-                                            {format(parseISO(review.date), "dd MMM yyyy")}
+                                        <td className="truncate px-4 py-3 text-muted-foreground text-[11px] w-[15%]">
+                                            {format(parseISO(review.date), "EEE, dd MMM yyyy")}
                                         </td>
                                     </tr>
                                 ))
@@ -163,12 +166,14 @@ export function ReviewsDashboard({ initialDays, initialData }: { initialDays: nu
                         </tbody>
                     </table>
                 </div>
-                <PaginationFooter
-                    page={pageParam}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    totalItems={totalCount}
-                />
+                <div className="shrink-0 border-t border-border bg-card">
+                    <PaginationFooter
+                        page={pageParam}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                        totalItems={totalCount}
+                    />
+                </div>
             </div>
         </div>
     )

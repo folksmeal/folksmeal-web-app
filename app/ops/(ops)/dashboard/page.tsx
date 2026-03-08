@@ -29,7 +29,6 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
 
     const effectiveAddressId = await getEffectiveAddressId(sessionUser)
 
-    // Safety check - though superadmin should always get one, a brand new DB might be empty
     const whereClauseAddress = effectiveAddressId ? { addressId: effectiveAddressId } : {}
 
     const [selections, allEmployees] = await Promise.all([

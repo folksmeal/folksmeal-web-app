@@ -176,7 +176,7 @@ export function OpsDashboard({
     ]
 
     return (
-        <div className="flex flex-col flex-1 gap-6 min-h-0">
+        <div className="flex flex-col h-full gap-6 overflow-hidden">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
                 <div className="flex items-center gap-3">
                     <Popover>
@@ -184,7 +184,7 @@ export function OpsDashboard({
                             <Button
                                 variant="outline"
                                 className={cn(
-                                    "w-[160px] justify-start text-left font-normal bg-card rounded-xl",
+                                    "h-10 w-40 justify-start text-left font-normal bg-card rounded-xl",
                                     !date && "text-muted-foreground"
                                 )}
                             >
@@ -214,7 +214,7 @@ export function OpsDashboard({
                         onClick={handleExportCSV}
                         disabled={!rows.length}
                     >
-                        <Download className="h-3.5 w-3.5" />
+                        <Download className="h-4 w-4 mr-2" />
                         Export CSV
                     </Button>
                 </div>
@@ -239,7 +239,7 @@ export function OpsDashboard({
                     { label: "Opted Out", icon: XCircle, color: "text-muted-foreground", value: stats.optedOut },
                     { label: "Missing Input", icon: AlertTriangle, color: "text-amber-500", value: stats.missingInput },
                 ].map((stat, i) => (
-                    <div key={i} className="rounded-lg border border-border bg-card p-4 h-[100px] flex flex-col justify-between">
+                    <div key={i} className="rounded-lg border border-border bg-card p-4 h-25 flex flex-col justify-between">
                         <div className="flex items-center gap-2">
                             <stat.icon className={cn("h-4 w-4", stat.color)} />
                             <p className="text-xs font-medium text-muted-foreground">
@@ -257,8 +257,6 @@ export function OpsDashboard({
                 ))}
             </div>
 
-            <Separator />
-
             <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 text-muted-foreground">
                     <Filter className="h-4 w-4" />
@@ -268,7 +266,7 @@ export function OpsDashboard({
                     value={statusFilter}
                     onValueChange={(val) => handleStatusChange(val as StatusFilter)}
                 >
-                    <SelectTrigger className="h-9 w-[180px] bg-card rounded-lg border-border">
+                    <SelectTrigger className="h-10 w-45 bg-card rounded-lg border-border">
                         <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -282,104 +280,70 @@ export function OpsDashboard({
             </div>
 
             <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
-                <div className="overflow-auto flex-1">
-                    <table className="w-full text-sm relative">
-                        <thead className="sticky top-0 bg-slate-50 z-10">
-                            <tr className="border-b border-border">
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                    Employee Name
-                                </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                    Employee ID
-                                </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                    Company
-                                </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                    Opt Status
-                                </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                    Veg/NonVeg
-                                </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                    Date
-                                </th>
+                <div className="shrink-0 border-b border-border bg-slate-50">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[20%]">Employee Name</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Employee ID</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Company</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Opt Status</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Veg/NonVeg</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[20%]">Date</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-border">
+                    </table>
+                </div>
+                <div className="overflow-auto flex-1">
+                    <table className="w-full text-sm table-fixed">
+                        <tbody>
                             {showSkeletons ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={`skeleton-${i}`} className="border-b border-border last:border-0">
-                                        <td className="px-4 py-4"><Skeleton className="h-4 w-32" /></td>
-                                        <td className="px-4 py-4"><Skeleton className="h-4 w-24" /></td>
-                                        <td className="px-4 py-4"><Skeleton className="h-4 w-40" /></td>
-                                        <td className="px-4 py-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
-                                        <td className="px-4 py-4"><Skeleton className="h-4 w-28" /></td>
-                                        <td className="px-4 py-4"><Skeleton className="h-4 w-24" /></td>
+                                        <td className="px-4 py-4 w-[20%]"><Skeleton className="h-4 w-32" /></td>
+                                        <td className="px-4 py-4 w-[15%]"><Skeleton className="h-4 w-24" /></td>
+                                        <td className="px-4 py-4 w-[15%]"><Skeleton className="h-4 w-40" /></td>
+                                        <td className="px-4 py-4 w-[15%]"><Skeleton className="h-6 w-20 rounded-full" /></td>
+                                        <td className="px-4 py-4 w-[15%]"><Skeleton className="h-4 w-28" /></td>
+                                        <td className="px-4 py-4 w-[20%]"><Skeleton className="h-4 w-24" /></td>
                                     </tr>
                                 ))
                             ) : rows.length === 0 ? (
                                 <tr>
-                                    <td
-                                        colSpan={6}
-                                        className="px-4 py-12 text-center text-sm text-muted-foreground"
-                                    >
+                                    <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
                                         No employees found for {format(parseISO(date), "dd MMM yyyy")}
                                     </td>
                                 </tr>
                             ) : (
                                 rows.map((row, i) => (
-                                    <tr
-                                        key={i}
-                                        className="transition-colors hover:bg-muted/30"
-                                    >
-                                        <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground">
-                                            {row.employeeName}
-                                        </td>
-                                        <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                                            {row.employeeCode}
-                                        </td>
-                                        <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                                            {row.company}
-                                        </td>
-                                        <td className="whitespace-nowrap px-4 py-3">
-                                            <span
-                                                className={cn(
-                                                    "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                                                    row.status === "OPT_IN" && "bg-primary/10 text-primary",
-                                                    row.status === "OPT_OUT" && "bg-muted text-muted-foreground",
-                                                    row.status === "NO_SELECTION" && "bg-amber-500/10 text-amber-600"
-                                                )}
-                                            >
+                                    <tr key={i} className="transition-colors hover:bg-muted/30 border-b border-border">
+                                        <td className="truncate px-4 py-3 font-medium text-foreground w-[20%]">{row.employeeName}</td>
+                                        <td className="truncate px-4 py-3 text-muted-foreground w-[15%]">{row.employeeCode}</td>
+                                        <td className="truncate px-4 py-3 text-muted-foreground w-[15%]">{row.company}</td>
+                                        <td className="whitespace-nowrap px-4 py-3 w-[15%]">
+                                            <span className={cn(
+                                                "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
+                                                row.status === "OPT_IN" && "bg-primary/10 text-primary",
+                                                row.status === "OPT_OUT" && "bg-muted text-muted-foreground",
+                                                row.status === "NO_SELECTION" && "bg-amber-500/10 text-amber-600"
+                                            )}>
                                                 {row.status === "OPT_IN" ? "Opted In" : row.status === "OPT_OUT" ? "Opted Out" : "No Selection"}
                                             </span>
                                         </td>
-                                        <td className="whitespace-nowrap px-4 py-3">
+                                        <td className="whitespace-nowrap px-4 py-3 w-[15%]">
                                             {row.preference ? (
                                                 <div className="inline-flex items-center gap-2">
-                                                    <span
-                                                        className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 ${row.preference === "VEG"
-                                                            ? "border-veg"
-                                                            : "border-nonveg"
-                                                            }`}
-                                                    >
-                                                        <span
-                                                            className={`block h-2 w-2 rounded-full ${row.preference === "VEG"
-                                                                ? "bg-veg"
-                                                                : "bg-nonveg"
-                                                                }`}
-                                                        />
+                                                    <span className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border-2 ${row.preference === "VEG" ? "border-veg" : "border-nonveg"}`}>
+                                                        <span className={`block h-1.5 w-1.5 rounded-full ${row.preference === "VEG" ? "bg-veg" : "bg-nonveg"}`} />
                                                     </span>
-                                                    <span className="text-xs leading-none text-muted-foreground">
-                                                        {row.preference === "VEG" ? "Veg" : "Non-Veg"}
-                                                    </span>
+                                                    <span className="text-[11px] leading-none text-muted-foreground">{row.preference === "VEG" ? "Veg" : "Non-Veg"}</span>
                                                 </div>
                                             ) : (
-                                                <span className="text-xs text-muted-foreground">—</span>
+                                                <span className="text-xs text-muted-foreground/40">—</span>
                                             )}
                                         </td>
-                                        <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                                            {format(parseISO(row.date), "dd MMM yyyy")}
+                                        <td className="truncate px-4 py-3 text-muted-foreground text-[11px] w-[20%]">
+                                            {format(parseISO(row.date), "EEE, dd MMM yyyy")}
                                         </td>
                                     </tr>
                                 ))

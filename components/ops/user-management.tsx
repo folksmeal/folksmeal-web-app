@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PaginationFooter } from "@/components/ops/pagination-footer"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 
 interface Employee {
     id: string
@@ -98,6 +99,12 @@ export function UserManagement({
     const [empDialogOpen, setEmpDialogOpen] = useState(false)
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
     const [userDialogOpen, setUserDialogOpen] = useState(false)
+    const [editingUser, setEditingUser] = useState<User | null>(null)
+    const [activeTab, setActiveTab] = useState(tabParam)
+
+    useEffect(() => {
+        setActiveTab(tabParam)
+    }, [tabParam])
 
     // Debounce pushing search to URL
     useEffect(() => {
@@ -115,6 +122,7 @@ export function UserManagement({
     }, [searchInput, search, pathname, router, searchParams])
 
     const handleTabChange = (val: string) => {
+        setActiveTab(val)
         const params = new URLSearchParams(searchParams.toString())
         params.set("tab", val)
         router.replace(`${pathname}?${params.toString()}`, { scroll: false })
@@ -137,7 +145,7 @@ export function UserManagement({
     const totalAdminPages = Math.ceil(finalTotalUsers / itemsPerPage)
 
     return (
-        <div className="flex flex-col flex-1 gap-6 min-h-0">
+        <div className="flex flex-col h-full gap-6 overflow-hidden">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
                 <h1 className="text-lg font-semibold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
                     User Management
@@ -159,15 +167,15 @@ export function UserManagement({
                         </DialogContent>
                     </Dialog>
 
-                    <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
+                    <Dialog open={userDialogOpen} onOpenChange={(open) => { setUserDialogOpen(open); if (!open) setEditingUser(null) }}>
                         <DialogTrigger asChild>
                             <Button><Plus className="h-3.5 w-3.5 mr-2" /> Create User</Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-md">
                             <DialogHeader>
-                                <DialogTitle>Create Admin User</DialogTitle>
+                                <DialogTitle>{editingUser ? "Edit Admin User" : "Create Admin User"}</DialogTitle>
                             </DialogHeader>
-                            <UserForm onSuccess={() => { setUserDialogOpen(false); mutateUser() }} />
+                            <UserForm user={editingUser} onSuccess={() => { setUserDialogOpen(false); setEditingUser(null); mutateUser() }} />
                         </DialogContent>
                     </Dialog>
                 </div>
@@ -183,34 +191,58 @@ export function UserManagement({
                 />
             </div>
 
-            <Tabs value={tabParam} onValueChange={handleTabChange} className="w-full flex-1 flex flex-col min-h-0">
-                <TabsList className="mb-4 shrink-0">
-                    <TabsTrigger value="employees">Employees</TabsTrigger>
-                    <TabsTrigger value="admins">Admin Users</TabsTrigger>
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex-1 flex flex-col min-h-0">
+                <TabsList className="mb-4 shrink-0 relative p-1 bg-muted/60 rounded-full border border-border h-auto inline-flex self-start sm:w-75 w-full">
+                    {["employees", "admins"].map((tab) => {
+                        const isSelected = activeTab === tab;
+                        return (
+                            <TabsTrigger
+                                key={tab}
+                                value={tab}
+                                className="relative flex-1 cursor-pointer rounded-full px-4 py-2 text-sm font-medium transition-colors hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:border-transparent dark:data-[state=active]:border-transparent data-[state=active]:shadow-none z-10"
+                            >
+                                {isSelected && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute inset-0 bg-background rounded-full border border-border"
+                                        initial={false}
+                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                    />
+                                )}
+                                <span className="relative z-20">
+                                    {tab === "employees" ? "Employees" : "Admin Users"}
+                                </span>
+                            </TabsTrigger>
+                        )
+                    })}
                 </TabsList>
 
                 <TabsContent value="employees" className="flex-1 flex flex-col min-h-0 data-[state=inactive]:hidden data-[state=active]:flex m-0">
                     <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
-                        <div className="overflow-auto flex-1">
-                            <table className="w-full text-sm relative">
-                                <thead className="sticky top-0 bg-slate-50 z-10">
-                                    <tr className="border-b border-border">
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Employee ID</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Preference</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Company & Location</th>
-                                        <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
+                        <div className="shrink-0 border-b border-border bg-slate-50">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[25%]">Name</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[20%]">Employee ID</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Preference</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[25%]">Company & Location</th>
+                                        <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border">
+                            </table>
+                        </div>
+                        <div className="overflow-auto flex-1">
+                            <table className="w-full text-sm table-fixed">
+                                <tbody>
                                     {employees.length === 0 ? (
                                         <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-muted-foreground">No employees found</td></tr>
                                     ) : (
-                                        employees.map((emp) => (
-                                            <tr key={emp.id} className="transition-colors hover:bg-muted/30">
-                                                <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground">{emp.name}</td>
-                                                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{emp.employeeCode}</td>
-                                                <td className="whitespace-nowrap px-4 py-3">
+                                        employees.map((emp, i) => (
+                                            <tr key={emp.id} className="transition-colors hover:bg-muted/30 border-b border-border">
+                                                <td className="truncate px-4 py-3 font-medium text-foreground w-[25%]">{emp.name}</td>
+                                                <td className="truncate px-4 py-3 text-muted-foreground w-[20%]">{emp.employeeCode}</td>
+                                                <td className="whitespace-nowrap px-4 py-3 w-[15%]">
                                                     <div className="inline-flex items-center gap-2">
                                                         <span className={cn("inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2", emp.defaultPreference === "VEG" ? "border-veg" : "border-nonveg")}>
                                                             <span className={cn("block h-2 w-2 rounded-full", emp.defaultPreference === "VEG" ? "bg-veg" : "bg-nonveg")} />
@@ -218,11 +250,11 @@ export function UserManagement({
                                                         <span className="text-xs text-muted-foreground">{emp.defaultPreference === "VEG" ? "Veg" : "Non-Veg"}</span>
                                                     </div>
                                                 </td>
-                                                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{emp.companyName} - {emp.addressCity}</td>
-                                                <td className="whitespace-nowrap px-4 py-3 text-right">
+                                                <td className="truncate px-4 py-3 text-muted-foreground w-[25%]">{emp.companyName} - {emp.addressCity}</td>
+                                                <td className="whitespace-nowrap px-4 py-3 text-right w-[15%]">
                                                     <div className="flex items-center justify-end gap-1">
-                                                        <Button variant="ghost" size="sm" onClick={() => { setEditingEmployee(emp); setEmpDialogOpen(true) }}>
-                                                            <Pencil className="h-3.5 w-3.5" />
+                                                        <Button variant="ghost" className="h-9 w-9 p-0" onClick={() => { setEditingEmployee(emp); setEmpDialogOpen(true) }}>
+                                                            <Pencil className="h-4 w-4" />
                                                         </Button>
                                                         <DeleteButton id={emp.id} endpoint="/api/ops/employees" onDelete={() => mutateEmp()} />
                                                     </div>
@@ -244,25 +276,32 @@ export function UserManagement({
 
                 <TabsContent value="admins" className="flex-1 flex flex-col min-h-0 data-[state=inactive]:hidden data-[state=active]:flex m-0">
                     <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
-                        <div className="overflow-auto flex-1">
-                            <table className="w-full text-sm relative">
-                                <thead className="sticky top-0 bg-slate-50 z-10">
-                                    <tr className="border-b border-border">
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</th>
-                                        <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
+                        <div className="shrink-0 border-b border-border bg-slate-50">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[40%]">Name</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[45%]">Email</th>
+                                        <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border">
+                            </table>
+                        </div>
+                        <div className="overflow-auto flex-1">
+                            <table className="w-full text-sm table-fixed">
+                                <tbody>
                                     {users.length === 0 ? (
                                         <tr><td colSpan={3} className="px-4 py-12 text-center text-sm text-muted-foreground">No admin users found</td></tr>
                                     ) : (
-                                        users.map((user) => (
-                                            <tr key={user.id} className="transition-colors hover:bg-muted/30">
-                                                <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground">{user.name}</td>
-                                                <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{user.email}</td>
-                                                <td className="whitespace-nowrap px-4 py-3 text-right">
+                                        users.map((user, i) => (
+                                            <tr key={user.id} className="transition-colors hover:bg-muted/30 border-b border-border">
+                                                <td className="truncate px-4 py-3 font-medium text-foreground w-[40%]">{user.name}</td>
+                                                <td className="truncate px-4 py-3 text-muted-foreground w-[45%]">{user.email}</td>
+                                                <td className="whitespace-nowrap px-4 py-3 text-right w-[15%]">
                                                     <div className="flex items-center justify-end gap-1">
+                                                        <Button variant="ghost" className="h-9 w-9 p-0" onClick={() => { setEditingUser(user); setUserDialogOpen(true) }}>
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
                                                         <DeleteButton id={user.id} endpoint="/api/ops/users" onDelete={() => mutateUser()} />
                                                     </div>
                                                 </td>
@@ -290,8 +329,7 @@ function DeleteButton({ id, endpoint, onDelete }: { id: string; endpoint: string
     return (
         <Button
             variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive"
+            className="h-9 w-9 p-0 text-destructive hover:text-destructive"
             disabled={deleting}
             onClick={async () => {
                 if (!confirm("Are you sure you want to delete this record?")) return
@@ -310,7 +348,7 @@ function DeleteButton({ id, endpoint, onDelete }: { id: string; endpoint: string
                 setDeleting(false)
             }}
         >
-            {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
         </Button>
     )
 }
@@ -472,9 +510,9 @@ function EmployeeForm({ employee, defaultAddressId, onSuccess }: { employee: Emp
 // ----------------------------------------------------
 // Admin User Form
 // ----------------------------------------------------
-function UserForm({ onSuccess }: { onSuccess: () => void }) {
-    const [name, setName] = useState("")
-    const [email, setEmail] = useState("")
+function UserForm({ user, onSuccess }: { user?: User | null, onSuccess: () => void }) {
+    const [name, setName] = useState(user?.name ?? "")
+    const [email, setEmail] = useState(user?.email ?? "")
     const [password, setPassword] = useState("")
 
     const [submitting, setSubmitting] = useState(false)
@@ -485,10 +523,14 @@ function UserForm({ onSuccess }: { onSuccess: () => void }) {
         setSubmitting(true)
         setError("")
 
+        const body: Record<string, string> = { name, email };
+        if (password) body.password = password;
+        if (user) body.id = user.id;
+
         const res = await fetch("/api/ops/users", {
-            method: "POST",
+            method: user ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, password }),
+            body: JSON.stringify(body),
         })
 
         if (res.ok) {
@@ -511,8 +553,8 @@ function UserForm({ onSuccess }: { onSuccess: () => void }) {
                 <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div className="flex flex-col gap-2">
-                <Label>Password</Label>
-                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+                <Label>{user ? "New Password" : "Password"}</Label>
+                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required={!user} minLength={6} placeholder={user ? "Leave blank to keep current password" : ""} />
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
@@ -523,7 +565,7 @@ function UserForm({ onSuccess }: { onSuccess: () => void }) {
                 </DialogClose>
                 <Button type="submit" disabled={submitting}>
                     {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    Create
+                    {user ? "Update" : "Create"}
                 </Button>
             </div>
         </form>

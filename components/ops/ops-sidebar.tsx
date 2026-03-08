@@ -28,10 +28,11 @@ const navItems = [
 
 interface OpsSidebarProps {
     companyName: string
+    companyIcon?: string | null
     managedCompanies: ManagedCompany[]
 }
 
-export function OpsSidebar({ companyName, managedCompanies }: OpsSidebarProps) {
+export function OpsSidebar({ companyName, companyIcon, managedCompanies }: OpsSidebarProps) {
     const pathname = usePathname()
     const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -51,6 +52,7 @@ export function OpsSidebar({ companyName, managedCompanies }: OpsSidebarProps) {
             <div className="px-3 py-3">
                 <CompanySwitcher
                     currentCompanyName={companyName}
+                    currentCompanyIcon={companyIcon}
                     managedCompanies={managedCompanies}
                 />
             </div>
@@ -94,7 +96,7 @@ export function OpsSidebar({ companyName, managedCompanies }: OpsSidebarProps) {
         <>
             <button
                 onClick={() => setMobileOpen(true)}
-                className="fixed left-4 top-4 z-40 rounded-lg border border-border bg-card p-2 shadow-sm lg:hidden"
+                className="fixed left-4 top-4 z-40 rounded-lg border border-border bg-card p-2 shadow-sm lg:hidden cursor-pointer"
             >
                 <Menu className="h-5 w-5" />
             </button>
@@ -108,7 +110,7 @@ export function OpsSidebar({ companyName, managedCompanies }: OpsSidebarProps) {
                     <div className="relative z-50 h-full w-64 bg-card shadow-xl">
                         <button
                             onClick={() => setMobileOpen(false)}
-                            className="absolute right-3 top-4 rounded-lg p-1 text-muted-foreground hover:text-foreground"
+                            className="absolute right-3 top-4 rounded-lg p-1 text-muted-foreground hover:text-foreground cursor-pointer"
                         >
                             <X className="h-5 w-5" />
                         </button>
@@ -117,7 +119,7 @@ export function OpsSidebar({ companyName, managedCompanies }: OpsSidebarProps) {
                 </div>
             )}
 
-            <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-border lg:bg-card">
+            <aside className="hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-border lg:bg-card">
                 {sidebarContent}
             </aside>
         </>

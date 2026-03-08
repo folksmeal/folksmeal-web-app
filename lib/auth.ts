@@ -101,6 +101,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         role: "EMPLOYEE",
                         companyId: employee.companyId,
                         companyName: employee.company.name,
+                        companyIcon: employee.company.icon,
                         addressId: employee.addressId,
                         addressCity: employee.address.city,
                         locationTimezone: employee.address.timezone,

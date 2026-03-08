@@ -86,36 +86,13 @@ export function MenuUploader({ addressId, onClose }: MenuUploaderProps) {
     }, [selectedFile, session])
 
     return (
-        <div className="rounded-lg border border-border bg-card p-5">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-semibold text-foreground">
-                        Upload Weekly Menu
-                    </h3>
-                </div>
-                {onClose && (
-                    <Button
-                        variant="ghost"
-                        onClick={onClose}
-                        size="icon"
-                        className="h-8 w-8 rounded-full"
-                        aria-label="Close"
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
-
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                Upload an Excel file (.xlsx) with columns:{" "}
-                <strong>Date</strong> and <strong>Menu</strong>.
-                The Menu column should have comma-separated values — first item is veg,
-                second is non-veg (optional).
+        <div className="flex flex-col items-center justify-center gap-6 py-4 text-center">
+            <p className="text-sm text-muted-foreground">
+                Upload an Excel file (.xlsx) with <strong>Date</strong> and <strong>Menu</strong> columns.
             </p>
 
-            <div className="mt-4 flex flex-col gap-3">
-                <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center gap-4 w-full">
+                <div className="flex flex-col items-center gap-3">
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -127,13 +104,13 @@ export function MenuUploader({ addressId, onClose }: MenuUploaderProps) {
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
-                        className="h-9 text-xs"
+                        className="h-10 px-8 rounded-full"
                     >
-                        <Upload className="mr-2 h-3.5 w-3.5" />
+                        <Upload className="mr-2 h-4 w-4" />
                         Choose File
                     </Button>
                     {selectedFile && (
-                        <span className="text-xs font-medium text-foreground truncate max-w-[200px]">
+                        <span className="text-xs font-medium text-primary bg-primary/5 px-3 py-1 rounded-full border border-primary/10 truncate max-w-64">
                             {selectedFile.name}
                         </span>
                     )}
@@ -143,7 +120,7 @@ export function MenuUploader({ addressId, onClose }: MenuUploaderProps) {
                     <Button
                         onClick={handleUpload}
                         disabled={uploading}
-                        className="w-fit h-9 text-xs"
+                        className="h-10 px-10 rounded-full"
                     >
                         {uploading ? (
                             <>

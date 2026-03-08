@@ -16,6 +16,13 @@ const createUserSchema = z.object({
     password: z.string().min(6, "Password must be at least 6 characters"),
 })
 
+const updateUserSchema = z.object({
+    id: z.string().min(1, "User ID is required"),
+    name: z.string().min(1, "Name is required").max(100),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters").optional(),
+})
+
 export async function GET(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
@@ -120,5 +127,39 @@ export async function DELETE(request: NextRequest) {
 
         await prisma.user.delete({ where: { id } })
         return apiResponse({ success: true })
+    })
+}
+
+export async function PUT(request: NextRequest) {
+    return handleApiRequest(async () => {
+        const user = await requireAdmin()
+        if (!user) return apiError("Forbidden", 403)
+
+        const { id, name, email, password } = await parseBody(request, updateUserSchema)
+
+        const existing = await prisma.user.findUnique({ where: { email } })
+        if (existing && existing.id !== id) {
+            return apiError("Email already in use", 400, "EMAIL_IN_USE")
+        }
+
+        const dataToUpdate: any = { name, email }
+
+        if (password) {
+            dataToUpdate.password = await bcrypt.hash(password, 12)
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id },
+            data: dataToUpdate,
+        })
+
+        return apiResponse({
+            success: true,
+            user: {
+                id: updatedUser.id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+            },
+        })
     })
 }

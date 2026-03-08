@@ -12,8 +12,8 @@ export function MenuUploadButton({ addressId }: { addressId: string }) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="sm">
-                    <Upload className="h-3.5 w-3.5" /> Upload Menu
+                <Button>
+                    <Upload className="h-4 w-4 mr-2" /> Upload Menu
                 </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">

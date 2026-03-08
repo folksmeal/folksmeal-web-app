@@ -63,7 +63,7 @@ export function MenuScreen({
   const [selected, setSelected] = useState<MealChoice | null>(
     existingSelection?.status === "OPT_IN" ? existingSelection.preference : null
   )
-  const [loading, setLoading] = useState(false)
+  const [loadingAction, setLoadingAction] = useState<"OPT_IN" | "OPT_OUT" | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const pastCutoff = useMemo(() => isPastCutoffInTimezone(cutoffTime, timezone), [cutoffTime, timezone])
@@ -76,7 +76,7 @@ export function MenuScreen({
   }, [menu?.date])
   const handleSubmit = useCallback(
     async (status: "OPT_IN" | "OPT_OUT") => {
-      setLoading(true)
+      setLoadingAction(status)
       setError(null)
       try {
         const result = await submitMealSelection({
@@ -94,7 +94,7 @@ export function MenuScreen({
       } catch {
         setError("Network error. Please try again.")
       } finally {
-        setLoading(false)
+        setLoadingAction(null)
       }
     },
     [selected, router]
@@ -119,11 +119,19 @@ export function MenuScreen({
             />
             { }
             <div className="h-8 w-px bg-border max-sm:hidden" />
-            <div className="hidden h-10 items-center gap-2.5 rounded-xl border border-input bg-card px-4 sm:flex">
+            <div className="hidden h-10 items-center gap-2.5 rounded-xl border border-input bg-card px-4 py-2 sm:flex">
               {companyIcon ? (
-                <Image src={companyIcon} alt={companyName} width={20} height={20} className="h-5 w-5 object-contain" />
+                <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md border border-border/50 bg-muted/30">
+                  <Image
+                    src={companyIcon}
+                    alt={companyName}
+                    fill
+                    className="object-contain p-0.5"
+                    unoptimized
+                  />
+                </div>
               ) : (
-                <Building className="h-4 w-4 text-muted-foreground" />
+                <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
               )}
               <span className="text-sm font-semibold text-foreground">
                 {companyName}
@@ -140,13 +148,21 @@ export function MenuScreen({
           </Button>
         </div>
         <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
-          <div className="flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-input bg-card px-4">
+          <div className="flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-input bg-card px-4 py-2 shadow-sm">
             {companyIcon ? (
-              <Image src={companyIcon} alt={companyName} width={20} height={20} className="h-5 w-5 object-contain" />
+              <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md border border-border/50 bg-muted/30">
+                <Image
+                  src={companyIcon}
+                  alt={companyName}
+                  fill
+                  className="object-contain p-0.5"
+                  unoptimized
+                />
+              </div>
             ) : (
-              <Building className="h-4 w-4 text-muted-foreground" />
+              <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
             )}
-            <span className="text-sm font-semibold text-foreground truncate max-w-[200px]">
+            <span className="text-sm font-semibold text-foreground truncate max-w-50">
               {companyName}
             </span>
           </div>
@@ -180,8 +196,8 @@ export function MenuScreen({
               <Skeleton className="h-14 w-full rounded-lg" />
               <Separator />
               <div className="flex flex-col gap-3">
-                <Skeleton className="h-[104px] w-full rounded-lg" />
-                <Skeleton className="h-[104px] w-full rounded-lg" />
+                <Skeleton className="h-26 w-full rounded-lg" />
+                <Skeleton className="h-26 w-full rounded-lg" />
               </div>
               <Separator />
               <div className="flex gap-3">
@@ -221,7 +237,7 @@ export function MenuScreen({
                   <h3 className="text-xl font-semibold text-foreground">
                     Menu Not Available
                   </h3>
-                  <p className="text-sm text-muted-foreground max-w-[300px] mx-auto">
+                  <p className="text-sm text-muted-foreground max-w-75 mx-auto">
                     No menu has been posted for {tomorrowLabel} yet. Please check back later.
                   </p>
                 </div>
@@ -266,7 +282,7 @@ export function MenuScreen({
               <RadioGroup
                 value={selected ?? ""}
                 onValueChange={(v) => setSelected(v as MealChoice)}
-                disabled={pastCutoff || loading}
+                disabled={pastCutoff || loadingAction !== null}
                 className="flex flex-col gap-3"
               >
                 <Label
@@ -360,10 +376,10 @@ export function MenuScreen({
               <div className="flex gap-3">
                 <Button
                   className="flex-1"
-                  disabled={!selected || pastCutoff || loading}
+                  disabled={!selected || pastCutoff || loadingAction !== null}
                   onClick={() => handleSubmit("OPT_IN")}
                 >
-                  {loading ? (
+                  {loadingAction === "OPT_IN" ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Check className="h-4 w-4" />
@@ -373,10 +389,14 @@ export function MenuScreen({
                 <Button
                   variant="outline"
                   className="flex-1"
-                  disabled={pastCutoff || loading}
+                  disabled={pastCutoff || loadingAction !== null}
                   onClick={() => handleSubmit("OPT_OUT")}
                 >
-                  <X className="h-4 w-4" />
+                  {loadingAction === "OPT_OUT" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <X className="h-4 w-4" />
+                  )}
                   Opt Out
                 </Button>
               </div>

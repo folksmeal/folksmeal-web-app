@@ -97,7 +97,7 @@ function StarRating({ mealDate, existingRating }: { mealDate: string; existingRa
             onClick={() => { setRating(star); setSubmitted(false) }}
             onMouseEnter={() => setHoveredStar(star)}
             onMouseLeave={() => setHoveredStar(0)}
-            className="p-0.5 transition-transform hover:scale-110"
+            className="p-0.5 transition-transform hover:scale-110 cursor-pointer"
           >
             <Star
               className={`h - 7 w - 7 transition - colors ${star <= (hoveredStar || rating)
@@ -144,7 +144,7 @@ function StarRating({ mealDate, existingRating }: { mealDate: string; existingRa
           <button
             onClick={() => setSubmitted(false)}
             disabled={inCooldown}
-            className="text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             Edit
           </button>
@@ -191,13 +191,21 @@ export function ConfirmationScreen({
               priority
             />
             <div className="h-8 w-px bg-border max-sm:hidden" />
-            <div className="hidden h-9 items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 sm:flex">
+            <div className="hidden h-10 items-center justify-center gap-2.5 rounded-xl border border-input bg-card px-4 py-2 sm:flex shadow-sm">
               {companyIcon ? (
-                <Image src={companyIcon} alt={companyName} width={16} height={16} className="h-4 w-4 object-contain" />
+                <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md border border-border/50 bg-muted/30">
+                  <Image
+                    src={companyIcon}
+                    alt={companyName}
+                    fill
+                    className="object-contain p-0.5"
+                    unoptimized
+                  />
+                </div>
               ) : (
-                <Building className="h-4 w-4 text-primary" />
+                <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
               )}
-              <span className="text-sm font-semibold text-primary">
+              <span className="text-sm font-semibold text-foreground">
                 {companyName}
               </span>
             </div>
@@ -212,13 +220,21 @@ export function ConfirmationScreen({
           </Button>
         </div>
         <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
-          <div className="flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-primary/10 px-4">
+          <div className="flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-input bg-card px-4 py-2">
             {companyIcon ? (
-              <Image src={companyIcon} alt={companyName} width={16} height={16} className="h-4 w-4 object-contain" />
+              <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md border border-border/50 bg-muted/30">
+                <Image
+                  src={companyIcon}
+                  alt={companyName}
+                  fill
+                  className="object-contain p-0.5"
+                  unoptimized
+                />
+              </div>
             ) : (
-              <Building className="h-4 w-4 text-primary" />
+              <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
             )}
-            <span className="text-sm font-semibold text-primary truncate max-w-[200px]">
+            <span className="text-sm font-semibold text-foreground truncate max-w-50">
               {companyName}
             </span>
           </div>

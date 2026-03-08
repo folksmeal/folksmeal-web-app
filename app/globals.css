@@ -77,42 +77,36 @@
     @apply bg-background text-foreground;
   }
 
-  @keyframes wave {
-    0% {
-      transform: rotate(0.0deg);
-    }
-
-    10% {
-      transform: rotate(14.0deg);
-    }
-
-    20% {
-      transform: rotate(-8.0deg);
-    }
-
-    30% {
-      transform: rotate(14.0deg);
-    }
-
-    40% {
-      transform: rotate(-4.0deg);
-    }
-
-    50% {
-      transform: rotate(10.0deg);
-    }
-
-    60% {
-      transform: rotate(0.0deg);
-    }
-
-    100% {
-      transform: rotate(0.0deg);
-    }
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 8px;
   }
 
-  .wave-animation {
-    animation: wave 2.5s infinite;
-    transform-origin: 70% 70%;
+  ::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--primary) !important;
+    border-radius: 12px;
+  }
+
+  ::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    visibility: hidden !important;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent !important;
+  }
+
+  @supports (-moz-appearance: none) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--primary) transparent;
+    }
   }
 }

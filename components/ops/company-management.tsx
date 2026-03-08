@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog"
 import { Plus, Pencil, Trash2, Loader2, Building2, MapPin, Search } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface Address {
     id: string
@@ -98,7 +99,7 @@ export function CompanyManagement({ initialCompanies, totalCompanies }: { initia
     const handleMutate = useCallback(() => mutate(), [mutate])
 
     return (
-        <div className="flex flex-col flex-1 gap-4 min-h-0">
+        <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
                 <h1 className="text-lg font-semibold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
                     Company Management
@@ -110,12 +111,12 @@ export function CompanyManagement({ initialCompanies, totalCompanies }: { initia
                             placeholder="Search companies..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="h-9 w-[200px] pl-8 text-sm"
+                            className="h-10 w-60 pl-8 text-sm rounded-xl"
                         />
                     </div>
                     <Dialog open={companyDialogOpen} onOpenChange={(open) => { setCompanyDialogOpen(open); if (!open) setEditingCompany(null) }}>
                         <DialogTrigger asChild>
-                            <Button size="sm"><Plus className="h-3.5 w-3.5" /> Add Company</Button>
+                            <Button><Plus className="h-4 w-4 mr-2" /> Add Company</Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-md">
                             <DialogHeader>
@@ -145,7 +146,7 @@ export function CompanyManagement({ initialCompanies, totalCompanies }: { initia
                     {debouncedSearch ? `No companies matching "${debouncedSearch}"` : "No companies found"}
                 </div>
             ) : (
-                <div className="overflow-auto flex-1 flex flex-col gap-4 min-h-0">
+                <div className="flex flex-col gap-4">
                     {companies.map((company) => (
                         <div key={company.id} className="rounded-lg border border-border bg-card overflow-hidden">
                             <div className="flex items-center justify-between border-b border-border px-5 py-4">
@@ -179,13 +180,15 @@ export function CompanyManagement({ initialCompanies, totalCompanies }: { initia
                             </div>
                             <div className="divide-y divide-border">
                                 {company.addresses.map((addr) => (
-                                    <div key={addr.id} className="flex items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors">
+                                    <div key={addr.id} className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
                                         <div className="flex items-center gap-3">
-                                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-sm font-medium text-foreground">{addr.city}{addr.state ? `, ${addr.state}` : ""}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    Cutoff: {addr.cutoffTime} · {addr.timezone} · Days: {addr.workingDays.map((d) => dayLabels[d]).join(", ")}
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/5">
+                                                <MapPin className="h-4 w-4 text-primary/70" />
+                                            </div>
+                                            <div className="flex flex-col gap-0.5">
+                                                <p className="text-sm font-semibold text-foreground">{addr.city}{addr.state ? `, ${addr.state}` : ""}</p>
+                                                <p className="text-[11px] font-medium text-muted-foreground/90">
+                                                    Cutoff: <span className="text-foreground/80">{addr.cutoffTime}</span> · {addr.timezone} · <span className="text-primary/70 uppercase text-[10px] tracking-wider">{addr.workingDays.map((d) => dayLabels[d]).join(", ")}</span>
                                                 </p>
                                             </div>
                                         </div>
@@ -237,7 +240,7 @@ function DeleteCompanyButton({ id, onDelete }: { id: string; onDelete: () => voi
 function DeleteAddressButton({ id, onDelete }: { id: string; onDelete: () => void }) {
     const [loading, setLoading] = useState(false)
     return (
-        <Button variant="ghost" size="sm" className="text-destructive" disabled={loading}
+        <Button variant="ghost" className="h-9 w-9 p-0 text-destructive" disabled={loading}
             onClick={async () => {
                 if (!confirm("Delete this location?")) return
                 setLoading(true)
@@ -245,7 +248,7 @@ function DeleteAddressButton({ id, onDelete }: { id: string; onDelete: () => voi
                 onDelete()
                 setLoading(false)
             }}>
-            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
         </Button>
     )
 }
@@ -308,30 +311,50 @@ function CompanyForm({ company, onSuccess }: { company: Company | null; onSucces
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
                 <Label>Company Icon</Label>
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/50 transition-colors hover:border-primary/40 hover:bg-muted overflow-hidden"
-                    >
-                        {iconPreview ? (
-                            <Image
-                                src={iconPreview}
-                                alt="Icon"
-                                width={64}
-                                height={64}
-                                className="h-full w-full object-contain p-1"
-                                unoptimized
-                            />
-                        ) : (
-                            <Building2 className="h-6 w-6 text-muted-foreground" />
-                        )}
-                    </button>
-                    <div className="flex flex-col gap-1">
-                        <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => fileInputRef.current?.click()}>
-                            {iconPreview ? "Change" : "Upload"} Icon
-                        </Button>
-                        <p className="text-[10px] text-muted-foreground">PNG, JPEG, WebP or SVG · Max 2MB</p>
+                <div className="flex items-center gap-4">
+                    <div className="relative group">
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className={cn(
+                                "relative flex h-24 w-24 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed transition-all overflow-hidden",
+                                iconPreview
+                                    ? "border-primary/20 bg-card hover:border-primary/50"
+                                    : "border-border bg-muted/30 hover:border-primary/40 hover:bg-muted/50"
+                            )}
+                        >
+                            {iconPreview ? (
+                                <>
+                                    <Image
+                                        src={iconPreview}
+                                        alt="Icon Preview"
+                                        width={96}
+                                        height={96}
+                                        className="h-full w-full object-contain p-2"
+                                        unoptimized
+                                    />
+                                    {iconFile && (
+                                        <div className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-amber-500/90 py-0.5 opacity-100 transition-opacity group-hover:opacity-0">
+                                            <span className="text-[8px] font-bold text-white uppercase tracking-tighter">Unsaved</span>
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                                        <span className="text-[10px] font-semibold text-white uppercase tracking-wider">Change</span>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center gap-1.5 text-muted-foreground transition-colors group-hover:text-primary/70">
+                                    <Building2 className="h-6 w-6" />
+                                    <span className="text-[10px] font-medium uppercase tracking-tight">Select Icon</span>
+                                </div>
+                            )}
+                        </button>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <p className="text-xs font-medium text-foreground">Company Branding</p>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed max-w-45">
+                            Upload a high-quality logo. PNG, JPEG, WebP or SVG are supported. Max size 2MB.
+                        </p>
                     </div>
                     <input
                         ref={fileInputRef}

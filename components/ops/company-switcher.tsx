@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { useSession } from "next-auth/react"
 import { Building, Check, ChevronRight, Loader2 } from "lucide-react"
+import Image from "next/image"
 import {
     Popover,
     PopoverContent,
@@ -21,16 +22,19 @@ export interface ManagedCompany {
     id: string
     name: string
     companyName: string
+    companyIcon?: string | null
     addressCity: string
 }
 
 interface CompanySwitcherProps {
     currentCompanyName: string
+    currentCompanyIcon?: string | null
     managedCompanies: ManagedCompany[]
 }
 
 export function CompanySwitcher({
     currentCompanyName,
+    currentCompanyIcon,
     managedCompanies,
 }: CompanySwitcherProps) {
     const { update } = useSession()
@@ -58,10 +62,22 @@ export function CompanySwitcher({
 
     if (managedCompanies.length <= 1) {
         return (
-            <div className="flex h-10 items-center justify-between gap-3 rounded-xl border border-input bg-card px-4 py-2">
-                <div className="flex items-center gap-2.5">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    <span className="max-w-[140px] truncate text-sm font-semibold text-foreground sm:max-w-[200px]">
+            <div className="flex w-full h-10 items-center justify-between gap-3 rounded-xl border border-input bg-card px-4 py-2">
+                <div className="flex flex-1 items-center gap-2.5 min-w-0">
+                    {currentCompanyIcon ? (
+                        <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md border border-border/50 bg-muted/30">
+                            <Image
+                                src={currentCompanyIcon}
+                                alt={currentCompanyName}
+                                fill
+                                className="object-contain p-0.5"
+                                unoptimized
+                            />
+                        </div>
+                    ) : (
+                        <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <span className="truncate text-sm font-semibold text-foreground">
                         {currentCompanyName}
                     </span>
                 </div>
@@ -72,7 +88,7 @@ export function CompanySwitcher({
     return (
         <>
             {isSwitching && (
-                <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
+                <div className="fixed inset-0 z-100 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     <p className="mt-4 text-sm font-medium text-muted-foreground">Switching context...</p>
                 </div>
@@ -80,20 +96,32 @@ export function CompanySwitcher({
 
             <Popover open={showSwitcher} onOpenChange={setShowSwitcher}>
                 <PopoverTrigger asChild>
-                    <button className="flex h-10 cursor-pointer items-center justify-between gap-3 rounded-xl border border-input bg-card px-4 py-2 transition-all hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20">
-                        <div className="flex items-center gap-2.5">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            <span className="max-w-[140px] truncate text-sm font-semibold text-foreground sm:max-w-[200px]">
+                    <button className="flex w-full h-10 cursor-pointer items-center justify-between gap-3 rounded-xl border border-input bg-card px-4 py-2 transition-all hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20">
+                        <div className="flex flex-1 items-center gap-2.5 min-w-0">
+                            {currentCompanyIcon ? (
+                                <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md border border-border/50 bg-muted/30">
+                                    <Image
+                                        src={currentCompanyIcon}
+                                        alt={currentCompanyName}
+                                        fill
+                                        className="object-contain p-0.5"
+                                        unoptimized
+                                    />
+                                </div>
+                            ) : (
+                                <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            )}
+                            <span className="truncate text-sm font-semibold text-foreground">
                                 {currentCompanyName}
                             </span>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
                     </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0" align="start">
+                <PopoverContent className="w-75 p-0" align="start">
                     <Command className="rounded-xl border-none">
                         <CommandInput placeholder="Search location" className="h-11 border-none focus:ring-0" />
-                        <CommandList className="max-h-[320px] p-1.5">
+                        <CommandList className="max-h-80 p-1.5">
                             <CommandEmpty className="py-6 text-xs text-muted-foreground">No location found.</CommandEmpty>
                             <CommandGroup>
                                 {managedCompanies.map((company) => {
@@ -110,11 +138,28 @@ export function CompanySwitcher({
                                                 isActive ? "bg-primary/15 font-semibold text-primary shadow-sm" : "hover:bg-accent/50"
                                             )}
                                         >
-                                            <div className="flex flex-col gap-0.5">
-                                                <span className="text-sm font-semibold tracking-tight">{company.companyName}</span>
-                                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
-                                                    {company.addressCity}
-                                                </span>
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                {company.companyIcon ? (
+                                                    <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-border/50 bg-muted/30">
+                                                        <Image
+                                                            src={company.companyIcon}
+                                                            alt={company.companyName}
+                                                            fill
+                                                            className="object-contain p-1"
+                                                            unoptimized
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-muted/30">
+                                                        <Building className="h-4 w-4 text-muted-foreground" />
+                                                    </div>
+                                                )}
+                                                <div className="flex flex-col gap-0.5 truncate">
+                                                    <span className="text-sm font-semibold tracking-tight truncate">{company.companyName}</span>
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+                                                        {company.addressCity}
+                                                    </span>
+                                                </div>
                                             </div>
                                             {isActive ? (
                                                 <Check className="h-4 w-4 text-primary" strokeWidth={3} />

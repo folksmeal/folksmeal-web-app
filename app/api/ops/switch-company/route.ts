@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
             newLocation: {
                 companyId: address.companyId,
                 companyName: address.company.name,
+                companyIcon: address.company.icon,
                 addressId: address.id,
                 addressCity: address.city,
                 locationTimezone: address.timezone,
