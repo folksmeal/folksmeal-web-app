@@ -199,7 +199,7 @@ export function UserManagement({
                             <TabsTrigger
                                 key={tab}
                                 value={tab}
-                                className="relative flex-1 cursor-pointer rounded-full px-4 py-2 text-sm font-medium transition-colors hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:border-transparent dark:data-[state=active]:border-transparent data-[state=active]:shadow-none z-10"
+                                className="relative flex-1 cursor-pointer rounded-full px-4 py-2 text-sm font-medium transition-colors hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:border-transparent data-[state=active]:shadow-none z-10"
                             >
                                 {isSelected && (
                                     <motion.div
