@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { requireAdmin } from "@/lib/auth-helpers"
+import { requireAdmin, getEffectiveAddressId } from "@/lib/auth-helpers"
 import { Prisma } from "@prisma/client"
 import { apiResponse, apiError, handleApiRequest } from "@/lib/api-utils"
 
@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
         if (!user) return apiError("Forbidden", 403)
 
         const { searchParams } = new URL(request.url)
-        const addressId = searchParams.get("addressId") || user.addressId
+        // Allow explicit query override, else fallback to effective address
+        const queryAddressId = searchParams.get("addressId")
+        const effectiveAddressId = queryAddressId || await getEffectiveAddressId(user)
+
         const daysParam = searchParams.get("days") || "30"
         const days = parseInt(daysParam)
         const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
@@ -28,8 +31,8 @@ export async function GET(request: NextRequest) {
             createdAt: { gte: since },
         }
 
-        if (addressId) {
-            whereClause.employee = { addressId }
+        if (effectiveAddressId) {
+            whereClause.employee = { addressId: effectiveAddressId }
         }
 
         // Get total count and aggregated stats from full dataset

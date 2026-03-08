@@ -10,6 +10,7 @@ import { Plus, Pencil, Trash2, Loader2, Search } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PaginationFooter } from "@/components/ops/pagination-footer"
 
 interface Employee {
     id: string
@@ -45,7 +46,7 @@ interface Company {
 
 import { fetcher } from "@/lib/fetcher"
 
-export function UserManagement() {
+export function UserManagement({ effectiveAddressId }: { effectiveAddressId?: string }) {
     const { data: empData, mutate: mutateEmp, isLoading: loadingEmp } = useSWR<{ employees: Employee[] }>("/api/ops/employees", fetcher)
     const { data: userData, mutate: mutateUser, isLoading: loadingUser } = useSWR<{ users: User[] }>("/api/ops/users", fetcher)
 
@@ -67,9 +68,25 @@ export function UserManagement() {
         u.email.toLowerCase().includes(search.toLowerCase())
     )
 
+    const itemsPerPage = 15
+    const [empPage, setEmpPage] = useState(1)
+    const [adminPage, setAdminPage] = useState(1)
+
+    const totalEmpPages = Math.ceil(filteredEmp.length / itemsPerPage)
+    const paginatedEmp = filteredEmp.slice((empPage - 1) * itemsPerPage, empPage * itemsPerPage)
+
+    const totalAdminPages = Math.ceil(filteredUsers.length / itemsPerPage)
+    const paginatedUsers = filteredUsers.slice((adminPage - 1) * itemsPerPage, adminPage * itemsPerPage)
+
+    // Reset pagination on search
+    useEffect(() => {
+        setEmpPage(1)
+        setAdminPage(1)
+    }, [search])
+
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col flex-1 gap-6 min-h-0">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
                 <h1 className="text-lg font-semibold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
                     User Management
                 </h1>
@@ -84,6 +101,7 @@ export function UserManagement() {
                             </DialogHeader>
                             <EmployeeForm
                                 employee={editingEmployee}
+                                defaultAddressId={effectiveAddressId}
                                 onSuccess={() => { setEmpDialogOpen(false); setEditingEmployee(null); mutateEmp() }}
                             />
                         </DialogContent>
@@ -103,7 +121,7 @@ export function UserManagement() {
                 </div>
             </div>
 
-            <div className="relative">
+            <div className="relative shrink-0">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                     placeholder="Search by name, ID, or email..."
@@ -113,18 +131,18 @@ export function UserManagement() {
                 />
             </div>
 
-            <Tabs defaultValue="employees" className="w-full">
-                <TabsList className="mb-4">
+            <Tabs defaultValue="employees" className="w-full flex-1 flex flex-col min-h-0">
+                <TabsList className="mb-4 shrink-0">
                     <TabsTrigger value="employees">Employees</TabsTrigger>
                     <TabsTrigger value="admins">Admin Users</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="employees">
-                    <div className="rounded-lg border border-border bg-card">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b border-border bg-muted/50">
+                <TabsContent value="employees" className="flex-1 flex flex-col min-h-0 data-[state=inactive]:hidden data-[state=active]:flex m-0">
+                    <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
+                        <div className="overflow-auto flex-1">
+                            <table className="w-full text-sm relative">
+                                <thead className="sticky top-0 bg-muted z-10 shadow-sm">
+                                    <tr className="border-b border-border">
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Employee ID</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Preference</th>
@@ -140,7 +158,7 @@ export function UserManagement() {
                                     ) : filteredEmp.length === 0 ? (
                                         <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-muted-foreground">No employees found</td></tr>
                                     ) : (
-                                        filteredEmp.map((emp) => (
+                                        paginatedEmp.map((emp) => (
                                             <tr key={emp.id} className="transition-colors hover:bg-muted/30">
                                                 <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground">{emp.name}</td>
                                                 <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{emp.employeeCode}</td>
@@ -167,15 +185,21 @@ export function UserManagement() {
                                 </tbody>
                             </table>
                         </div>
+                        <PaginationFooter
+                            page={empPage}
+                            totalPages={totalEmpPages}
+                            onPageChange={setEmpPage}
+                            totalItems={filteredEmp.length}
+                        />
                     </div>
                 </TabsContent>
 
-                <TabsContent value="admins">
-                    <div className="rounded-lg border border-border bg-card">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b border-border bg-muted/50">
+                <TabsContent value="admins" className="flex-1 flex flex-col min-h-0 data-[state=inactive]:hidden data-[state=active]:flex m-0">
+                    <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
+                        <div className="overflow-auto flex-1">
+                            <table className="w-full text-sm relative">
+                                <thead className="sticky top-0 bg-muted z-10 shadow-sm">
+                                    <tr className="border-b border-border">
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</th>
                                         <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
@@ -189,7 +213,7 @@ export function UserManagement() {
                                     ) : filteredUsers.length === 0 ? (
                                         <tr><td colSpan={3} className="px-4 py-12 text-center text-sm text-muted-foreground">No admin users found</td></tr>
                                     ) : (
-                                        filteredUsers.map((user) => (
+                                        paginatedUsers.map((user) => (
                                             <tr key={user.id} className="transition-colors hover:bg-muted/30">
                                                 <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground">{user.name}</td>
                                                 <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{user.email}</td>
@@ -204,6 +228,12 @@ export function UserManagement() {
                                 </tbody>
                             </table>
                         </div>
+                        <PaginationFooter
+                            page={adminPage}
+                            totalPages={totalAdminPages}
+                            onPageChange={setAdminPage}
+                            totalItems={filteredUsers.length}
+                        />
                     </div>
                 </TabsContent>
             </Tabs>
@@ -244,24 +274,51 @@ function DeleteButton({ id, endpoint, onDelete }: { id: string; endpoint: string
 // ----------------------------------------------------
 // Employee Form
 // ----------------------------------------------------
-function EmployeeForm({ employee, onSuccess }: { employee: Employee | null; onSuccess: () => void }) {
+function EmployeeForm({ employee, defaultAddressId, onSuccess }: { employee: Employee | null; defaultAddressId?: string; onSuccess: () => void }) {
+    const { data: companyData } = useSWR<{ companies: Company[] }>("/api/ops/companies", fetcher)
+    const companies = companyData?.companies ?? []
+
+    // Attempt to map the requested defaultAddressId to its parent companyId
+    const defaultCompanyId = useMemo(() => {
+        if (!defaultAddressId) return ""
+        for (const company of companies) {
+            if (company.addresses.some(a => a.id === defaultAddressId)) {
+                return company.id
+            }
+        }
+        return ""
+    }, [defaultAddressId, companies])
+
     const [name, setName] = useState(employee?.name ?? "")
     const [employeeCode, setEmployeeCode] = useState(employee?.employeeCode ?? "")
     const [password, setPassword] = useState("")
     const [preference, setPreference] = useState(employee?.defaultPreference ?? "VEG")
-    const [companyId, setCompanyId] = useState(employee?.companyId ?? "")
-    const [addressId, setAddressId] = useState(employee?.addressId ?? "")
+
+    // Use employee's existing IDs, OR the active effectiveAddressId defaults, OR empty string as a last resort
+    const [companyId, setCompanyId] = useState(employee?.companyId ?? defaultCompanyId)
+    const [addressId, setAddressId] = useState(employee?.addressId ?? defaultAddressId ?? "")
 
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState("")
 
-    const { data: companyData } = useSWR<{ companies: Company[] }>("/api/ops/companies", fetcher)
-    const companies = companyData?.companies ?? []
-
     const selectedCompany = useMemo(() => companies.find(c => c.id === companyId), [companyId, companies])
     const addresses = selectedCompany?.addresses ?? []
 
-    // Reset address if company changes
+    // Maintain companyId fallback sync as data loads in async
+    useEffect(() => {
+        if (!employee && !companyId && defaultCompanyId) {
+            setCompanyId(defaultCompanyId)
+        }
+    }, [defaultCompanyId, companyId, employee])
+
+    // Maintain addressId fallback sync as data loads in async
+    useEffect(() => {
+        if (!employee && !addressId && defaultAddressId && addresses.some(a => a.id === defaultAddressId)) {
+            setAddressId(defaultAddressId)
+        }
+    }, [defaultAddressId, addressId, employee, addresses])
+
+    // Reset address if company strictly changes to something else entirely
     useEffect(() => {
         if (!employee && companyId && addresses.length > 0 && !addresses.find(a => a.id === addressId)) {
             setAddressId(addresses[0].id)

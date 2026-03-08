@@ -1,37 +1,57 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getEffectiveAddressId } from "@/lib/auth-helpers"
 import { MenuUploader } from "@/components/ops/menu-uploader"
+import { PaginationFooter } from "@/components/ops/pagination-footer"
 import { format } from "date-fns"
 
-export default async function MenusPage() {
+export default async function MenusPage({ searchParams }: { searchParams: { page?: string } }) {
     const session = await auth()
     if (!session?.user) return null
 
-    const menus = await prisma.menu.findMany({
-        where: { addressId: (session.user.addressId as string) || undefined },
-        orderBy: { date: "desc" },
-        take: 14,
-    })
+    const effectiveAddressId = await getEffectiveAddressId(session.user)
+
+    const page = Number(searchParams.page) || 1
+    const take = 15
+    const skip = (page - 1) * take
+
+    const [menus, totalItems] = await Promise.all([
+        prisma.menu.findMany({
+            where: effectiveAddressId ? { addressId: effectiveAddressId } : undefined,
+            orderBy: { date: "desc" },
+            take,
+            skip,
+        }),
+        prisma.menu.count({
+            where: effectiveAddressId ? { addressId: effectiveAddressId } : undefined,
+        })
+    ])
+
+    const totalPages = Math.ceil(totalItems / take)
 
     return (
-        <div className="flex flex-col gap-6">
-            <h1
-                className="text-lg font-semibold text-foreground"
-                style={{ fontFamily: "var(--font-heading)" }}
-            >
-                Menu Management
-            </h1>
+        <div className="flex flex-col flex-1 gap-6 min-h-0">
+            <div className="shrink-0 flex items-center justify-between">
+                <h1
+                    className="text-lg font-semibold text-foreground"
+                    style={{ fontFamily: "var(--font-heading)" }}
+                >
+                    Menu Management
+                </h1>
+            </div>
 
-            <MenuUploader />
+            <div className="shrink-0">
+                {effectiveAddressId && <MenuUploader addressId={effectiveAddressId} />}
+            </div>
 
-            <div className="rounded-lg border border-border bg-card">
-                <div className="border-b border-border px-5 py-3">
+            <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="border-b border-border px-5 py-3 shrink-0">
                     <p className="text-sm font-medium text-foreground">Recent Menus</p>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-border bg-muted/50">
+                <div className="overflow-auto flex-1">
+                    <table className="w-full text-sm relative">
+                        <thead className="sticky top-0 bg-muted z-10 shadow-sm">
+                            <tr className="border-b border-border">
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Date</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Day</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Veg Item</th>
@@ -64,6 +84,12 @@ export default async function MenusPage() {
                         </tbody>
                     </table>
                 </div>
+                <PaginationFooter
+                    page={page}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    hrefBuilder={(p) => `/ops/menus?page=${p}`}
+                />
             </div>
         </div>
     )

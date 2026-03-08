@@ -349,14 +349,7 @@ export function MenuScreen({
                 </Label>
               </RadioGroup>
 
-              {menu?.notes && (
-                <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-3">
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-semibold text-foreground">Note: </span>
-                    {menu.notes}
-                  </p>
-                </div>
-              )}
+
 
               {error && (
                 <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">

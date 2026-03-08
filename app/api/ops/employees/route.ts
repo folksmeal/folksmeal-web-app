@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { requireAdmin } from "@/lib/auth-helpers"
+import { requireAdmin, getEffectiveAddressId } from "@/lib/auth-helpers"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 import {
@@ -34,12 +34,16 @@ export async function GET(request: NextRequest) {
         if (!user) return apiError("Forbidden", 403)
 
         const { searchParams } = new URL(request.url)
+        // We still allow a query param override if explicitly requested (e.g. by a future feature), 
+        // but default to the session's effective address
         const queryAddressId = searchParams.get("addressId")
+        const effectiveAddressId = queryAddressId || await getEffectiveAddressId(user)
+
         const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
         const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50")))
         const skip = (page - 1) * limit
 
-        const where = queryAddressId ? { addressId: queryAddressId } : undefined
+        const where = effectiveAddressId ? { addressId: effectiveAddressId } : undefined
 
         const [employees, total] = await Promise.all([
             prisma.employee.findMany({

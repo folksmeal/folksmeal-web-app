@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { getTomorrowMidnightInTimezone } from "@/lib/utils/time"
 import { OpsDashboard } from "@/components/ops/ops-dashboard"
 
+import { getEffectiveAddressId } from "@/lib/auth-helpers"
+
 export default async function OpsDashboardPage() {
     const session = await auth()
     if (!session?.user) return null
@@ -11,15 +13,9 @@ export default async function OpsDashboardPage() {
     const timezone = (sessionUser.locationTimezone as string) || "Asia/Kolkata"
     const targetDate = getTomorrowMidnightInTimezone(timezone)
 
-    let effectiveAddressId = sessionUser.addressId as string | undefined
+    const effectiveAddressId = await getEffectiveAddressId(sessionUser)
 
-    if (!effectiveAddressId && sessionUser.role === "SUPERADMIN") {
-        const firstAddress = await prisma.companyAddress.findFirst({
-            orderBy: { createdAt: "asc" }
-        })
-        if (firstAddress) effectiveAddressId = firstAddress.id
-    }
-
+    // Safety check - though superadmin should always get one, a brand new DB might be empty
     const whereClauseAddress = effectiveAddressId ? { addressId: effectiveAddressId } : {}
 
     const [selections, allEmployees] = await Promise.all([
@@ -77,11 +73,17 @@ export default async function OpsDashboardPage() {
         updatedAt: "",
     }))
 
-    let companyName = "Global Platform"
+    let companyName = "Select Company"
     if (sessionUser.companyName && sessionUser.addressCity) {
         companyName = `${sessionUser.companyName} - ${sessionUser.addressCity}`
-    } else if (allEmployees.length > 0 && allEmployees[0].company) {
-        companyName = `${allEmployees[0].company.name} - ${allEmployees[0].address.city}`
+    } else if (effectiveAddressId) {
+        const address = await prisma.companyAddress.findUnique({
+            where: { id: effectiveAddressId },
+            include: { company: true }
+        })
+        if (address) {
+            companyName = `${address.company.name} - ${address.city}`
+        }
     }
 
     return (

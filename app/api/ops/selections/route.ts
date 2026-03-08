@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { requireAdmin } from "@/lib/auth-helpers"
+import { requireAdmin, getEffectiveAddressId } from "@/lib/auth-helpers"
 import { getTomorrowMidnightInTimezone } from "@/lib/utils/time"
 import { apiResponse, apiError, handleApiRequest } from "@/lib/api-utils"
 
@@ -11,16 +11,11 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url)
         const dateParam = searchParams.get("date")
-        let addressId = (searchParams.get("addressId") || user.addressId) as string | undefined
 
-        if (user.role === "SUPERADMIN" && !addressId) {
-            const firstAddress = await prisma.companyAddress.findFirst({
-                orderBy: { createdAt: "asc" },
-            })
-            if (firstAddress) addressId = firstAddress.id
-        }
+        const queryAddressId = searchParams.get("addressId")
+        const effectiveAddressId = queryAddressId || await getEffectiveAddressId(user)
 
-        const whereClauseAddress = addressId ? { addressId } : {}
+        const whereClauseAddress = effectiveAddressId ? { addressId: effectiveAddressId } : {}
 
         let targetDate: Date
         if (dateParam) {

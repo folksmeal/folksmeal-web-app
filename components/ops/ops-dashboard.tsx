@@ -25,6 +25,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { PaginationFooter } from "@/components/ops/pagination-footer"
 
 interface SelectionRow {
     employeeName: string
@@ -67,6 +68,8 @@ export function OpsDashboard({
 }: OpsDashboardProps) {
     const [date, setDate] = useState(initialDate)
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+    const [page, setPage] = useState(1)
+    const itemsPerPage = 15
 
     const { data, error, isLoading } = useSWR<{ rows: SelectionRow[]; stats: Stats }>(
         `/api/ops/selections?date=${date}`,
@@ -91,6 +94,14 @@ export function OpsDashboard({
         if (statusFilter === "no_selection") return row.status === "NO_SELECTION"
         return true
     })
+
+    const totalPages = Math.ceil(filteredRows.length / itemsPerPage)
+    const paginatedRows = filteredRows.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+
+    // Reset page on filter/date change
+    useCallback(() => {
+        setPage(1)
+    }, [statusFilter, date])
 
     const handleExportCSV = useCallback(() => {
         if (!filteredRows.length) return
@@ -144,8 +155,8 @@ export function OpsDashboard({
     ]
 
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col flex-1 gap-6 min-h-0">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
                 <div className="flex items-center gap-3">
                     <Popover>
                         <PopoverTrigger asChild>
@@ -249,11 +260,11 @@ export function OpsDashboard({
                 </Select>
             </div>
 
-            <div className="rounded-lg border border-border bg-card">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-border bg-muted/50">
+            <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="overflow-auto flex-1">
+                    <table className="w-full text-sm relative">
+                        <thead className="sticky top-0 bg-muted z-10 shadow-sm">
+                            <tr className="border-b border-border">
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                                     Employee Name
                                 </th>
@@ -296,7 +307,7 @@ export function OpsDashboard({
                                     </td>
                                 </tr>
                             ) : (
-                                filteredRows.map((row, i) => (
+                                paginatedRows.map((row, i) => (
                                     <tr
                                         key={i}
                                         className="transition-colors hover:bg-muted/30"
@@ -355,6 +366,12 @@ export function OpsDashboard({
                         </tbody>
                     </table>
                 </div>
+                <PaginationFooter
+                    page={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    totalItems={filteredRows.length}
+                />
             </div>
         </div>
     )

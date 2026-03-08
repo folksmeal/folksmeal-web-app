@@ -52,8 +52,8 @@ export default async function OpsAuthenticatedLayout({
                 companyName={locationName}
                 managedCompanies={managedCompanies}
             />
-            <div className="lg:pl-64">
-                <main className="mx-auto max-w-7xl px-6 py-6 pt-16 lg:pt-6">
+            <div className="lg:pl-64 flex flex-col min-h-screen w-full">
+                <main className="flex-1 flex flex-col w-full mx-auto max-w-7xl px-6 py-6 pt-16 lg:pt-6">
                     {children}
                 </main>
             </div>

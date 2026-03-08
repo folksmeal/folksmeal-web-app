@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog"
 import { Plus, Pencil, Trash2, Loader2, Building2, MapPin } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { PaginationFooter } from "@/components/ops/pagination-footer"
 
 interface Address {
     id: string
@@ -40,9 +41,15 @@ export function CompanyManagement() {
     const [editingAddress, setEditingAddress] = useState<{ address: Address; companyId: string } | null>(null)
     const [addAddressCompanyId, setAddAddressCompanyId] = useState<string | null>(null)
 
+    const [page, setPage] = useState(1)
+    const itemsPerPage = 5
+
+    const totalPages = Math.ceil(companies.length / itemsPerPage)
+    const paginatedCompanies = companies.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col flex-1 gap-6 min-h-0">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
                 <h1 className="text-lg font-semibold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
                     Company Management
                 </h1>
@@ -73,66 +80,74 @@ export function CompanyManagement() {
             </Dialog>
 
             {isLoading ? (
-                <div className="space-y-4">
-                    {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 w-full" />)}
+                <div className="space-y-4 overflow-auto flex-1">
+                    {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 w-full shrink-0" />)}
                 </div>
             ) : companies.length === 0 ? (
-                <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground">
+                <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground flex-1">
                     No companies found
                 </div>
             ) : (
-                <div className="space-y-4">
-                    {companies.map((company) => (
-                        <div key={company.id} className="rounded-lg border border-border bg-card">
-                            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-                                <div className="flex items-center gap-3">
-                                    {company.icon ? (
-                                        <img src={company.icon} alt={company.name} className="h-5 w-5 object-contain" />
-                                    ) : (
-                                        <Building2 className="h-5 w-5 text-primary" />
-                                    )}
-                                    <div>
-                                        <p className="font-semibold text-foreground">{company.name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {company.employeeCount} employees · {company.addresses.length} location{company.addresses.length !== 1 ? "s" : ""}
-                                        </p>
+                <div className="flex flex-col flex-1 min-h-0 rounded-lg border border-border bg-card overflow-hidden">
+                    <div className="overflow-auto flex-1 flex flex-col bg-muted/30">
+                        {paginatedCompanies.map((company) => (
+                            <div key={company.id} className="border-b border-border bg-card last:border-b-0">
+                                <div className="flex items-center justify-between border-b border-border px-5 py-4 shrink-0">
+                                    <div className="flex items-center gap-3">
+                                        {company.icon ? (
+                                            <img src={company.icon} alt={company.name} className="h-5 w-5 object-contain" />
+                                        ) : (
+                                            <Building2 className="h-5 w-5 text-primary" />
+                                        )}
+                                        <div>
+                                            <p className="font-semibold text-foreground">{company.name}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {company.employeeCount} employees · {company.addresses.length} location{company.addresses.length !== 1 ? "s" : ""}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <Button variant="ghost" size="sm" onClick={() => { setEditingCompany(company); setCompanyDialogOpen(true) }}>
+                                            <Pencil className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <DeleteCompanyButton id={company.id} onDelete={() => mutate()} />
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="sm" onClick={() => { setEditingCompany(company); setCompanyDialogOpen(true) }}>
-                                        <Pencil className="h-3.5 w-3.5" />
-                                    </Button>
-                                    <DeleteCompanyButton id={company.id} onDelete={() => mutate()} />
-                                </div>
-                            </div>
-                            <div className="divide-y divide-border">
-                                {company.addresses.map((addr) => (
-                                    <div key={addr.id} className="flex items-center justify-between px-5 py-3">
-                                        <div className="flex items-center gap-3">
-                                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-sm font-medium text-foreground">{addr.city}{addr.state ? `, ${addr.state}` : ""}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    Cutoff: {addr.cutoffTime} · {addr.timezone} · Days: {addr.workingDays.map((d) => dayLabels[d]).join(", ")}
-                                                </p>
+                                <div className="divide-y divide-border">
+                                    {company.addresses.map((addr) => (
+                                        <div key={addr.id} className="flex items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-foreground">{addr.city}{addr.state ? `, ${addr.state}` : ""}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Cutoff: {addr.cutoffTime} · {addr.timezone} · Days: {addr.workingDays.map((d) => dayLabels[d]).join(", ")}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Button variant="ghost" size="sm" onClick={() => { setEditingAddress({ address: addr, companyId: company.id }); setAddressDialogOpen(true) }}>
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </Button>
+                                                <DeleteAddressButton id={addr.id} onDelete={() => mutate()} />
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <Button variant="ghost" size="sm" onClick={() => { setEditingAddress({ address: addr, companyId: company.id }); setAddressDialogOpen(true) }}>
-                                                <Pencil className="h-3.5 w-3.5" />
-                                            </Button>
-                                            <DeleteAddressButton id={addr.id} onDelete={() => mutate()} />
-                                        </div>
+                                    ))}
+                                    <div className="px-5 py-3">
+                                        <Button variant="ghost" size="sm" className="text-primary" onClick={() => { setAddAddressCompanyId(company.id); setAddressDialogOpen(true) }}>
+                                            <Plus className="h-3.5 w-3.5" /> Add Location
+                                        </Button>
                                     </div>
-                                ))}
-                                <div className="px-5 py-3">
-                                    <Button variant="ghost" size="sm" className="text-primary" onClick={() => { setAddAddressCompanyId(company.id); setAddressDialogOpen(true) }}>
-                                        <Plus className="h-3.5 w-3.5" /> Add Location
-                                    </Button>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
+                    <PaginationFooter
+                        page={page}
+                        totalPages={totalPages}
+                        onPageChange={setPage}
+                        totalItems={companies.length}
+                    />
                 </div>
             )}
         </div>

@@ -14,6 +14,7 @@ import {
 import { format, parseISO } from "date-fns"
 
 interface MenuUploaderProps {
+    addressId: string
     onClose?: () => void
 }
 
@@ -26,8 +27,7 @@ interface UploadResult {
     error?: string
 }
 
-export function MenuUploader({ onClose }: MenuUploaderProps) {
-    const { data: session } = useSession()
+export function MenuUploader({ addressId, onClose }: MenuUploaderProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [uploading, setUploading] = useState(false)
@@ -46,8 +46,6 @@ export function MenuUploader({ onClose }: MenuUploaderProps) {
 
     const handleUpload = useCallback(async () => {
         if (!selectedFile) return
-
-        const addressId = session?.user?.addressId
         if (!addressId) {
             setResult({
                 success: false,

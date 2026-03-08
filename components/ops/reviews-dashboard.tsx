@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { format, parseISO } from "date-fns"
 import { cn } from "@/lib/utils"
+import { PaginationFooter } from "@/components/ops/pagination-footer"
+import { useEffect } from "react"
 
 interface Review {
     id: string
@@ -30,11 +32,22 @@ export function ReviewsDashboard() {
     const [days, setDays] = useState(30)
     const { data, isLoading } = useSWR<ReviewsData>(`/api/ops/reviews?days=${days}`, fetcher)
 
+    const [page, setPage] = useState(1)
+    const itemsPerPage = 15
+
+    const reviews = data?.reviews ?? []
+    const totalPages = Math.ceil(reviews.length / itemsPerPage)
+    const paginatedReviews = reviews.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+
+    useEffect(() => {
+        setPage(1)
+    }, [days])
+
     const maxCount = data ? Math.max(...data.distribution.map(d => d.count), 1) : 1
 
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col flex-1 gap-6 min-h-0">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
                 <h1 className="text-lg font-semibold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
                     Meal Reviews
                 </h1>
@@ -94,11 +107,11 @@ export function ReviewsDashboard() {
                 </div>
             </div>
 
-            <div className="rounded-lg border border-border bg-card">
-                <div className="border-b border-border px-5 py-3">
+            <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden shrink-0">
+                <div className="border-b border-border px-5 py-3 shrink-0">
                     <p className="text-sm font-medium text-foreground">Recent Reviews</p>
                 </div>
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-border overflow-auto flex-1">
                     {isLoading ? (
                         Array.from({ length: 5 }).map((_, i) => (
                             <div key={i} className="px-5 py-4"><Skeleton className="h-4 w-full" /></div>
@@ -106,8 +119,8 @@ export function ReviewsDashboard() {
                     ) : !data?.reviews.length ? (
                         <div className="px-5 py-12 text-center text-sm text-muted-foreground">No reviews yet</div>
                     ) : (
-                        data.reviews.map((review) => (
-                            <div key={review.id} className="px-5 py-4">
+                        paginatedReviews.map((review) => (
+                            <div key={review.id} className="px-5 py-4 hover:bg-muted/30 transition-colors">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <p className="text-sm font-medium text-foreground">{review.employeeName}</p>
@@ -132,6 +145,12 @@ export function ReviewsDashboard() {
                         ))
                     )}
                 </div>
+                <PaginationFooter
+                    page={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    totalItems={reviews.length}
+                />
             </div>
         </div>
     )
