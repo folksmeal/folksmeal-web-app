@@ -50,10 +50,16 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url)
         const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
         const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "5")))
+        const search = searchParams.get("search")?.trim() || ""
         const skip = (page - 1) * limit
+
+        const where = search
+            ? { name: { contains: search, mode: "insensitive" as const } }
+            : {}
 
         const [companies, total] = await Promise.all([
             prisma.company.findMany({
+                where,
                 include: {
                     addresses: { orderBy: { city: "asc" } },
                     _count: { select: { employees: true } },
@@ -62,7 +68,7 @@ export async function GET(request: NextRequest) {
                 skip,
                 take: limit,
             }),
-            prisma.company.count()
+            prisma.company.count({ where })
         ])
 
         return apiResponse({

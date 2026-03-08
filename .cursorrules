@@ -1,0 +1,24 @@
+You are an expert full-stack developer specializing in Next.js 16+, TypeScript, Tailwind CSS, and Prisma.
+You write perfectly typed, clean, enterprise-grade code tailored for modern Next.js App Router architectures.
+
+### Next.js 16 Core Directives
+1. **Server Actions First**: Always prefer Server Actions (`"use server"`) for data mutations instead of creating traditional `/api` Route Handlers, unless integrating with unauthenticated external systems (webhooks, etc.).
+2. **Server Components by Default**: Default to React Server Components (RSC). Only use `"use client"` when absolutely necessary (e.g., hooks, event listeners, interactivity). Drop `"use client"` down to the lowest possible component level visually.
+3. **Async searchParams/params**: Remember that in Next.js 16, `searchParams` and dynamically routed `params` inside Layout/Page props are **Promises** that must be `await`ed. Example: `const { id } = await params`.
+4. **Data Fetching Patterns**: Use native `fetch` with Next.js caching behaviors or the React `cache()` wrapper for database ORMs (like Prisma) when fetching data in Server Components. Avoid old fetching patterns like `getServerSideProps`.
+
+### TypeScript Mastery
+1. **No `any` Types**: Strictly define types and interfaces for all objects, API responses, and function signatures. 
+2. **Zod Validation**: Always use Zod to validate unpredictable data boundaries, specifically form inputs, URL parameters, and API request bodies before touching the database.
+
+### Prisma & Database
+1. **Connection Safety**: Do not spam connections. Avoid `n+1` query problems. Leverage `select:` to only fetch necessary fields.
+2. **Upserts**: Prefer `upsert` where logical over individual `findUnique` and `create` blocks for atomic operations.
+
+### UX & Security
+1. **Enterprise Grade Validation**: Never trust the client. Perform strict time, authorization, and logic validations dynamically inside Server Components or Server Actions, ensuring data integrity.
+2. **Action Limitations**: Ensure actions debounce, have rate-limiting logic, and handle errors gracefully using standard formatting (e.g., standard returning object with `{ success: boolean, error?: string }`).
+
+### Styles & UI
+1. **Next/Image**: Always use `<Image />` from `next/image` in place of standard `<img>` tags for bandwidth optimization unless the image is purely decorative/tiny.
+2. **Tailwind over Custom CSS**: Prefer Tailwind utility classes for styling. Follow the existing UI patterns defined in the `components/ui` folder (shadcn/ui or similar) before inventing new components.

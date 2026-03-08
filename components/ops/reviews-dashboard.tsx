@@ -117,38 +117,51 @@ export function ReviewsDashboard({ initialDays, initialData }: { initialDays: nu
             </div>
 
             <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden shrink-0">
-                <div className="border-b border-border px-5 py-3 shrink-0">
-                    <p className="text-sm font-medium text-foreground">Recent Reviews</p>
-                </div>
-                <div className="divide-y divide-border overflow-auto flex-1">
-                    {!data?.reviews.length ? (
-                        <div className="px-5 py-12 text-center text-sm text-muted-foreground">No reviews yet</div>
-                    ) : (
-                        reviews.map((review: Review) => (
-                            <div key={review.id} className="px-5 py-4 hover:bg-muted/30 transition-colors">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-sm font-medium text-foreground">{review.employeeName}</p>
-                                        <span className="text-xs text-muted-foreground">({review.employeeCode})</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        {[1, 2, 3, 4, 5].map((s) => (
-                                            <Star key={s} className={cn("h-3.5 w-3.5", s <= review.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30")} />
-                                        ))}
-                                    </div>
-                                </div>
-                                {review.comment && (
-                                    <div className="mt-2 flex items-start gap-2">
-                                        <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                                        <p className="text-sm text-muted-foreground">{review.comment}</p>
-                                    </div>
-                                )}
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                    {format(parseISO(review.date), "dd MMM yyyy")}
-                                </p>
-                            </div>
-                        ))
-                    )}
+                <div className="overflow-auto flex-1">
+                    <table className="w-full text-sm relative">
+                        <thead className="sticky top-0 bg-slate-50 z-10">
+                            <tr className="border-b border-border">
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Employee</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Rating</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Comment</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                            {!data?.reviews.length ? (
+                                <tr><td colSpan={4} className="px-4 py-12 text-center text-sm text-muted-foreground">No reviews yet</td></tr>
+                            ) : (
+                                reviews.map((review: Review) => (
+                                    <tr key={review.id} className="transition-colors hover:bg-muted/30">
+                                        <td className="whitespace-nowrap px-4 py-3">
+                                            <p className="font-medium text-foreground">{review.employeeName}</p>
+                                            <p className="text-xs text-muted-foreground">{review.employeeCode}</p>
+                                        </td>
+                                        <td className="whitespace-nowrap px-4 py-3">
+                                            <div className="flex items-center gap-1">
+                                                {[1, 2, 3, 4, 5].map((s) => (
+                                                    <Star key={s} className={cn("h-3.5 w-3.5", s <= review.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30")} />
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 max-w-xs">
+                                            {review.comment ? (
+                                                <div className="flex items-start gap-2">
+                                                    <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                                    <p className="text-sm text-muted-foreground truncate">{review.comment}</p>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground/50">—</span>
+                                            )}
+                                        </td>
+                                        <td className="whitespace-nowrap px-4 py-3 text-muted-foreground text-xs">
+                                            {format(parseISO(review.date), "dd MMM yyyy")}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
                 <PaginationFooter
                     page={pageParam}

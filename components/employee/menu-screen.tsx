@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { isPastCutoffInTimezone } from "@/lib/utils/time"
 import { Clock, Check, X, LogOut, Loader2, AlertCircle, Building } from "lucide-react"
 import { format, parseISO } from "date-fns"
+import { submitMealSelection } from "@/app/actions/meal-selection"
+
 export type MealChoice = "VEG" | "NONVEG"
 export interface MenuData {
   date: string
@@ -77,19 +79,16 @@ export function MenuScreen({
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch("/api/meal-selection", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status,
-            preference: status === "OPT_IN" ? selected : null,
-          }),
+        const result = await submitMealSelection({
+          status,
+          preference: status === "OPT_IN" ? selected : null,
         })
-        const data = await res.json()
-        if (!res.ok) {
-          setError(data.error || "Failed to submit selection")
+
+        if (!result.success) {
+          setError(result.error || "Failed to submit selection")
           return
         }
+
         router.push("/dashboard?submitted=true")
         router.refresh()
       } catch {

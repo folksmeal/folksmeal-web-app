@@ -1,5 +1,5 @@
 "use client"
-import { useState, useCallback } from "react"
+import { useState, useCallback, useTransition } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { CheckCircle2, XCircle, ArrowLeft, LogOut, Building, Star, Loader2 } from "lucide-react"
 import { format, parseISO } from "date-fns"
+import { submitMealRating } from "@/app/actions/meal-rating"
 
 interface ConfirmationScreenProps {
   employeeCode: string
@@ -17,6 +18,7 @@ interface ConfirmationScreenProps {
   updatedAt: string
   mealDate: string
   existingRating?: { rating: number; comment: string | null } | null
+  promptRating?: boolean
 }
 
 function getStatusConfig(
@@ -61,23 +63,26 @@ function StarRating({ mealDate, existingRating }: { mealDate: string; existingRa
   const [rating, setRating] = useState(existingRating?.rating ?? 0)
   const [hoveredStar, setHoveredStar] = useState(0)
   const [comment, setComment] = useState(existingRating?.comment ?? "")
-  const [submitting, setSubmitting] = useState(false)
+  const [submitting, startTransition] = useTransition()
   const [submitted, setSubmitted] = useState(!!existingRating)
+  const [inCooldown, setInCooldown] = useState(false)
+  const [errorResult, setErrorResult] = useState<string | null>(null)
 
   const handleSubmitRating = useCallback(async () => {
-    if (rating === 0) return
-    setSubmitting(true)
-    try {
-      const res = await fetch("/api/meal-rating", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating, comment: comment || undefined, date: mealDate }),
-      })
-      if (res.ok) setSubmitted(true)
-    } catch { /* silently fail */ } finally {
-      setSubmitting(false)
-    }
-  }, [rating, comment, mealDate])
+    if (rating === 0 || inCooldown) return
+    setErrorResult(null)
+
+    startTransition(async () => {
+      const result = await submitMealRating({ rating, comment: comment || undefined, date: mealDate })
+      if (result.success) {
+        setSubmitted(true)
+        setInCooldown(true)
+        setTimeout(() => setInCooldown(false), 5000)
+      } else {
+        setErrorResult(result.error || "Failed to submit rating")
+      }
+    })
+  }, [rating, comment, mealDate, inCooldown])
 
   return (
     <div className="rounded-lg border border-border bg-card p-5">
@@ -95,10 +100,10 @@ function StarRating({ mealDate, existingRating }: { mealDate: string; existingRa
             className="p-0.5 transition-transform hover:scale-110"
           >
             <Star
-              className={`h-7 w-7 transition-colors ${star <= (hoveredStar || rating)
+              className={`h - 7 w - 7 transition - colors ${star <= (hoveredStar || rating)
                 ? "fill-amber-400 text-amber-400"
                 : "text-muted-foreground/30"
-                }`}
+                } `}
             />
           </button>
         ))}
@@ -127,10 +132,22 @@ function StarRating({ mealDate, existingRating }: { mealDate: string; existingRa
           </Button>
         </div>
       )}
+      {errorResult && (
+        <p className="mt-2 text-xs text-destructive">
+          {errorResult}
+        </p>
+      )}
+
       {submitted && (
         <p className="mt-2 text-xs text-muted-foreground">
           You rated this meal {rating} star{rating !== 1 ? "s" : ""}.{" "}
-          <button onClick={() => setSubmitted(false)} className="text-primary hover:underline">Edit</button>
+          <button
+            onClick={() => setSubmitted(false)}
+            disabled={inCooldown}
+            className="text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Edit
+          </button>
         </p>
       )}
     </div>
@@ -145,6 +162,7 @@ export function ConfirmationScreen({
   updatedAt,
   mealDate,
   existingRating,
+  promptRating = false,
 }: ConfirmationScreenProps) {
   const router = useRouter()
   const cfg = getStatusConfig(status, preference)
@@ -219,7 +237,7 @@ export function ConfirmationScreen({
           <div className="rounded-lg border border-border bg-card p-5">
             <div className="flex flex-col items-center gap-4 py-4 text-center">
               <Icon
-                className={`h-10 w-10 ${cfg.iconClass}`}
+                className={`h - 10 w - 10 ${cfg.iconClass} `}
                 strokeWidth={1.5}
               />
               <div className="flex flex-col gap-1.5">
@@ -229,10 +247,10 @@ export function ConfirmationScreen({
                 {cfg.badgeBorder && (
                   <div className="flex items-center justify-center gap-2">
                     <span
-                      className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 ${cfg.badgeBorder}`}
+                      className={`flex h - 4 w - 4 shrink - 0 items - center justify - center rounded - sm border - 2 ${cfg.badgeBorder} `}
                       aria-hidden="true"
                     >
-                      <span className={`h-2 w-2 rounded-full ${cfg.badgeDot}`} />
+                      <span className={`h - 2 w - 2 rounded - full ${cfg.badgeDot} `} />
                     </span>
                     <span className="text-sm text-muted-foreground">
                       {cfg.badgeLabel}
@@ -252,7 +270,7 @@ export function ConfirmationScreen({
             </p>
           </div>
 
-          {status === "OPT_IN" && (
+          {promptRating && (
             <StarRating mealDate={mealDate} existingRating={existingRating} />
           )}
 

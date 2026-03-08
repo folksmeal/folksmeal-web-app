@@ -193,7 +193,7 @@ export function UserManagement({
                     <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
                         <div className="overflow-auto flex-1">
                             <table className="w-full text-sm relative">
-                                <thead className="sticky top-0 bg-muted z-10 shadow-sm">
+                                <thead className="sticky top-0 bg-slate-50 z-10">
                                     <tr className="border-b border-border">
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Employee ID</th>
@@ -246,7 +246,7 @@ export function UserManagement({
                     <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
                         <div className="overflow-auto flex-1">
                             <table className="w-full text-sm relative">
-                                <thead className="sticky top-0 bg-muted z-10 shadow-sm">
+                                <thead className="sticky top-0 bg-slate-50 z-10">
                                     <tr className="border-b border-border">
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</th>

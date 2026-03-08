@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
-import { MenuUploader } from "@/components/ops/menu-uploader"
+import { MenuUploadButton } from "@/components/ops/menu-upload-button"
 import { PaginationFooter } from "@/components/ops/pagination-footer"
 import { format } from "date-fns"
 
@@ -38,19 +38,13 @@ export default async function MenusPage({ searchParams }: { searchParams: { page
                 >
                     Menu Management
                 </h1>
-            </div>
-
-            <div className="shrink-0">
-                {effectiveAddressId && <MenuUploader addressId={effectiveAddressId} />}
+                {effectiveAddressId && <MenuUploadButton addressId={effectiveAddressId} />}
             </div>
 
             <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
-                <div className="border-b border-border px-5 py-3 shrink-0">
-                    <p className="text-sm font-medium text-foreground">Recent Menus</p>
-                </div>
                 <div className="overflow-auto flex-1">
                     <table className="w-full text-sm relative">
-                        <thead className="sticky top-0 bg-muted z-10 shadow-sm">
+                        <thead className="sticky top-0 bg-slate-50 z-10">
                             <tr className="border-b border-border">
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Date</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Day</th>
@@ -88,6 +82,7 @@ export default async function MenusPage({ searchParams }: { searchParams: { page
                     page={page}
                     totalPages={totalPages}
                     totalItems={totalItems}
+                    pageSize={take}
                     hrefBuilder={(p) => `/ops/menus?page=${p}`}
                 />
             </div>

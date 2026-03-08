@@ -30,15 +30,32 @@ export default async function DashboardPage({
     const timezone = locationTimezone || "Asia/Kolkata"
     const tomorrow = getTomorrowMidnightInTimezone(timezone)
 
-    const [address, menu, selection] = await Promise.all([
+    const today = new Date()
+    // Shift system time to location timezone accurately
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset())
+    const todayISO = today.toISOString().split("T")[0]
+    const todayMidnight = new Date(`${todayISO}T00:00:00.000Z`)
+
+    const [address, menu, selection, todaySelection, todayMenu] = await Promise.all([
         prisma.companyAddress.findUnique({
             where: { id: addressId },
+            select: { cutoffTime: true, workingDays: true },
         }),
         prisma.menu.findUnique({
             where: { addressId_date: { addressId, date: tomorrow } },
+            select: { date: true, day: true, vegItem: true, nonvegItem: true, sideBeverage: true, notes: true },
         }),
         prisma.mealSelection.findUnique({
             where: { employeeId_date: { employeeId: id, date: tomorrow } },
+            select: { status: true, preference: true, updatedAt: true },
+        }),
+        prisma.mealSelection.findUnique({
+            where: { employeeId_date: { employeeId: id, date: todayMidnight } },
+            select: { status: true },
+        }),
+        prisma.menu.findUnique({
+            where: { addressId_date: { addressId, date: todayMidnight } },
+            select: { id: true },
         }),
     ])
 
@@ -79,18 +96,29 @@ export default async function DashboardPage({
     const fullLocationName = `${companyName} - ${addressCity}`
 
     if (justSubmitted && existingSelection) {
-        const today = new Date()
-        today.setMinutes(today.getMinutes() - today.getTimezoneOffset())
-        const todayStr = today.toISOString().split("T")[0]
+        // Evaluate if the user is eligible to rate TODAY's meal
+        const isTodayWorkingDay = address?.workingDays.includes(todayMidnight.getDay()) ?? true
+        const didOptInToday = todaySelection?.status === "OPT_IN"
+        const hasMenuToday = !!todayMenu
 
-        const existingRating = await prisma.mealRating.findUnique({
-            where: {
-                employeeId_date: {
-                    employeeId: session.user.id as string,
-                    date: new Date(todayStr + "T00:00:00.000Z"),
+        // Is it past 2:00 PM (14:00) in the user's local timezone?
+        const currentHourInLocation = today.getHours()
+        const isPast2PM = currentHourInLocation >= 14
+
+        const promptRating = isTodayWorkingDay && didOptInToday && hasMenuToday && isPast2PM
+
+        let existingRating = null
+        if (promptRating) {
+            existingRating = await prisma.mealRating.findUnique({
+                where: {
+                    employeeId_date: {
+                        employeeId: id,
+                        date: todayMidnight,
+                    },
                 },
-            },
-        })
+                select: { rating: true, comment: true },
+            })
+        }
 
         return (
             <ConfirmationScreen
@@ -100,8 +128,9 @@ export default async function DashboardPage({
                 status={existingSelection.status}
                 preference={existingSelection.preference}
                 updatedAt={existingSelection.updatedAt}
-                mealDate={tomorrow.toISOString().split("T")[0]}
-                existingRating={existingRating ? { rating: existingRating.rating, comment: existingRating.comment } : null}
+                mealDate={todayISO} // Pass today for rating, not tomorrow
+                existingRating={existingRating}
+                promptRating={promptRating}
             />
         )
     }

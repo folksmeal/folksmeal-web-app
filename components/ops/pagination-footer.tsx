@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 
@@ -8,55 +7,57 @@ interface PaginationFooterProps {
     onPageChange?: (_page: number) => void
     hrefBuilder?: (_page: number) => string
     totalItems?: number
+    pageSize?: number
 }
 
-export function PaginationFooter({ page, totalPages, onPageChange, hrefBuilder, totalItems }: PaginationFooterProps) {
-    if (totalPages <= 1) return null
-
+export function PaginationFooter({ page, totalPages, onPageChange, hrefBuilder, totalItems, pageSize = 15 }: PaginationFooterProps) {
     const prevDisabled = page <= 1
     const nextDisabled = page >= totalPages
 
-    const renderButton = (isNext: boolean) => {
-        const content = (
-            <>
-                {!isNext && <ChevronLeft className="h-4 w-4" />}
-                <span className="sr-only sm:not-sr-only sm:inline">{isNext ? "Next" : "Prev"}</span>
-                {isNext && <ChevronRight className="h-4 w-4" />}
-            </>
-        )
-        const disabled = isNext ? nextDisabled : prevDisabled
-        const newPage = isNext ? page + 1 : page - 1
+    const ArrowBtn = ({ direction }: { direction: "prev" | "next" }) => {
+        const disabled = direction === "next" ? nextDisabled : prevDisabled
+        const newPage = direction === "next" ? page + 1 : page - 1
+        const Icon = direction === "next" ? ChevronRight : ChevronLeft
+
+        const className = `inline-flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 transition-colors ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-slate-50 hover:text-slate-900"
+            }`
 
         if (hrefBuilder && !disabled) {
             return (
-                <Link href={hrefBuilder(newPage)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-2 gap-1 py-0">
-                    {content}
+                <Link href={hrefBuilder(newPage)} className={className}>
+                    <Icon className="h-3.5 w-3.5" />
                 </Link>
             )
         }
 
         return (
-            <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0 px-2 flex items-center gap-1"
-                onClick={() => onPageChange?.(newPage)}
-                disabled={disabled}
-            >
-                {content}
-            </Button>
+            <button onClick={() => onPageChange?.(newPage)} disabled={disabled} className={className}>
+                <Icon className="h-3.5 w-3.5" />
+            </button>
         )
     }
 
+    // Calculate range: "1–15 of 47"
+    const start = totalItems !== undefined ? (page - 1) * pageSize + 1 : null
+    const end = totalItems !== undefined ? Math.min(page * pageSize, totalItems) : null
+
     return (
-        <div className="flex items-center justify-between border-t border-border px-4 py-3 bg-card mt-auto shrink-0">
-            <div className="flex items-center text-xs text-muted-foreground">
-                Page {page} of {totalPages} {totalItems !== undefined && `(${totalItems} total)`}
-            </div>
-            <div className="flex items-center gap-1">
-                {renderButton(false)}
-                {renderButton(true)}
-            </div>
+        <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-2.5 mt-auto shrink-0">
+            <span className="text-xs text-slate-500">
+                {totalItems !== undefined && start !== null && end !== null
+                    ? <>Showing <span className="font-medium text-slate-700">{start}–{end}</span> of <span className="font-medium text-slate-700">{totalItems}</span></>
+                    : `Page ${page}`
+                }
+            </span>
+            {totalPages > 1 && (
+                <div className="flex items-center gap-1.5">
+                    <ArrowBtn direction="prev" />
+                    <span className="text-xs text-slate-500 tabular-nums min-w-12 text-center">
+                        <span className="font-medium text-slate-700">{page}</span> of <span className="font-medium text-slate-700">{totalPages}</span>
+                    </span>
+                    <ArrowBtn direction="next" />
+                </div>
+            )}
         </div>
     )
 }
