@@ -77,7 +77,7 @@ export function LoginScreen() {
             <Input
               id="employee-id"
               type="text"
-              placeholder="e.g. EMP-1042"
+              placeholder="Enter your employee ID"
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
               className="h-11 bg-card"
