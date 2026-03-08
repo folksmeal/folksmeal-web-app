@@ -4,7 +4,6 @@ import { getEffectiveAddressId } from "@/lib/auth-helpers"
 import { MenuUploadButton } from "@/components/ops/menu-upload-button"
 import { PaginationFooter } from "@/components/ops/pagination-footer"
 import { format } from "date-fns"
-import { cn } from "@/lib/utils"
 
 export default async function MenusPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
     const session = await auth()
@@ -67,7 +66,7 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
                                     </td>
                                 </tr>
                             ) : (
-                                menus.map((menu, i) => (
+                                menus.map((menu, _i) => (
                                     <tr key={menu.id} className="transition-colors hover:bg-muted/30 border-b border-border">
                                         <td className="truncate px-4 py-3 font-medium text-foreground w-[20%]">
                                             {format(menu.date, "EEE, dd MMM yyyy")}

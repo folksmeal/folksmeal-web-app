@@ -2,7 +2,6 @@
 import { useCallback } from "react"
 import useSWR from "swr"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import {
     Download,
     Users,

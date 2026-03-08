@@ -5,8 +5,6 @@ import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
     Upload,
-    X,
-    FileSpreadsheet,
     Check,
     AlertCircle,
     Loader2,
@@ -27,7 +25,7 @@ interface UploadResult {
     error?: string
 }
 
-export function MenuUploader({ addressId, onClose }: MenuUploaderProps) {
+export function MenuUploader({ addressId, onClose: _onClose }: MenuUploaderProps) {
     const { data: session } = useSession()
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)

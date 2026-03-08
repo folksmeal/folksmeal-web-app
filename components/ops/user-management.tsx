@@ -238,7 +238,7 @@ export function UserManagement({
                                     {employees.length === 0 ? (
                                         <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-muted-foreground">No employees found</td></tr>
                                     ) : (
-                                        employees.map((emp, i) => (
+                                        employees.map((emp, _i) => (
                                             <tr key={emp.id} className="transition-colors hover:bg-muted/30 border-b border-border">
                                                 <td className="truncate px-4 py-3 font-medium text-foreground w-[25%]">{emp.name}</td>
                                                 <td className="truncate px-4 py-3 text-muted-foreground w-[20%]">{emp.employeeCode}</td>
@@ -293,7 +293,7 @@ export function UserManagement({
                                     {users.length === 0 ? (
                                         <tr><td colSpan={3} className="px-4 py-12 text-center text-sm text-muted-foreground">No admin users found</td></tr>
                                     ) : (
-                                        users.map((user, i) => (
+                                        users.map((user, _i) => (
                                             <tr key={user.id} className="transition-colors hover:bg-muted/30 border-b border-border">
                                                 <td className="truncate px-4 py-3 font-medium text-foreground w-[40%]">{user.name}</td>
                                                 <td className="truncate px-4 py-3 text-muted-foreground w-[45%]">{user.email}</td>

@@ -142,7 +142,7 @@ export async function PUT(request: NextRequest) {
             return apiError("Email already in use", 400, "EMAIL_IN_USE")
         }
 
-        const dataToUpdate: any = { name, email }
+        const dataToUpdate: { name: string; email: string; password?: string } = { name, email }
 
         if (password) {
             dataToUpdate.password = await bcrypt.hash(password, 12)

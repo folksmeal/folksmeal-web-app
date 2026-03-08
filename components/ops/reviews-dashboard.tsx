@@ -134,7 +134,7 @@ export function ReviewsDashboard({ initialDays, initialData }: { initialDays: nu
                             {!data?.reviews.length ? (
                                 <tr><td colSpan={4} className="px-4 py-12 text-center text-sm text-muted-foreground">No reviews yet</td></tr>
                             ) : (
-                                reviews.map((review: Review, i: number) => (
+                                reviews.map((review: Review, _i: number) => (
                                     <tr key={review.id} className="transition-colors hover:bg-muted/30 border-b border-border">
                                         <td className="truncate px-4 py-3 w-[25%]">
                                             <p className="font-medium text-foreground truncate">{review.employeeName}</p>
