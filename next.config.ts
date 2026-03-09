@@ -29,6 +29,10 @@ const nextConfig: NextConfig = {
             "date-fns",
             "recharts",
             "@radix-ui/react-icons",
+            "framer-motion",
+            "react-hook-form",
+            "swr",
+            "zod"
         ],
     },
 

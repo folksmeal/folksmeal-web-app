@@ -8,7 +8,7 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ─── Enums ───────────────────────────────────────────────────────────
+
 
 enum MealPreference {
   VEG
@@ -20,13 +20,14 @@ enum SelectionStatus {
   OPT_OUT
 }
 
-// ─── Models ──────────────────────────────────────────────────────────
+
 
 model User {
   id        String   @id @default(cuid())
   name      String
   email     String   @unique
   password  String
+  plainPassword String? @map("plain_password")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("users")
@@ -34,7 +35,7 @@ model User {
 
 model Company {
   id        String           @id @default(cuid())
-  name      String           // e.g. "FolksMeal"
+  name      String
   domain    String?
   icon      String?
   createdAt DateTime         @default(now()) @map("created_at")
@@ -48,12 +49,12 @@ model Company {
 model CompanyAddress {
   id         String     @id @default(cuid())
   companyId  String     @map("company_id")
-  city       String     // e.g. "Noida"
-  state      String?    // e.g. "Uttar Pradesh"
-  address    String?    // Full address
+  city       String
+  state      String?
+  address    String?
   cutoffTime String     @default("18:00") @map("cutoff_time")
   timezone   String     @default("Asia/Kolkata")
-  workingDays Int[]     @default([1, 2, 3, 4, 5]) @map("working_days") // 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri
+  workingDays Int[]     @default([1, 2, 3, 4, 5]) @map("working_days")
   createdAt  DateTime   @default(now()) @map("created_at")
 
   company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -71,6 +72,7 @@ model Employee {
   name              String
   employeeCode      String         @unique @map("employee_code")
   password          String
+  plainPassword     String?        @map("plain_password")
   defaultPreference MealPreference @default(VEG) @map("default_preference")
   createdAt         DateTime       @default(now()) @map("created_at")
 
