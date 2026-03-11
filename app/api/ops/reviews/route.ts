@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
         if (!user) return apiError("Forbidden", 403)
 
         const { searchParams } = new URL(request.url)
-        // Allow explicit query override, else fallback to effective address
         const queryAddressId = searchParams.get("addressId")
         const effectiveAddressId = queryAddressId || await getEffectiveAddressId(user)
 
@@ -35,12 +34,21 @@ export async function GET(request: NextRequest) {
             whereClause.employee = { addressId: effectiveAddressId }
         }
 
-        // Get total count and aggregated stats from full dataset
-        const [totalRatings, allRatings, paginatedRatings] = await Promise.all([
+        const [
+            totalRatings,
+            stats,
+            distributionRaw,
+            paginatedRatings,
+        ] = await Promise.all([
             prisma.mealRating.count({ where: whereClause }),
-            prisma.mealRating.findMany({
+            prisma.mealRating.aggregate({
                 where: whereClause,
-                select: { rating: true },
+                _avg: { rating: true },
+            }),
+            prisma.mealRating.groupBy({
+                by: ["rating"],
+                where: whereClause,
+                _count: { rating: true },
             }),
             prisma.mealRating.findMany({
                 where: whereClause,
@@ -53,14 +61,15 @@ export async function GET(request: NextRequest) {
             }),
         ])
 
-        const averageRating = totalRatings > 0
-            ? allRatings.reduce((sum, r) => sum + r.rating, 0) / totalRatings
-            : 0
+        const averageRating = stats._avg.rating || 0
 
-        const distribution = [1, 2, 3, 4, 5].map((star) => ({
-            star,
-            count: allRatings.filter((r) => r.rating === star).length,
-        }))
+        const distribution = [1, 2, 3, 4, 5].map((star) => {
+            const found = distributionRaw.find((d) => d.rating === star)
+            return {
+                star,
+                count: found ? found._count.rating : 0,
+            }
+        })
 
         return apiResponse({
             averageRating: Math.round(averageRating * 10) / 10,

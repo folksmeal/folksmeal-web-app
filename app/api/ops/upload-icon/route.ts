@@ -7,7 +7,7 @@ import path from "path"
 import { randomUUID } from "crypto"
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"]
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"]
 
 export async function POST(request: NextRequest) {
     return handleApiRequest(async () => {
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
         if (!ALLOWED_TYPES.includes(file.type)) {
             throw new ApiRequestError(
-                "Invalid file type. Only PNG, JPEG, WebP, and SVG are allowed.",
+                "Invalid file type. Only PNG, JPEG, and WebP are allowed.",
                 400,
                 "INVALID_FILE_TYPE"
             )
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Save file to public/uploads/icons/
-        const ext = file.name.split(".").pop() || "png"
+        const ext = file.type.split("/")[1] || "png"
         const filename = `${randomUUID()}.${ext}`
         const uploadDir = path.join(process.cwd(), "public", "uploads", "icons")
         await mkdir(uploadDir, { recursive: true })

@@ -10,8 +10,6 @@ export async function GET() {
             return apiResponse({
                 status: "healthy",
                 timestamp: new Date().toISOString(),
-                uptime: process.uptime(),
-                env: process.env.NODE_ENV,
                 database: "connected"
             })
         } catch (error) {

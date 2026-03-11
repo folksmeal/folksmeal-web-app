@@ -9,6 +9,7 @@ const ALLOWED_MIME_TYPES = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "application/vnd.ms-excel",
 ]
+const MAX_ROWS = 1000
 
 export async function POST(request: NextRequest) {
     return handleApiRequest(async () => {
@@ -51,6 +52,10 @@ export async function POST(request: NextRequest) {
         const sheet = workbook.worksheets[0]
         if (!sheet || sheet.rowCount <= 1) {
             throw new ApiRequestError("Excel file is empty or missing data rows", 400, "EMPTY_FILE")
+        }
+
+        if (sheet.rowCount > MAX_ROWS + 1) {
+            throw new ApiRequestError(`Excel file exceeds the maximum limit of ${MAX_ROWS} rows`, 400, "TOO_MANY_ROWS")
         }
 
         const results: { date: string; vegItem: string; nonvegItem: string | null; action: string }[] = []

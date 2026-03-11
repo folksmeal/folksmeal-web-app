@@ -1,18 +1,18 @@
-import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getTomorrowMidnightInTimezone } from "@/lib/utils/time"
+import { apiResponse, apiError, handleApiRequest } from "@/lib/api-utils"
 
 export async function GET() {
-    try {
+    return handleApiRequest(async () => {
         const session = await auth()
         if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+            return apiError("Unauthorized", 401)
         }
 
         const { addressId } = session.user
         if (!addressId) {
-            return NextResponse.json({ error: "No location assigned" }, { status: 400 })
+            return apiError("No location assigned", 400)
         }
 
         // Use the employee's timezone for accurate "tomorrow" calculation
@@ -29,7 +29,7 @@ export async function GET() {
         })
 
         if (!menu) {
-            return NextResponse.json({
+            return apiResponse({
                 date: tomorrow.toISOString(),
                 vegItem: null,
                 nonvegItem: null,
@@ -37,7 +37,7 @@ export async function GET() {
             })
         }
 
-        return NextResponse.json({
+        return apiResponse({
             date: menu.date.toISOString(),
             vegItem: menu.vegItem,
             nonvegItem: menu.nonvegItem,
@@ -45,11 +45,5 @@ export async function GET() {
             notes: menu.notes,
             available: true,
         })
-    } catch (error) {
-        console.error("[GET /api/menu]", error)
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        )
-    }
+    })
 }
