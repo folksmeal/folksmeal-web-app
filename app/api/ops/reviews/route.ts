@@ -31,7 +31,12 @@ export async function GET(request: NextRequest) {
         }
 
         if (effectiveAddressId) {
-            whereClause.employee = { addressId: effectiveAddressId }
+            whereClause.employee = {
+                addressId: effectiveAddressId,
+                ...(user.role === "ADMIN" && user.companyId ? { companyId: user.companyId } : {})
+            }
+        } else if (user.role === "ADMIN" && user.companyId) {
+            whereClause.employee = { companyId: user.companyId }
         }
 
         const [

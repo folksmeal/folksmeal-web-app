@@ -6,14 +6,21 @@ import Image from "next/image"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
+import { Loader2, Eye, EyeOff } from "lucide-react"
 
 export function LoginScreen() {
   const router = useRouter()
   const [employeeId, setEmployeeId] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSubmit(e as unknown as React.FormEvent);
+    }
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -34,10 +41,11 @@ export function LoginScreen() {
       const result = await signIn("credentials", {
         identifier: employeeId.trim(),
         password: password.trim(),
+        portal: "employee",
         redirect: false,
       })
       if (result?.error) {
-        setError("Invalid Employee ID or password.")
+        setError("Invalid credentials")
       } else {
         router.push("/dashboard")
         router.refresh()
@@ -61,9 +69,14 @@ export function LoginScreen() {
             className="h-10 w-auto"
             priority
           />
-          <p className="text-sm font-medium text-foreground">
-            FolksMeal Employee Portal
-          </p>
+          <div className="text-center">
+            <h1
+              className="text-xl font-semibold text-foreground"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
+              Employee Portal
+            </h1>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -92,16 +105,27 @@ export function LoginScreen() {
             >
               Password
             </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-11 bg-card"
-              autoComplete="current-password"
-              disabled={loading}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="h-11 bg-card"
+                autoComplete="current-password"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -121,10 +145,6 @@ export function LoginScreen() {
             )}
           </Button>
         </form>
-
-        <p className="mt-8 text-center text-[11px] leading-relaxed text-muted-foreground">
-          Use your company credentials to sign in.
-        </p>
       </div>
     </div>
   )

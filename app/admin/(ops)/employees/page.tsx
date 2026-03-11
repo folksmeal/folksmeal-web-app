@@ -1,13 +1,12 @@
 import { UserManagement } from "@/components/ops/user-management"
 import { auth } from "@/lib/auth"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
-
 import { prisma } from "@/lib/prisma"
 
-export default async function UsersPage({
+export default async function AdminEmployeesPage({
     searchParams
 }: {
-    searchParams: Promise<{ search?: string, tab?: string, empPage?: string, adminPage?: string }>
+    searchParams: Promise<{ search?: string, empPage?: string }>
 }) {
     const session = await auth()
     if (!session?.user) return null
@@ -17,13 +16,12 @@ export default async function UsersPage({
 
     const search = params.search || ""
     const empPage = Math.max(1, parseInt(params.empPage || "1"))
-    const adminPage = Math.max(1, parseInt(params.adminPage || "1"))
     const limit = 15
     const empSkip = (empPage - 1) * limit
-    const adminSkip = (adminPage - 1) * limit
 
     const empWhere = {
         ...(effectiveAddressId ? { addressId: effectiveAddressId } : {}),
+        ...(session.user.role === "ADMIN" ? { companyId: session.user.companyId! } : {}),
         ...(search ? {
             OR: [
                 { name: { contains: search, mode: "insensitive" as const } },
@@ -32,16 +30,7 @@ export default async function UsersPage({
         } : {})
     }
 
-    const adminWhere = {
-        ...(search ? {
-            OR: [
-                { name: { contains: search, mode: "insensitive" as const } },
-                { email: { contains: search, mode: "insensitive" as const } }
-            ]
-        } : {})
-    }
-
-    const [employees, totalEmployees, users, totalUsers] = await Promise.all([
+    const [employees, totalEmployees] = await Promise.all([
         prisma.employee.findMany({
             where: empWhere,
             include: { company: true, address: true },
@@ -50,13 +39,6 @@ export default async function UsersPage({
             skip: empSkip,
         }),
         prisma.employee.count({ where: empWhere }),
-        prisma.user.findMany({
-            where: adminWhere,
-            orderBy: { name: "asc" },
-            take: limit,
-            skip: adminSkip,
-        }),
-        prisma.user.count({ where: adminWhere })
     ])
 
     const serializedEmployees = employees.map((e) => ({
@@ -64,7 +46,7 @@ export default async function UsersPage({
         name: e.name,
         employeeCode: e.employeeCode,
         email: e.email,
-        defaultPreference: e.defaultPreference,
+        defaultPreference: e.defaultPreference as any,
         companyId: e.companyId,
         addressId: e.addressId,
         companyName: e.company.name,
@@ -72,20 +54,16 @@ export default async function UsersPage({
         createdAt: e.createdAt.toISOString(),
     }))
 
-    const serializedUsers = users.map((u) => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        createdAt: u.createdAt.toISOString(),
-    }))
-
     return (
-        <UserManagement
-            effectiveAddressId={effectiveAddressId || undefined}
-            initialEmployees={serializedEmployees}
-            totalEmployees={totalEmployees}
-            initialUsers={serializedUsers}
-            totalUsers={totalUsers}
-        />
+        <div className="flex-1 p-6 h-full overflow-hidden">
+            <UserManagement
+                effectiveAddressId={effectiveAddressId || undefined}
+                initialEmployees={serializedEmployees}
+                totalEmployees={totalEmployees}
+                initialUsers={[]}
+                totalUsers={0}
+                isAdminPortal={true}
+            />
+        </div>
     )
 }

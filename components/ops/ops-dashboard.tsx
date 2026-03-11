@@ -47,12 +47,11 @@ interface Stats {
 }
 
 interface OpsDashboardProps {
-    userName: string
-    companyName: string
     initialDate: string
     initialRows: SelectionRow[]
     totalRows: number
     initialStats: Stats
+    basePath?: string
 }
 
 type StatusFilter = "all" | "opted_in" | "opted_out" | "no_selection"
@@ -68,6 +67,7 @@ export function OpsDashboard({
     initialRows,
     totalRows,
     initialStats,
+    basePath = "/ops",
 }: OpsDashboardProps) {
     const router = useRouter()
     const pathname = usePathname()
@@ -87,7 +87,7 @@ export function OpsDashboard({
     query.set("limit", itemsPerPage.toString())
 
     const { data, error, isLoading } = useSWR<{ rows: SelectionRow[]; stats: Stats; pagination?: { total: number } }>(
-        `/api/ops/selections?${query.toString()}`,
+        `/api${basePath}/selections?${query.toString()}`,
         fetcher,
         {
             fallbackData: { rows: initialRows, stats: initialStats, pagination: { total: totalRows } },
@@ -114,12 +114,6 @@ export function OpsDashboard({
         const params = new URLSearchParams(searchParams.toString())
         params.set("status", newStatus)
         params.set("page", "1")
-        router.push(`${pathname}?${params.toString()}`)
-    }
-
-    const handlePageChange = (p: number) => {
-        const params = new URLSearchParams(searchParams.toString())
-        params.set("page", p.toString())
         router.push(`${pathname}?${params.toString()}`)
     }
 
@@ -353,8 +347,9 @@ export function OpsDashboard({
                 <PaginationFooter
                     page={pageParam}
                     totalPages={totalPages}
-                    onPageChange={handlePageChange}
                     totalItems={totalCount}
+                    pageSize={itemsPerPage}
+                    hrefPrefix={`${pathname}?${searchParams.toString()}&page=`}
                 />
             </div>
         </div>

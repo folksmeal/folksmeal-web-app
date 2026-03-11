@@ -9,11 +9,13 @@ import {
     handleApiRequest,
     parseBody,
 } from "@/lib/api-utils"
+import crypto from "crypto"
+import { encryptText, decryptText } from "@/lib/encryption"
 
 const createUserSchema = z.object({
     name: z.string().min(1, "Name is required").max(100),
     email: z.string().email("Invalid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: z.string().min(6, "Password must be at least 6 characters").optional(),
 })
 
 const updateUserSchema = z.object({
@@ -26,7 +28,7 @@ const updateUserSchema = z.object({
 export async function GET(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) return apiError("Forbidden", 403)
+        if (!user || user.role !== "SUPERADMIN") return apiError("Forbidden", 403)
 
         const { searchParams } = new URL(request.url)
         const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
@@ -54,10 +56,11 @@ export async function GET(request: NextRequest) {
         ])
 
         return apiResponse({
-            users: users.map((u) => ({
+            users: users.map((u: { id: string; name: string; email: string; plainPassword: string | null; createdAt: Date }) => ({
                 id: u.id,
                 name: u.name,
                 email: u.email,
+                password: u.plainPassword ? decryptText(u.plainPassword) : null,
                 createdAt: u.createdAt.toISOString(),
             })),
             pagination: {
@@ -73,7 +76,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) return apiError("Forbidden", 403)
+        if (!user || user.role !== "SUPERADMIN") return apiError("Forbidden", 403)
 
         const { name, email, password } = await parseBody(request, createUserSchema)
 
@@ -82,13 +85,16 @@ export async function POST(request: NextRequest) {
             return apiError("Email already in use", 400, "EMAIL_IN_USE")
         }
 
-        const hashedPassword = await bcrypt.hash(password, 12)
+        const actualPassword = password || crypto.randomBytes(4).toString("hex")
+        const hashedPassword = await bcrypt.hash(actualPassword, 12)
+        const encryptedPlain = encryptText(actualPassword)
 
         const newUser = await prisma.user.create({
             data: {
                 name,
                 email,
                 password: hashedPassword,
+                plainPassword: encryptedPlain,
             },
         })
 
@@ -106,7 +112,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) return apiError("Forbidden", 403)
+        if (!user || user.role !== "SUPERADMIN") return apiError("Forbidden", 403)
 
         const { searchParams } = new URL(request.url)
         const id = searchParams.get("id")
@@ -119,7 +125,7 @@ export async function DELETE(request: NextRequest) {
             return apiError("User not found", 404, "USER_NOT_FOUND")
         }
 
-        // Prevent deleting the last admin
+
         const adminCount = await prisma.user.count()
         if (adminCount <= 1) {
             return apiError("Cannot delete the last admin", 400, "LAST_ADMIN")
@@ -133,7 +139,7 @@ export async function DELETE(request: NextRequest) {
 export async function PUT(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) return apiError("Forbidden", 403)
+        if (!user || user.role !== "SUPERADMIN") return apiError("Forbidden", 403)
 
         const { id, name, email, password } = await parseBody(request, updateUserSchema)
 

@@ -9,6 +9,9 @@ export default async function LoginPage() {
     if (role === "SUPERADMIN") {
       redirect("/ops/dashboard")
     }
+    if (role === "ADMIN") {
+      redirect("/admin/dashboard")
+    }
     redirect("/dashboard")
   }
   return <LoginScreen />

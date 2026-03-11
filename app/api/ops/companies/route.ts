@@ -53,9 +53,18 @@ export async function GET(request: NextRequest) {
         const search = searchParams.get("search")?.trim() || ""
         const skip = (page - 1) * limit
 
-        const where = search
+        const searchFilter = search
             ? { name: { contains: search, mode: "insensitive" as const } }
             : {}
+
+        const roleFilter = user.role === "ADMIN" && user.companyId
+            ? { id: user.companyId }
+            : {}
+
+        const where = {
+            ...searchFilter,
+            ...roleFilter
+        }
 
         const [companies, total] = await Promise.all([
             prisma.company.findMany({
@@ -101,7 +110,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) return apiError("Forbidden", 403)
+        if (!user || user.role !== "SUPERADMIN") return apiError("Forbidden", 403)
 
         let body: Record<string, unknown>
         try {
@@ -132,7 +141,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) return apiError("Forbidden", 403)
+        if (!user || user.role !== "SUPERADMIN") return apiError("Forbidden", 403)
 
         let body: Record<string, unknown>
         try {
@@ -158,7 +167,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) return apiError("Forbidden", 403)
+        if (!user || user.role !== "SUPERADMIN") return apiError("Forbidden", 403)
 
         const { searchParams } = new URL(request.url)
         const id = searchParams.get("id")

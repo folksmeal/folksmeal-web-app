@@ -12,7 +12,7 @@ const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"]
 export async function POST(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
-        if (!user) return apiError("Forbidden", 403)
+        if (!user || user.role !== "SUPERADMIN") return apiError("Forbidden", 403)
 
         const formData = await request.formData()
         const file = formData.get("file") as File | null

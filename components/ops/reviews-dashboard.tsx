@@ -28,7 +28,7 @@ import { fetcher } from "@/lib/fetcher"
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 
-export function ReviewsDashboard({ initialDays, initialData }: { initialDays: number; initialData: ReviewsData }) {
+export function ReviewsDashboard({ initialDays, initialData, basePath = "/ops" }: { initialDays: number; initialData: ReviewsData; basePath?: string }) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -41,7 +41,7 @@ export function ReviewsDashboard({ initialDays, initialData }: { initialDays: nu
     query.set("page", pageParam.toString())
     query.set("limit", itemsPerPage.toString())
 
-    const { data } = useSWR<ReviewsData>(`/api/ops/reviews?${query.toString()}`, fetcher, { fallbackData: initialData })
+    const { data } = useSWR<ReviewsData>(`/api${basePath}/reviews?${query.toString()}`, fetcher, { fallbackData: initialData })
 
     const reviews = data?.reviews ?? []
 

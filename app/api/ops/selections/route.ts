@@ -18,7 +18,10 @@ export async function GET(request: NextRequest) {
         const queryAddressId = searchParams.get("addressId")
         const effectiveAddressId = queryAddressId || await getEffectiveAddressId(user)
 
-        const whereClauseAddress = effectiveAddressId ? { addressId: effectiveAddressId } : {}
+        const whereClauseAddress = {
+            ...(effectiveAddressId ? { addressId: effectiveAddressId } : {}),
+            ...(user.role === "ADMIN" && user.companyId ? { companyId: user.companyId } : {})
+        }
 
         let targetDate: Date
         if (dateParam) {

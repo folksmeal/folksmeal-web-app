@@ -50,16 +50,25 @@ async function main() {
     }
     console.log(`✅ ${addresses.length} Addresses seeded`)
 
-    // ─── Platform Admins ─────────────────────────────────────────────
-    const admins = [
-        { id: "admin-001", name: "Arjun Mehta", email: "admin@folksmeal.com", password: hashedPassword },
-        { id: "admin-002", name: "Priya Iyer", email: "priya@folksmeal.com", password: hashedPassword },
+    // ─── Admins ──────────────────────────────────────────────────────
+    const adminData = [
+        // Super Admins (Platform-wide)
+        { id: "admin-001", name: "Arjun Mehta", email: "admin@folksmeal.com", password: hashedPassword, role: "SUPERADMIN" as const },
+        { id: "admin-002", name: "Priya Iyer", email: "priya@folksmeal.com", password: hashedPassword, role: "SUPERADMIN" as const },
+
+        // Company Admins (Specific to a Company)
+        { id: "admin-tech", name: "Tech Admin", email: "tech-admin@techsolutions.in", password: hashedPassword, role: "ADMIN" as const, companyId: "company-techsolutions" },
+        { id: "admin-green", name: "Green Admin", email: "green-admin@greenleafpharma.com", password: hashedPassword, role: "ADMIN" as const, companyId: "company-greenleaf" },
     ]
 
-    for (const a of admins) {
-        await prisma.user.upsert({ where: { email: a.email }, update: {}, create: a })
+    for (const a of adminData) {
+        await prisma.user.upsert({
+            where: { email: a.email },
+            update: { role: a.role, companyId: a.companyId },
+            create: a
+        })
     }
-    console.log(`✅ ${admins.length} Admins seeded`)
+    console.log(`✅ ${adminData.length} Admins seeded (Super & Company)`)
 
     // ─── Employees ───────────────────────────────────────────────────
     const employeeData: { id: string; companyId: string; addressId: string; name: string; employeeCode: string; defaultPreference: MealPreference }[] = [
@@ -301,9 +310,11 @@ async function main() {
     // ─── Summary ─────────────────────────────────────────────────────
     console.log("\n🎉 Seed complete!\n")
     console.log("📋 Credentials (default password: password123):")
-    console.log("  Admin:      admin@folksmeal.com / priya@folksmeal.com")
-    console.log("  Employees:  TS-1001 through TS-2005 (TechSolutions)")
-    console.log("              GL-3001 through GL-4004 (GreenLeaf)")
+    console.log("  Platform Admin:  admin@folksmeal.com")
+    console.log("  Company Admins:  tech-admin@techsolutions.in (TechSolutions)")
+    console.log("                   green-admin@greenleafpharma.com (GreenLeaf)")
+    console.log("  Employees:       TS-1001 through TS-2005 (TechSolutions)")
+    console.log("                   GL-3001 through GL-4004 (GreenLeaf)")
     console.log("              SF-5001 through SF-6004 (Stellar)")
     console.log("              UC-7001 through UC-7004 (UrbanCraft)")
 }

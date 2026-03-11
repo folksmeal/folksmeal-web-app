@@ -129,6 +129,18 @@ const nextConfig: NextConfig = {
                 destination: "https://ops.folksmeal.com/:path*",
                 permanent: true,
             },
+            {
+                source: "/admin",
+                has: [{ type: "host", value: "(?!admin\\.).*" }],
+                destination: "https://admin.folksmeal.com/",
+                permanent: true,
+            },
+            {
+                source: "/admin/:path*",
+                has: [{ type: "host", value: "(?!admin\\.).*" }],
+                destination: "https://admin.folksmeal.com/:path*",
+                permanent: true,
+            },
         ]
     },
 }

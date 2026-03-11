@@ -27,10 +27,13 @@ export async function POST(request: NextRequest) {
             throw new ApiRequestError("Location ID (addressId) is required", 400, "MISSING_ADDRESS_ID")
         }
 
-        // Validate the address exists
         const address = await prisma.companyAddress.findUnique({ where: { id: addressId } })
         if (!address) {
             return apiError("Location not found", 404, "ADDRESS_NOT_FOUND")
+        }
+
+        if (user.role === "ADMIN" && user.companyId !== address.companyId) {
+            return apiError("Forbidden: Cannot upload menu for another company", 403, "FORBIDDEN")
         }
 
         if (file.size > MAX_FILE_SIZE) {

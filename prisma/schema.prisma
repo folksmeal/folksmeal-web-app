@@ -15,6 +15,11 @@ enum MealPreference {
   NONVEG
 }
 
+enum UserRole {
+  SUPERADMIN
+  ADMIN
+}
+
 enum SelectionStatus {
   OPT_IN
   OPT_OUT
@@ -23,13 +28,18 @@ enum SelectionStatus {
 
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  plainPassword String? @map("plain_password")
-  createdAt DateTime @default(now()) @map("created_at")
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  plainPassword String?  @map("plain_password")
+  role          UserRole @default(SUPERADMIN)
+  companyId     String?  @map("company_id")
+  createdAt     DateTime @default(now()) @map("created_at")
 
+  company       Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
   @@map("users")
 }
 
@@ -42,6 +52,7 @@ model Company {
 
   addresses CompanyAddress[]
   employees Employee[]
+  users     User[]
 
   @@map("companies")
 }
@@ -71,6 +82,7 @@ model Employee {
   addressId         String         @map("address_id")
   name              String
   employeeCode      String         @unique @map("employee_code")
+  email             String?        @unique
   password          String
   plainPassword     String?        @map("plain_password")
   defaultPreference MealPreference @default(VEG) @map("default_preference")

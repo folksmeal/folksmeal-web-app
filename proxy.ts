@@ -111,6 +111,32 @@ function handleOpsRouting(
     return NextResponse.rewrite(url)
 }
 
+function handleAdminRouting(
+    request: NextRequest,
+    pathname: string,
+    isAdminSubdomain: boolean,
+    hasSession: boolean
+): NextResponse {
+    const adminPath = pathname.startsWith("/admin")
+        ? pathname.replace(/^\/admin/, "") || "/"
+        : pathname
+
+    const loginTarget = isAdminSubdomain ? "/" : "/admin"
+    const isPublicPath = PUBLIC_PATHS.has(adminPath)
+
+    if (!hasSession && !isPublicPath) {
+        return redirect(request, loginTarget)
+    }
+
+    if (!isAdminSubdomain && pathname.startsWith("/admin")) {
+        return NextResponse.next()
+    }
+
+    const url = request.nextUrl.clone()
+    url.pathname = `/admin${adminPath}`
+    return NextResponse.rewrite(url)
+}
+
 function handleEmployeeRouting(
     request: NextRequest,
     pathname: string,
@@ -163,9 +189,14 @@ export function proxy(request: NextRequest): NextResponse {
     const hasSession = !!token
     const hostname = request.headers.get("host") || ""
     const isOpsSubdomain = hostname.startsWith("ops.")
+    const isAdminSubdomain = hostname.startsWith("admin.")
 
     if (isOpsSubdomain || pathname.startsWith("/ops")) {
         return handleOpsRouting(request, pathname, isOpsSubdomain, hasSession)
+    }
+
+    if (isAdminSubdomain || pathname.startsWith("/admin")) {
+        return handleAdminRouting(request, pathname, isAdminSubdomain, hasSession)
     }
 
     return handleEmployeeRouting(request, pathname, hasSession)

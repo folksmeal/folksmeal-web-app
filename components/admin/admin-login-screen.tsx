@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Loader2, Eye, EyeOff } from "lucide-react"
 
-export function OpsLoginScreen() {
+export function AdminLoginScreen() {
     const router = useRouter()
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -35,13 +35,13 @@ export function OpsLoginScreen() {
             const result = await signIn("credentials", {
                 identifier: email.trim(),
                 password: password.trim(),
-                portal: "ops",
+                portal: "admin",
                 redirect: false,
             })
             if (result?.error) {
                 setError("Invalid credentials")
             } else {
-                router.push("/ops/dashboard")
+                router.push("/admin/dashboard")
                 router.refresh()
             }
         } catch {
@@ -75,7 +75,7 @@ export function OpsLoginScreen() {
                             className="text-xl font-semibold text-foreground"
                             style={{ fontFamily: "var(--font-heading)" }}
                         >
-                            FolksMeal Operations
+                            Admin Portal
                         </h1>
                     </div>
                 </div>
@@ -91,7 +91,7 @@ export function OpsLoginScreen() {
                         <Input
                             id="admin-email"
                             type="email"
-                            placeholder="e.g. admin@folksmeal.com"
+                            placeholder="e.g. admin@company.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="h-11 bg-card"
@@ -101,14 +101,14 @@ export function OpsLoginScreen() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                         <Label
-                            htmlFor="ops-password"
+                            htmlFor="admin-password"
                             className="text-xs font-medium text-muted-foreground"
                         >
                             Password
                         </Label>
                         <div className="relative">
                             <Input
-                                id="ops-password"
+                                id="admin-password"
                                 type={showPassword ? "text" : "password"}
                                 placeholder="Enter your password"
                                 value={password}

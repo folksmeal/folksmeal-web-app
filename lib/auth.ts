@@ -53,12 +53,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     }
 
                     const identifier = credentials.identifier as string
+                    const portal = credentials.portal as string // "employee", "admin", or "ops"
                     const isEmail = identifier.includes("@")
 
-                    // Flow 1: Platform Super Admin Login
+                    // Flow 1: Platform Super Admin / Admin Portal Login (via Email)
                     if (isEmail) {
+                        // Admin/Ops portals MUST use flow 1
+                        if (portal !== "admin" && portal !== "ops") return null
+
                         const user = await prisma.user.findUnique({
                             where: { email: identifier },
+                            include: { company: true }
                         })
 
                         if (!user) return null
@@ -69,15 +74,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         )
                         if (!isValid) return null
 
+                        // Portal restrictions - STRICT SEPARATION
+                        if (portal === "ops" && user.role !== "SUPERADMIN") return null
+                        if (portal === "admin" && user.role !== "ADMIN") return null
+
                         return {
                             id: user.id,
                             name: user.name,
                             email: user.email,
-                            role: "SUPERADMIN",
+                            role: user.role, // SUPERADMIN or ADMIN
+                            companyId: user.companyId,
+                            companyName: user.company?.name,
+                            companyIcon: user.company?.icon,
                         }
                     }
 
-                    // Flow 2: Standard Employee Login
+                    // Flow 2: Standard Employee Login (via Employee Code)
+                    if (portal !== "employee") return null
+
                     const employee = await prisma.employee.findUnique({
                         where: { employeeCode: identifier },
                         include: {

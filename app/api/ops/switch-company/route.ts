@@ -24,6 +24,10 @@ export async function POST(request: NextRequest) {
             return apiError("Location not found", 404, "LOCATION_NOT_FOUND")
         }
 
+        if (user.role === "ADMIN" && address.companyId !== user.companyId) {
+            return apiError("Forbidden: Cannot switch to another company's location", 403, "FORBIDDEN")
+        }
+
         return apiResponse({
             success: true,
             newLocation: {
