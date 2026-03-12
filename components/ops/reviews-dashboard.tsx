@@ -125,20 +125,16 @@ export function ReviewsDashboard({ initialDays, initialData, basePath = "/ops" }
             </div>
 
             <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
-                <div className="shrink-0 border-b border-border bg-slate-50">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr>
+                <div className="overflow-auto flex-1">
+                    <table className="w-full text-sm table-fixed">
+                        <thead className="sticky top-0 z-10 bg-slate-50">
+                            <tr className="border-b border-border">
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[25%]">Employee</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[20%]">Rating</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[40%]">Comment</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Date</th>
                             </tr>
                         </thead>
-                    </table>
-                </div>
-                <div className="overflow-auto flex-1">
-                    <table className="w-full text-sm table-fixed">
                         <tbody>
                             {!data?.reviews.length ? (
                                 <tr><td colSpan={4} className="px-4 py-12 text-center text-sm text-muted-foreground">No reviews yet</td></tr>

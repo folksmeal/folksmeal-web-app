@@ -52,6 +52,7 @@ export default async function UsersPage({
         prisma.employee.count({ where: empWhere }),
         prisma.user.findMany({
             where: adminWhere,
+            include: { company: true },
             orderBy: { name: "asc" },
             take: limit,
             skip: adminSkip,
@@ -76,6 +77,9 @@ export default async function UsersPage({
         id: u.id,
         name: u.name,
         email: u.email,
+        role: u.role,
+        companyId: u.companyId,
+        companyName: u.company?.name ?? null,
         createdAt: u.createdAt.toISOString(),
     }))
 

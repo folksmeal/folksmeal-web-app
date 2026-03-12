@@ -45,6 +45,9 @@ interface User {
     id: string
     name: string
     email: string
+    role: "SUPERADMIN" | "ADMIN"
+    companyId: string | null
+    companyName: string | null
     password?: string | null
     createdAt: string
 }
@@ -402,32 +405,40 @@ function AdminUserTable({ users, onEdit, onDelete }: { users: User[], onEdit: (_
     return (
         <div className="flex min-h-0 flex-1 flex-col">
             <div className="shrink-0 border-b border-border bg-slate-50/80">
-                <table className="w-full min-w-160 text-sm table-fixed">
+                <table className="w-full min-w-190 text-sm table-fixed">
                     <thead>
                         <tr>
-                            <th className="w-[28%] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
-                            <th className="w-[38%] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</th>
-                            <th className="w-[24%] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Password</th>
+                            <th className="w-[24%] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
+                            <th className="w-[28%] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</th>
+                            <th className="w-[14%] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Role</th>
+                            <th className="w-[24%] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Company</th>
+                            <th className="w-[20%] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Password</th>
                             <th className="w-[10%] px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
                         </tr>
                     </thead>
                 </table>
             </div>
             <div className="flex-1 overflow-auto">
-                <table className="w-full min-w-160 text-sm table-fixed">
+                <table className="w-full min-w-190 text-sm table-fixed">
                     <tbody className="divide-y divide-border">
                         {users.length === 0 ? (
-                            <tr><td colSpan={4} className="px-4 py-16 text-center text-sm text-muted-foreground">No admin users found matching your search.</td></tr>
+                            <tr><td colSpan={6} className="px-4 py-16 text-center text-sm text-muted-foreground">No admin users found matching your search.</td></tr>
                         ) : (
                             users.map((user) => (
                                 <tr key={user.id} className="transition-colors hover:bg-muted/30">
-                                    <td className="w-[28%] px-4 py-3">
+                                    <td className="w-[24%] px-4 py-3">
                                         <p className="truncate font-medium text-foreground">{user.name}</p>
                                     </td>
-                                    <td className="w-[38%] px-4 py-3 text-muted-foreground">
+                                    <td className="w-[28%] px-4 py-3 text-muted-foreground">
                                         <p className="truncate">{user.email}</p>
                                     </td>
-                                    <td className="w-[24%] px-4 py-3">
+                                    <td className="w-[14%] px-4 py-3">
+                                        <p className="truncate text-sm text-foreground">{user.role === "SUPERADMIN" ? "Super Admin" : "Company Admin"}</p>
+                                    </td>
+                                    <td className="w-[24%] px-4 py-3 text-muted-foreground">
+                                        <p className="truncate">{user.companyName ?? "All companies"}</p>
+                                    </td>
+                                    <td className="w-[20%] px-4 py-3">
                                         <PasswordCell password={user.password} />
                                     </td>
                                     <td className="w-[10%] px-4 py-3 text-right">
@@ -614,16 +625,35 @@ function EmployeeForm({ employee, defaultAddressId, onSuccess, isAdminPortal }: 
 }
 
 function AdminUserForm({ user, onSuccess }: { user: User | null; onSuccess: () => void }) {
-    const [form, setForm] = useState({ name: user?.name ?? "", email: user?.email ?? "", password: "" })
+    const { data } = useSWR<{ companies: Company[] }>("/api/ops/companies", fetcher)
+    const companies = data?.companies ?? []
+    const [form, setForm] = useState({
+        name: user?.name ?? "",
+        email: user?.email ?? "",
+        role: user?.role ?? "ADMIN",
+        companyId: user?.companyId ?? "",
+        password: ""
+    })
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState("")
+
+    useEffect(() => {
+        if (form.role === "SUPERADMIN" && form.companyId) {
+            setForm((prev) => ({ ...prev, companyId: "" }))
+        }
+    }, [form.role, form.companyId])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setSubmitting(true)
         setError("")
         try {
-            const body = { ...form, id: user?.id, password: form.password || undefined }
+            const body = {
+                ...form,
+                id: user?.id,
+                companyId: form.role === "ADMIN" ? form.companyId : undefined,
+                password: form.password || undefined
+            }
             const res = await fetch("/api/ops/users", {
                 method: user ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
@@ -652,6 +682,33 @@ function AdminUserForm({ user, onSuccess }: { user: User | null; onSuccess: () =
             <div className="space-y-1.5">
                 <Label>Email Address</Label>
                 <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required placeholder="admin@folksmeal.com" autoComplete="off" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                    <Label>Role</Label>
+                    <Select value={form.role} onValueChange={(value) => setForm({ ...form, role: value as "SUPERADMIN" | "ADMIN" })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
+                            <SelectItem value="ADMIN">Company Admin</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-1.5">
+                    <Label>Company</Label>
+                    <Select
+                        value={form.companyId}
+                        onValueChange={(value) => setForm({ ...form, companyId: value })}
+                        disabled={form.role !== "ADMIN"}
+                    >
+                        <SelectTrigger><SelectValue placeholder={form.role === "ADMIN" ? "Select Company" : "Not required"} /></SelectTrigger>
+                        <SelectContent>
+                            {companies.map((company) => (
+                                <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
             <div className="space-y-1.5">
                 <Label>{user ? "Change Password" : "Password"}</Label>

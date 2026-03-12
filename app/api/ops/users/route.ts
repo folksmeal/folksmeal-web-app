@@ -16,6 +16,12 @@ const createUserSchema = z.object({
     name: z.string().min(1, "Name is required").max(100),
     email: z.string().email("Invalid email address"),
     password: z.string().min(6, "Password must be at least 6 characters").optional(),
+    role: z.enum(["SUPERADMIN", "ADMIN"]),
+    companyId: z.string().min(1).optional(),
+}).superRefine((data, ctx) => {
+    if (data.role === "ADMIN" && !data.companyId) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["companyId"], message: "Company is required for company admins" })
+    }
 })
 
 const updateUserSchema = z.object({
@@ -23,6 +29,12 @@ const updateUserSchema = z.object({
     name: z.string().min(1, "Name is required").max(100),
     email: z.string().email("Invalid email address"),
     password: z.string().min(6, "Password must be at least 6 characters").optional(),
+    role: z.enum(["SUPERADMIN", "ADMIN"]),
+    companyId: z.string().min(1).optional(),
+}).superRefine((data, ctx) => {
+    if (data.role === "ADMIN" && !data.companyId) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["companyId"], message: "Company is required for company admins" })
+    }
 })
 
 export async function GET(request: NextRequest) {
@@ -48,6 +60,7 @@ export async function GET(request: NextRequest) {
         const [users, total] = await Promise.all([
             prisma.user.findMany({
                 where,
+                include: { company: true },
                 orderBy: { name: "asc" },
                 skip,
                 take: limit,
@@ -56,10 +69,13 @@ export async function GET(request: NextRequest) {
         ])
 
         return apiResponse({
-            users: users.map((u: { id: string; name: string; email: string; plainPassword: string | null; createdAt: Date }) => ({
+            users: users.map((u: { id: string; name: string; email: string; role: string; companyId: string | null; company: { name: string } | null; plainPassword: string | null; createdAt: Date }) => ({
                 id: u.id,
                 name: u.name,
                 email: u.email,
+                role: u.role,
+                companyId: u.companyId,
+                companyName: u.company?.name ?? null,
                 password: u.plainPassword ? decryptText(u.plainPassword) : null,
                 createdAt: u.createdAt.toISOString(),
             })),
@@ -78,7 +94,7 @@ export async function POST(request: NextRequest) {
         const user = await requireAdmin()
         if (!user || user.role !== "SUPERADMIN") return apiError("Forbidden", 403)
 
-        const { name, email, password } = await parseBody(request, createUserSchema)
+        const { name, email, password, role, companyId } = await parseBody(request, createUserSchema)
 
         const existing = await prisma.user.findUnique({ where: { email } })
         if (existing) {
@@ -93,6 +109,8 @@ export async function POST(request: NextRequest) {
             data: {
                 name,
                 email,
+                role,
+                companyId: role === "ADMIN" ? companyId : null,
                 password: hashedPassword,
                 plainPassword: encryptedPlain,
             },
@@ -104,6 +122,8 @@ export async function POST(request: NextRequest) {
                 id: newUser.id,
                 name: newUser.name,
                 email: newUser.email,
+                role: newUser.role,
+                companyId: newUser.companyId,
             },
         })
     })
@@ -141,17 +161,23 @@ export async function PUT(request: NextRequest) {
         const user = await requireAdmin()
         if (!user || user.role !== "SUPERADMIN") return apiError("Forbidden", 403)
 
-        const { id, name, email, password } = await parseBody(request, updateUserSchema)
+        const { id, name, email, password, role, companyId } = await parseBody(request, updateUserSchema)
 
         const existing = await prisma.user.findUnique({ where: { email } })
         if (existing && existing.id !== id) {
             return apiError("Email already in use", 400, "EMAIL_IN_USE")
         }
 
-        const dataToUpdate: { name: string; email: string; password?: string } = { name, email }
+        const dataToUpdate: { name: string; email: string; role: "SUPERADMIN" | "ADMIN"; companyId: string | null; password?: string; plainPassword?: string } = {
+            name,
+            email,
+            role,
+            companyId: role === "ADMIN" ? (companyId ?? null) : null
+        }
 
         if (password) {
             dataToUpdate.password = await bcrypt.hash(password, 12)
+            dataToUpdate.plainPassword = encryptText(password)
         }
 
         const updatedUser = await prisma.user.update({
@@ -165,6 +191,8 @@ export async function PUT(request: NextRequest) {
                 id: updatedUser.id,
                 name: updatedUser.name,
                 email: updatedUser.email,
+                role: updatedUser.role,
+                companyId: updatedUser.companyId,
             },
         })
     })
