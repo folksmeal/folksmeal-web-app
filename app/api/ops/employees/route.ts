@@ -6,6 +6,7 @@ import { z } from "zod"
 import { apiResponse, apiError, handleApiRequest, parseBody } from "@/lib/api-utils"
 import crypto from "crypto"
 import { encryptText, decryptText } from "@/lib/encryption"
+import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
 
 type MealPreference = "VEG" | "NONVEG"
 
@@ -33,6 +34,9 @@ export async function GET(request: NextRequest) {
     return handleApiRequest(async () => {
         const adminUser = await requireAdmin()
         if (!adminUser) return apiError("Forbidden", 403)
+        if (!(await isCompanyAdminFeatureEnabled(adminUser, "employeeManagement"))) {
+            return apiError("Employee management is disabled for this company admin", 403, "FEATURE_DISABLED")
+        }
 
         const { searchParams } = new URL(request.url)
         const queryAddressId = searchParams.get("addressId")
@@ -94,6 +98,9 @@ export async function POST(request: NextRequest) {
     return handleApiRequest(async () => {
         const adminUser = await requireAdmin()
         if (!adminUser) return apiError("Forbidden", 403)
+        if (!(await isCompanyAdminFeatureEnabled(adminUser, "employeeManagement"))) {
+            return apiError("Employee management is disabled for this company admin", 403, "FEATURE_DISABLED")
+        }
 
         const body = await parseBody(request, createEmployeeSchema)
         const { name, employeeCode, email, password, defaultPreference, companyId, addressId } = body
@@ -143,6 +150,9 @@ export async function PUT(request: NextRequest) {
     return handleApiRequest(async () => {
         const adminUser = await requireAdmin()
         if (!adminUser) return apiError("Forbidden", 403)
+        if (!(await isCompanyAdminFeatureEnabled(adminUser, "employeeManagement"))) {
+            return apiError("Employee management is disabled for this company admin", 403, "FEATURE_DISABLED")
+        }
 
         const { id, password, email, ...updateData } = await parseBody(request, updateEmployeeSchema)
 
@@ -182,6 +192,9 @@ export async function DELETE(request: NextRequest) {
     return handleApiRequest(async () => {
         const adminUser = await requireAdmin()
         if (!adminUser) return apiError("Forbidden", 403)
+        if (!(await isCompanyAdminFeatureEnabled(adminUser, "employeeManagement"))) {
+            return apiError("Employee management is disabled for this company admin", 403, "FEATURE_DISABLED")
+        }
 
         const { searchParams } = new URL(request.url)
         const id = searchParams.get("id")

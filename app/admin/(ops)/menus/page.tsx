@@ -1,11 +1,15 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
+import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
+import { redirect } from "next/navigation"
 import { format, startOfWeek, endOfWeek, isToday, eachDayOfInterval } from "date-fns"
 
 export default async function MenusPage() {
     const session = await auth()
     if (!session?.user) return null
+    const hasMenuAccess = await isCompanyAdminFeatureEnabled(session.user, "menu")
+    if (!hasMenuAccess) redirect("/admin/dashboard")
 
     const effectiveAddressId = await getEffectiveAddressId(session.user)
 

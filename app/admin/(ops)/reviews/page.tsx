@@ -2,10 +2,14 @@ import { AdminReviewsDashboard } from "@/components/admin/admin-reviews-dashboar
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
+import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
+import { redirect } from "next/navigation"
 
 export default async function ReviewsPage({ searchParams }: { searchParams: Promise<{ days?: string, page?: string }> }) {
     const session = await auth()
     if (!session?.user) return null
+    const hasReviewsAccess = await isCompanyAdminFeatureEnabled(session.user, "reviews")
+    if (!hasReviewsAccess) redirect("/admin/dashboard")
 
     const effectiveAddressId = await getEffectiveAddressId(session.user)
     const params = await searchParams
@@ -20,10 +24,10 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
     since.setDate(since.getDate() - days)
 
     const whereClause: {
-        createdAt: { gte: Date };
+        date: { gte: Date };
         employee?: { addressId: string };
     } = {
-        createdAt: { gte: since },
+        date: { gte: since },
     }
 
     if (effectiveAddressId) {
@@ -41,7 +45,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
             include: {
                 employee: { select: { name: true, employeeCode: true, address: true } },
             },
-            orderBy: { createdAt: "desc" },
+            orderBy: [{ date: "desc" }, { createdAt: "desc" }],
             skip,
             take: limit,
         }),

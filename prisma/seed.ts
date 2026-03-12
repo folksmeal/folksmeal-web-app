@@ -34,6 +34,20 @@ async function main() {
     }
     console.log(`✅ ${companies.length} Companies seeded`)
 
+    for (const company of companies) {
+        await (prisma as any).companyAdminFeatureConfig.upsert({
+            where: { companyId: company.id },
+            update: {},
+            create: {
+                companyId: company.id,
+                employeeManagementEnabled: true,
+                menuEnabled: true,
+                reviewsEnabled: true,
+            },
+        })
+    }
+    console.log(`✅ ${companies.length} Company admin feature configs seeded`)
+
     // ─── Company Addresses ────────────────────────────────────────────
     const addresses = [
         { id: "addr-tech-noida", companyId: "company-techsolutions", city: "Noida", state: "Uttar Pradesh", address: "A-62, Sector 132, Noida Expressway", cutoffTime: "18:00", timezone: "Asia/Kolkata", workingDays: [1, 2, 3, 4, 5] },
@@ -306,6 +320,62 @@ async function main() {
     }
     console.log(`✅ ${selectionCount} Meal Selections seeded`)
     console.log(`✅ ${ratingCount} Meal Ratings seeded`)
+
+    // Ensure yesterday has deterministic rating data for key demo locations.
+    const yesterday = new Date(today)
+    yesterday.setDate(today.getDate() - 1)
+    yesterday.setHours(0, 0, 0, 0)
+
+    const guaranteedYesterdayRatings = [
+        {
+            employeeId: "emp-001",
+            addressId: "addr-tech-noida",
+            rating: 5,
+            comment: "Yesterday's lunch was excellent and fresh.",
+        },
+        {
+            employeeId: "emp-014",
+            addressId: "addr-green-mumbai",
+            rating: 4,
+            comment: "Good meal yesterday, especially the veg option.",
+        },
+    ]
+
+    for (const guaranteedEntry of guaranteedYesterdayRatings) {
+        const address = addresses.find((addr) => addr.id === guaranteedEntry.addressId)
+        if (!address || !address.workingDays.includes(yesterday.getDay())) continue
+
+        const employee = employeeData.find((emp) => emp.id === guaranteedEntry.employeeId)
+        if (!employee) continue
+
+        await prisma.mealSelection.upsert({
+            where: { employeeId_date: { employeeId: guaranteedEntry.employeeId, date: yesterday } },
+            update: {
+                status: SelectionStatus.OPT_IN,
+                preference: employee.defaultPreference,
+            },
+            create: {
+                employeeId: guaranteedEntry.employeeId,
+                date: yesterday,
+                status: SelectionStatus.OPT_IN,
+                preference: employee.defaultPreference,
+            },
+        })
+
+        await prisma.mealRating.upsert({
+            where: { employeeId_date: { employeeId: guaranteedEntry.employeeId, date: yesterday } },
+            update: {
+                rating: guaranteedEntry.rating,
+                comment: guaranteedEntry.comment,
+            },
+            create: {
+                employeeId: guaranteedEntry.employeeId,
+                date: yesterday,
+                rating: guaranteedEntry.rating,
+                comment: guaranteedEntry.comment,
+            },
+        })
+    }
 
     // ─── Summary ─────────────────────────────────────────────────────
     console.log("\n🎉 Seed complete!\n")

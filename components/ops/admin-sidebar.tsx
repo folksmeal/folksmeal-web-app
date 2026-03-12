@@ -28,11 +28,27 @@ interface AdminSidebarProps {
     companyName: string
     companyIcon?: string | null
     managedCompanies: ManagedCompany[]
+    showEmployeeManagement?: boolean
+    showMenu?: boolean
+    showReviews?: boolean
 }
 
-export function AdminSidebar({ companyName, companyIcon, managedCompanies }: AdminSidebarProps) {
+export function AdminSidebar({
+    companyName,
+    companyIcon,
+    managedCompanies,
+    showEmployeeManagement = true,
+    showMenu = true,
+    showReviews = true,
+}: AdminSidebarProps) {
     const pathname = usePathname()
     const [mobileOpen, setMobileOpen] = useState(false)
+    const visibleNavItems = navItems.filter((item) => {
+        if (!showEmployeeManagement && item.href === "/admin/employees") return false
+        if (!showMenu && item.href === "/admin/menus") return false
+        if (!showReviews && item.href === "/admin/reviews") return false
+        return true
+    })
 
     const sidebarContent = (
         <div className="flex h-full flex-col">
@@ -56,7 +72,7 @@ export function AdminSidebar({ companyName, companyIcon, managedCompanies }: Adm
             </div>
 
             <nav className="flex-1 space-y-1 px-3 py-2">
-                {navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                     const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                     return (
                         <Link

@@ -240,7 +240,7 @@ export function UserManagement({
 
                         {!isAdminPortal && (
                             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full xl:w-auto">
-                                <TabsList className="grid h-10 w-full grid-cols-2 rounded-xl border border-border bg-muted/50 p-1 xl:w-[280px]">
+                                <TabsList className="grid h-10 w-full grid-cols-2 rounded-xl border border-border bg-muted/50 p-1 xl:w-70">
                                     {["employees", "admins"].map((tab) => {
                                         const isSelected = activeTab === tab
                                         return (
@@ -335,7 +335,7 @@ function EmployeeTable({ employees, onEdit, onDelete, isAdminPortal }: { employe
     return (
         <div className="flex min-h-0 flex-1 flex-col">
             <div className="shrink-0 border-b border-border bg-slate-50/80">
-                <table className="w-full min-w-[760px] text-sm table-fixed">
+                <table className="w-full min-w-190 text-sm table-fixed">
                     <thead>
                         <tr>
                             <th className="w-[22%] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
@@ -350,7 +350,7 @@ function EmployeeTable({ employees, onEdit, onDelete, isAdminPortal }: { employe
                 </table>
             </div>
             <div className="flex-1 overflow-auto">
-                <table className="w-full min-w-[760px] text-sm table-fixed">
+                <table className="w-full min-w-190 text-sm table-fixed">
                     <tbody className="divide-y divide-border">
                         {employees.length === 0 ? (
                             <tr><td colSpan={isAdminPortal ? 6 : 7} className="px-4 py-16 text-center text-sm text-muted-foreground">{isAdminPortal ? "No employees found." : "No employees found matching your search."}</td></tr>
@@ -402,7 +402,7 @@ function AdminUserTable({ users, onEdit, onDelete }: { users: User[], onEdit: (_
     return (
         <div className="flex min-h-0 flex-1 flex-col">
             <div className="shrink-0 border-b border-border bg-slate-50/80">
-                <table className="w-full min-w-[640px] text-sm table-fixed">
+                <table className="w-full min-w-160 text-sm table-fixed">
                     <thead>
                         <tr>
                             <th className="w-[28%] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
@@ -414,7 +414,7 @@ function AdminUserTable({ users, onEdit, onDelete }: { users: User[], onEdit: (_
                 </table>
             </div>
             <div className="flex-1 overflow-auto">
-                <table className="w-full min-w-[640px] text-sm table-fixed">
+                <table className="w-full min-w-160 text-sm table-fixed">
                     <tbody className="divide-y divide-border">
                         {users.length === 0 ? (
                             <tr><td colSpan={4} className="px-4 py-16 text-center text-sm text-muted-foreground">No admin users found matching your search.</td></tr>

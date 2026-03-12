@@ -34,11 +34,12 @@ export function AdminReviewsDashboard({ initialDays, initialData, basePath = "/o
     const pathname = usePathname()
     const searchParams = useSearchParams()
 
+    const daysParam = Math.max(1, parseInt(searchParams.get("days") || initialDays.toString()))
     const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1"))
     const itemsPerPage = 15
 
     const query = new URLSearchParams()
-    query.set("days", initialDays.toString())
+    query.set("days", daysParam.toString())
     query.set("page", pageParam.toString())
     query.set("limit", itemsPerPage.toString())
 
@@ -81,7 +82,7 @@ export function AdminReviewsDashboard({ initialDays, initialData, basePath = "/o
                         {[7, 30, 90].map((d) => (
                             <Button
                                 key={d}
-                                variant={initialDays === d ? "default" : "outline"}
+                                variant={daysParam === d ? "default" : "outline"}
                                 className="h-10 rounded-xl px-5 text-xs"
                                 onClick={() => handleDaysChange(d)}
                             >

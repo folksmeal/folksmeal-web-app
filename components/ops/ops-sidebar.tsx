@@ -11,6 +11,7 @@ import {
     Building2,
     UtensilsCrossed,
     Star,
+    SlidersHorizontal,
     LogOut,
     Menu,
     X,
@@ -23,6 +24,7 @@ const navItems = [
     { href: "/ops/menus", label: "Menu Management", icon: UtensilsCrossed },
     { href: "/ops/users", label: "User Management", icon: Users },
     { href: "/ops/companies", label: "Company Management", icon: Building2 },
+    { href: "/ops/app-config", label: "App Config", icon: SlidersHorizontal },
     { href: "/ops/reviews", label: "Reviews", icon: Star },
 ]
 

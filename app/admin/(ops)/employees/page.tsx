@@ -1,7 +1,9 @@
 import { AdminEmployeeManagement } from "@/components/admin/admin-employee-management"
 import { auth } from "@/lib/auth"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
+import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
 import { prisma } from "@/lib/prisma"
+import { redirect } from "next/navigation"
 
 export default async function AdminEmployeesPage({
     searchParams
@@ -10,6 +12,8 @@ export default async function AdminEmployeesPage({
 }) {
     const session = await auth()
     if (!session?.user) return null
+    const hasEmployeeManagement = await isCompanyAdminFeatureEnabled(session.user, "employeeManagement")
+    if (!hasEmployeeManagement) redirect("/admin/dashboard")
 
     const effectiveAddressId = await getEffectiveAddressId(session.user)
     const params = await searchParams

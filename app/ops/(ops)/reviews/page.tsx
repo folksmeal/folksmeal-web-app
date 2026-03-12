@@ -21,7 +21,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
     since.setDate(since.getDate() - days)
 
     const whereClause: Prisma.MealRatingWhereInput = {
-        createdAt: { gte: since },
+        date: { gte: since },
     }
 
     if (effectiveAddressId) {
@@ -39,7 +39,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
             include: {
                 employee: { select: { name: true, employeeCode: true, address: true } },
             },
-            orderBy: { createdAt: "desc" },
+            orderBy: [{ date: "desc" }, { createdAt: "desc" }],
             skip,
             take: limit,
         }),

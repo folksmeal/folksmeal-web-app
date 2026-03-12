@@ -3,11 +3,15 @@ import { prisma } from "@/lib/prisma"
 import { requireAdmin, getEffectiveAddressId } from "@/lib/auth-helpers"
 import { Prisma } from "@prisma/client"
 import { apiResponse, apiError, handleApiRequest } from "@/lib/api-utils"
+import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
 
 export async function GET(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
         if (!user) return apiError("Forbidden", 403)
+        if (!(await isCompanyAdminFeatureEnabled(user, "reviews"))) {
+            return apiError("Reviews are disabled for this company admin", 403, "FEATURE_DISABLED")
+        }
 
         const { searchParams } = new URL(request.url)
         const queryAddressId = searchParams.get("addressId")
@@ -27,7 +31,7 @@ export async function GET(request: NextRequest) {
         since.setDate(since.getDate() - days)
 
         const whereClause: Prisma.MealRatingWhereInput = {
-            createdAt: { gte: since },
+            date: { gte: since },
         }
 
         if (effectiveAddressId) {
@@ -60,7 +64,7 @@ export async function GET(request: NextRequest) {
                 include: {
                     employee: { select: { name: true, employeeCode: true, address: true } },
                 },
-                orderBy: { createdAt: "desc" },
+                orderBy: [{ date: "desc" }, { createdAt: "desc" }],
                 skip,
                 take: limit,
             }),

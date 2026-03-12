@@ -5,11 +5,15 @@ import { apiError, handleApiRequest } from "@/lib/api-utils"
 import { decryptText } from "@/lib/encryption"
 import ExcelJS from "exceljs"
 import { MealPreference } from "@prisma/client"
+import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
 
 export async function GET(request: NextRequest) {
     return handleApiRequest(async () => {
         const adminUser = await requireAdmin()
         if (!adminUser) return apiError("Forbidden", 403)
+        if (!(await isCompanyAdminFeatureEnabled(adminUser, "employeeManagement"))) {
+            return apiError("Employee management is disabled for this company admin", 403, "FEATURE_DISABLED")
+        }
 
         const { searchParams } = new URL(request.url)
         const queryAddressId = searchParams.get("addressId")

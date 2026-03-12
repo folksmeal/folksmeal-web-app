@@ -6,6 +6,7 @@ import { apiResponse, apiError, handleApiRequest } from "@/lib/api-utils"
 import crypto from "crypto"
 import { encryptText } from "@/lib/encryption"
 import ExcelJS from "exceljs"
+import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
 
 type MealPreference = "VEG" | "NONVEG"
 
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest) {
     return handleApiRequest(async () => {
         const adminUser = await requireAdmin()
         if (!adminUser) return apiError("Forbidden", 403)
+        if (!(await isCompanyAdminFeatureEnabled(adminUser, "employeeManagement"))) {
+            return apiError("Employee management is disabled for this company admin", 403, "FEATURE_DISABLED")
+        }
 
         const formData = await request.formData()
         const file = formData.get("file") as File

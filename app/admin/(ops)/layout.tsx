@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { AdminSidebar } from "@/components/ops/admin-sidebar"
 import { cache } from "react"
+import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
 
 const getLocations = cache(async (companyId?: string | null) => {
     return prisma.companyAddress.findMany({
@@ -29,6 +30,11 @@ export default async function AdminAuthenticatedLayout({
 
     const sessionUser = session.user
     const locations = await getLocations(role === "ADMIN" ? companyId : undefined)
+    const [showEmployeeManagement, showMenu, showReviews] = await Promise.all([
+        isCompanyAdminFeatureEnabled(sessionUser, "employeeManagement"),
+        isCompanyAdminFeatureEnabled(sessionUser, "menu"),
+        isCompanyAdminFeatureEnabled(sessionUser, "reviews"),
+    ])
 
     const managedCompanies = locations.map((loc) => ({
         id: loc.id,
@@ -57,6 +63,9 @@ export default async function AdminAuthenticatedLayout({
                 companyName={locationName}
                 companyIcon={currentCompanyIcon}
                 managedCompanies={managedCompanies}
+                showEmployeeManagement={showEmployeeManagement}
+                showMenu={showMenu}
+                showReviews={showReviews}
             />
             <div className="lg:pl-64 flex flex-col h-screen w-full overflow-y-auto">
                 <main className="flex-1 flex flex-col w-full mx-auto max-w-7xl px-6 py-6 pt-16 lg:pt-6 min-h-0">
