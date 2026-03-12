@@ -5,7 +5,6 @@ import { useState, useTransition } from "react"
 import { Settings2, Users, Building2 } from "lucide-react"
 import { toast } from "sonner"
 import { fetcher } from "@/lib/fetcher"
-import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 
 interface CompanyConfigRow {

@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma"
+import { CompanyAdminFeatureConfig } from "@prisma/client"
 
 export type CompanyAdminFeatureKey = "employeeManagement" | "menu" | "reviews"
 
-export async function getCompanyAdminFeatureConfig(companyId: string) {
-    return (prisma as any).companyAdminFeatureConfig.upsert({
+export async function getCompanyAdminFeatureConfig(companyId: string): Promise<CompanyAdminFeatureConfig> {
+    return prisma.companyAdminFeatureConfig.upsert({
         where: { companyId },
         update: {},
         create: { companyId },

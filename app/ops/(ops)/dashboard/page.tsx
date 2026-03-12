@@ -99,23 +99,8 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
     const totalRows = filteredRows.length
     const paginatedRows = filteredRows.slice((page - 1) * limit, page * limit)
 
-    let companyName = "Select Company"
-    if (sessionUser.companyName && sessionUser.addressCity) {
-        companyName = `${sessionUser.companyName} - ${sessionUser.addressCity}`
-    } else if (effectiveAddressId) {
-        const address = await prisma.companyAddress.findUnique({
-            where: { id: effectiveAddressId },
-            include: { company: true }
-        })
-        if (address) {
-            companyName = `${address.company.name} - ${address.city}`
-        }
-    }
-
     return (
         <OpsDashboard
-            userName={sessionUser.name || "Admin"}
-            companyName={companyName}
             initialDate={targetDate.toISOString().split("T")[0]}
             initialRows={paginatedRows}
             totalRows={totalRows}

@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import { getTomorrowMidnightInTimezone } from "@/lib/utils/time"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
 
@@ -49,6 +50,13 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
         }),
     ])
 
+    type SelectionWithEmployee = Prisma.MealSelectionGetPayload<{
+        include: { employee: { include: { company: true; address: true } } }
+    }>
+    type EmployeeWithRelations = Prisma.EmployeeGetPayload<{
+        include: { company: true; address: true }
+    }>
+
     const totalEmployees = allEmployees.length
 
     const selectionEmployeeIds = new Set(selections.map((s: { employeeId: string }) => s.employeeId))
@@ -66,7 +74,7 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
         missingInput: employeesWithoutSelection.length,
     }
 
-    const selectionRows = selections.map((s: any) => ({
+    const selectionRows = selections.map((s: SelectionWithEmployee) => ({
         employeeName: s.employee.name,
         employeeCode: s.employee.employeeCode,
         company: `${s.employee.company.name} - ${s.employee.address.city}`,
@@ -76,7 +84,7 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
         updatedAt: s.updatedAt.toISOString(),
     }))
 
-    const noSelectionRows = employeesWithoutSelection.map((e: any) => ({
+    const noSelectionRows = employeesWithoutSelection.map((e: EmployeeWithRelations) => ({
         employeeName: e.name,
         employeeCode: e.employeeCode,
         company: `${e.company.name} - ${e.address.city}`,
@@ -98,19 +106,6 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
 
     const totalRows = filteredRows.length
     const paginatedRows = filteredRows.slice((page - 1) * limit, page * limit)
-
-    let companyName = "Select Company"
-    if (sessionUser.companyName && sessionUser.addressCity) {
-        companyName = `${sessionUser.companyName} - ${sessionUser.addressCity}`
-    } else if (effectiveAddressId) {
-        const address = await prisma.companyAddress.findUnique({
-            where: { id: effectiveAddressId },
-            include: { company: true }
-        })
-        if (address) {
-            companyName = `${address.company.name} - ${address.city}`
-        }
-    }
 
     return (
         <AdminDashboard

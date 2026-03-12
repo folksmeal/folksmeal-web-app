@@ -35,7 +35,7 @@ async function main() {
     console.log(`✅ ${companies.length} Companies seeded`)
 
     for (const company of companies) {
-        await (prisma as any).companyAdminFeatureConfig.upsert({
+        await prisma.companyAdminFeatureConfig.upsert({
             where: { companyId: company.id },
             update: {},
             create: {

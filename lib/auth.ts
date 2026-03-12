@@ -3,6 +3,14 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 
+type LoginPortal = "employee" | "admin" | "ops"
+
+interface LoginCredentials {
+    identifier: string
+    password: string
+    portal: LoginPortal
+}
+
 declare module "next-auth" {
     interface User {
         role?: string
@@ -45,15 +53,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             credentials: {
                 identifier: { label: "Email or Employee ID", type: "text" },
                 password: { label: "Password", type: "password" },
+                portal: { label: "Portal", type: "text" },
             },
             async authorize(credentials) {
                 try {
-                    if (!credentials?.identifier || !credentials?.password) {
+                    const parsedCredentials = credentials as Partial<LoginCredentials> | undefined
+
+                    if (
+                        !parsedCredentials?.identifier ||
+                        !parsedCredentials?.password ||
+                        !parsedCredentials?.portal
+                    ) {
                         return null
                     }
 
-                    const identifier = credentials.identifier as string
-                    const portal = credentials.portal as string // "employee", "admin", or "ops"
+                    const { identifier, password, portal } = parsedCredentials
                     const isEmail = identifier.includes("@")
 
                     // Flow 1: Platform Super Admin / Admin Portal Login (via Email)
@@ -69,7 +83,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         if (!user) return null
 
                         const isValid = await bcrypt.compare(
-                            credentials.password as string,
+                            password,
                             user.password
                         )
                         if (!isValid) return null
@@ -103,7 +117,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     if (!employee) return null
 
                     const isValid = await bcrypt.compare(
-                        credentials.password as string,
+                        password,
                         employee.password
                     )
                     if (!isValid) return null

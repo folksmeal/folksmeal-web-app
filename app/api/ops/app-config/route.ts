@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server"
+import { CompanyAdminFeatureConfig } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth-helpers"
 import { apiError, apiResponse, handleApiRequest } from "@/lib/api-utils"
@@ -23,11 +24,11 @@ export async function GET() {
                 },
                 orderBy: { name: "asc" },
             }),
-            (prisma as any).companyAdminFeatureConfig.findMany(),
+            prisma.companyAdminFeatureConfig.findMany(),
         ])
 
         const configByCompanyId = new Map<string, { employeeManagementEnabled: boolean; menuEnabled: boolean; reviewsEnabled: boolean }>(
-            configs.map((config: { companyId: string; employeeManagementEnabled: boolean; menuEnabled: boolean; reviewsEnabled: boolean }) => [
+            configs.map((config: CompanyAdminFeatureConfig) => [
                 config.companyId,
                 {
                     employeeManagementEnabled: config.employeeManagementEnabled,
@@ -65,7 +66,7 @@ export async function PUT(request: NextRequest) {
 
         const body = updateConfigSchema.parse(await request.json())
 
-        const config = await (prisma as any).companyAdminFeatureConfig.upsert({
+        const config = await prisma.companyAdminFeatureConfig.upsert({
             where: { companyId: body.companyId },
             update: {
                 employeeManagementEnabled: body.employeeManagementEnabled,
