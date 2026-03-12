@@ -50,7 +50,7 @@ export default async function MenusPage() {
                             Menu
                         </h1>
                         <p className="max-w-2xl text-sm text-muted-foreground">
-                            Review the current week&apos;s menu for {locationLabel}. Only configured working days are shown.
+                            This week&apos;s menu for {locationLabel}.
                         </p>
                     </div>
                     <div className="shrink-0 self-start rounded-xl border border-border bg-muted/30 px-4 py-2 text-center lg:self-auto">
