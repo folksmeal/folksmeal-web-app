@@ -62,13 +62,14 @@ interface Company {
     addresses: Address[]
 }
 
-export function UserManagement({
+export function AdminEmployeeManagement({
     effectiveAddressId,
     initialEmployees,
     totalEmployees,
     initialUsers,
     totalUsers,
-    isAdminPortal = false
+    isAdminPortal = false,
+    apiBasePath = "/admin",
 }: {
     effectiveAddressId?: string
     initialEmployees: Employee[]
@@ -76,6 +77,7 @@ export function UserManagement({
     initialUsers: User[]
     totalUsers: number
     isAdminPortal?: boolean
+    apiBasePath?: string
 }) {
     const headingFontStyle = { fontFamily: "var(--font-heading)" } as const
     const router = useRouter()
@@ -104,12 +106,12 @@ export function UserManagement({
     }, [search, adminPage])
 
     const { data: empData, mutate: mutateEmp } = useSWR<{ employees: Employee[], pagination?: { total: number } }>(
-        `/api/ops/employees?${empQuery}`,
+        `/api${apiBasePath}/employees?${empQuery}`,
         fetcher,
         { fallbackData: { employees: initialEmployees, pagination: { total: totalEmployees } }, revalidateOnFocus: false }
     )
     const { data: userData, mutate: mutateUser } = useSWR<{ users: User[], pagination?: { total: number } }>(
-        isAdminPortal ? null : `/api/ops/users?${adminQuery}`,
+        isAdminPortal ? null : `/api${apiBasePath}/users?${adminQuery}`,
         fetcher,
         { fallbackData: { users: initialUsers, pagination: { total: totalUsers } }, revalidateOnFocus: false }
     )
@@ -159,7 +161,7 @@ export function UserManagement({
         <div className="flex h-full flex-col gap-6 overflow-hidden">
             <div className="rounded-lg border border-border bg-card px-4 py-3 sm:px-5 sm:py-4">
                 <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div className="space-y-0.5">
                             <h1 className="text-lg font-semibold text-foreground" style={headingFontStyle}>
                                 {isAdminPortal ? "Employee Management" : "User Management"}
@@ -171,7 +173,7 @@ export function UserManagement({
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            <ExportButton effectiveAddressId={effectiveAddressId} />
+                            <ExportButton effectiveAddressId={effectiveAddressId} apiBasePath={apiBasePath} />
 
                             <Dialog>
                                 <DialogTrigger asChild>
@@ -184,7 +186,12 @@ export function UserManagement({
                                     <DialogHeader>
                                         <DialogTitle>Bulk Upload Employees</DialogTitle>
                                     </DialogHeader>
-                                    <BulkUploadForm defaultAddressId={effectiveAddressId} onSuccess={mutateEmp} isAdminPortal={isAdminPortal} />
+                                    <BulkUploadForm
+                                        defaultAddressId={effectiveAddressId}
+                                        onSuccess={mutateEmp}
+                                        isAdminPortal={isAdminPortal}
+                                        apiBasePath={apiBasePath}
+                                    />
                                 </DialogContent>
                             </Dialog>
 
@@ -204,6 +211,7 @@ export function UserManagement({
                                         defaultAddressId={effectiveAddressId}
                                         onSuccess={() => { setEmpDialogOpen(false); setEditingEmployee(null); mutateEmp() }}
                                         isAdminPortal={isAdminPortal}
+                                        apiBasePath={apiBasePath}
                                     />
                                 </DialogContent>
                             </Dialog>
@@ -220,7 +228,11 @@ export function UserManagement({
                                         <DialogHeader>
                                             <DialogTitle>{editingUser ? "Edit User" : "Create User"}</DialogTitle>
                                         </DialogHeader>
-                                        <AdminUserForm user={editingUser} onSuccess={() => { setUserDialogOpen(false); setEditingUser(null); mutateUser() }} />
+                                        <AdminUserForm
+                                            user={editingUser}
+                                            onSuccess={() => { setUserDialogOpen(false); setEditingUser(null); mutateUser() }}
+                                            apiBasePath={apiBasePath}
+                                        />
                                     </DialogContent>
                                 </Dialog>
                             )}
@@ -283,6 +295,7 @@ export function UserManagement({
                             onEdit={(emp) => { setEditingEmployee(emp); setEmpDialogOpen(true) }}
                             onDelete={mutateEmp}
                             isAdminPortal={isAdminPortal}
+                            apiBasePath={apiBasePath}
                         />
                         <div className="shrink-0 border-t border-border bg-card">
                             <PaginationFooter
@@ -311,6 +324,7 @@ export function UserManagement({
                             users={users}
                             onEdit={(u) => { setEditingUser(u); setUserDialogOpen(true) }}
                             onDelete={mutateUser}
+                            apiBasePath={apiBasePath}
                         />
                         <div className="shrink-0 border-t border-border bg-card">
                             <PaginationFooter
@@ -331,7 +345,19 @@ export function UserManagement({
     )
 }
 
-function EmployeeTable({ employees, onEdit, onDelete, isAdminPortal }: { employees: Employee[], onEdit: (_employee: Employee) => void, onDelete: () => void, isAdminPortal?: boolean }) {
+function EmployeeTable({
+    employees,
+    onEdit,
+    onDelete,
+    isAdminPortal,
+    apiBasePath,
+}: {
+    employees: Employee[]
+    onEdit: (_employee: Employee) => void
+    onDelete: () => void
+    isAdminPortal?: boolean
+    apiBasePath: string
+}) {
     return (
         <div className="flex min-h-0 flex-1 flex-col">
             <div className="shrink-0 border-b border-border bg-slate-50/80">
@@ -385,7 +411,7 @@ function EmployeeTable({ employees, onEdit, onDelete, isAdminPortal }: { employe
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => onEdit(emp)}>
                                                 <Pencil className="h-3.5 w-3.5" />
                                             </Button>
-                                            <DeleteButton id={emp.id} endpoint="/api/ops/employees" onDelete={onDelete} />
+                                            <DeleteButton id={emp.id} endpoint={`/api${apiBasePath}/employees`} onDelete={onDelete} />
                                         </div>
                                     </td>
                                 </tr>
@@ -398,7 +424,17 @@ function EmployeeTable({ employees, onEdit, onDelete, isAdminPortal }: { employe
     )
 }
 
-function AdminUserTable({ users, onEdit, onDelete }: { users: User[], onEdit: (_user: User) => void, onDelete: () => void }) {
+function AdminUserTable({
+    users,
+    onEdit,
+    onDelete,
+    apiBasePath,
+}: {
+    users: User[]
+    onEdit: (_user: User) => void
+    onDelete: () => void
+    apiBasePath: string
+}) {
     return (
         <div className="flex min-h-0 flex-1 flex-col">
             <div className="shrink-0 border-b border-border bg-slate-50/80">
@@ -435,7 +471,7 @@ function AdminUserTable({ users, onEdit, onDelete }: { users: User[], onEdit: (_
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => onEdit(user)}>
                                                 <Pencil className="h-3.5 w-3.5" />
                                             </Button>
-                                            <DeleteButton id={user.id} endpoint="/api/ops/users" onDelete={onDelete} />
+                                            <DeleteButton id={user.id} endpoint={`/api${apiBasePath}/users`} onDelete={onDelete} />
                                         </div>
                                     </td>
                                 </tr>
@@ -488,8 +524,20 @@ function PasswordCell({ password }: { password?: string | null }) {
     )
 }
 
-function EmployeeForm({ employee, defaultAddressId, onSuccess, isAdminPortal }: { employee: Employee | null; defaultAddressId?: string; onSuccess: () => void, isAdminPortal?: boolean }) {
-    const { data } = useSWR<{ companies: Company[] }>("/api/ops/companies", fetcher)
+function EmployeeForm({
+    employee,
+    defaultAddressId,
+    onSuccess,
+    isAdminPortal,
+    apiBasePath,
+}: {
+    employee: Employee | null
+    defaultAddressId?: string
+    onSuccess: () => void
+    isAdminPortal?: boolean
+    apiBasePath: string
+}) {
+    const { data } = useSWR<{ companies: Company[] }>(`/api${apiBasePath}/companies`, fetcher)
     const companies = data?.companies ?? []
 
     const [form, setForm] = useState({
@@ -527,7 +575,7 @@ function EmployeeForm({ employee, defaultAddressId, onSuccess, isAdminPortal }: 
                 defaultPreference: form.preference,
                 password: form.password || undefined
             }
-            const res = await fetch("/api/ops/employees", {
+            const res = await fetch(`/api${apiBasePath}/employees`, {
                 method: employee ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body),
@@ -613,7 +661,7 @@ function EmployeeForm({ employee, defaultAddressId, onSuccess, isAdminPortal }: 
     )
 }
 
-function AdminUserForm({ user, onSuccess }: { user: User | null; onSuccess: () => void }) {
+function AdminUserForm({ user, onSuccess, apiBasePath }: { user: User | null; onSuccess: () => void; apiBasePath: string }) {
     const [form, setForm] = useState({ name: user?.name ?? "", email: user?.email ?? "", password: "" })
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState("")
@@ -624,7 +672,7 @@ function AdminUserForm({ user, onSuccess }: { user: User | null; onSuccess: () =
         setError("")
         try {
             const body = { ...form, id: user?.id, password: form.password || undefined }
-            const res = await fetch("/api/ops/users", {
+            const res = await fetch(`/api${apiBasePath}/users`, {
                 method: user ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body),
@@ -674,8 +722,18 @@ function AdminUserForm({ user, onSuccess }: { user: User | null; onSuccess: () =
     )
 }
 
-function BulkUploadForm({ defaultAddressId, onSuccess, isAdminPortal }: { defaultAddressId?: string; onSuccess: () => void; isAdminPortal?: boolean }) {
-    const { data } = useSWR<{ companies: Company[] }>("/api/ops/companies", fetcher)
+function BulkUploadForm({
+    defaultAddressId,
+    onSuccess,
+    isAdminPortal,
+    apiBasePath,
+}: {
+    defaultAddressId?: string
+    onSuccess: () => void
+    isAdminPortal?: boolean
+    apiBasePath: string
+}) {
+    const { data } = useSWR<{ companies: Company[] }>(`/api${apiBasePath}/companies`, fetcher)
     const companies = data?.companies ?? []
 
     const [file, setFile] = useState<File | null>(null)
@@ -727,7 +785,7 @@ function BulkUploadForm({ defaultAddressId, onSuccess, isAdminPortal }: { defaul
         fd.append("companyId", companyId)
         fd.append("addressId", addressId)
         try {
-            const res = await fetch("/api/ops/employees/bulk", { method: "POST", body: fd })
+            const res = await fetch(`/api${apiBasePath}/employees/bulk`, { method: "POST", body: fd })
             const data = await res.json()
             if (res.ok) {
                 setResult(data)
@@ -818,12 +876,12 @@ function BulkUploadForm({ defaultAddressId, onSuccess, isAdminPortal }: { defaul
     )
 }
 
-function ExportButton({ effectiveAddressId }: { effectiveAddressId?: string }) {
+function ExportButton({ effectiveAddressId, apiBasePath }: { effectiveAddressId?: string; apiBasePath: string }) {
     const [exporting, setExporting] = useState(false)
     const handleExport = useCallback(async () => {
         setExporting(true)
         try {
-            const res = await fetch(`/api/ops/employees/export${effectiveAddressId ? `?addressId=${effectiveAddressId}` : ""}`)
+            const res = await fetch(`/api${apiBasePath}/employees/export${effectiveAddressId ? `?addressId=${effectiveAddressId}` : ""}`)
             if (!res.ok) throw new Error("Export failed")
             const blob = await res.blob()
             const url = window.URL.createObjectURL(blob)

@@ -28,7 +28,7 @@ import { fetcher } from "@/lib/fetcher"
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 
-export function ReviewsDashboard({ initialDays, initialData, basePath = "/ops" }: { initialDays: number; initialData: ReviewsData; basePath?: string }) {
+export function AdminReviewsDashboard({ initialDays, initialData, basePath = "/ops" }: { initialDays: number; initialData: ReviewsData; basePath?: string }) {
     const headingFontStyle = { fontFamily: "var(--font-heading)" } as const
     const router = useRouter()
     const pathname = usePathname()

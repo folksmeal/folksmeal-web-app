@@ -13,10 +13,9 @@ import {
     Menu,
     Users,
     X,
-    Building2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { type ManagedCompany } from "@/components/ops/company-switcher"
+import { CompanySwitcher, type ManagedCompany } from "@/components/ops/company-switcher"
 
 const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -48,32 +47,12 @@ export function AdminSidebar({ companyName, companyIcon, managedCompanies }: Adm
                 />
             </div>
 
-            <div className="px-5 py-3">
-                <div className="flex w-full h-11 items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-4 py-2">
-                    {companyIcon ? (
-                        <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-md border border-border/50 bg-card">
-                            <Image
-                                src={companyIcon}
-                                alt={companyName}
-                                fill
-                                className="object-contain p-0.5"
-                                unoptimized
-                            />
-                        </div>
-                    ) : (
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border/50 bg-card">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                    )}
-                    <div className="flex flex-col min-w-0">
-                        <span className="truncate text-sm font-bold text-foreground leading-tight">
-                            {companyName.split(' - ')[0]}
-                        </span>
-                        <span className="truncate text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                            {companyName.split(' - ')[1] || 'Dashboard'}
-                        </span>
-                    </div>
-                </div>
+            <div className="px-3 py-3">
+                <CompanySwitcher
+                    currentCompanyName={companyName}
+                    currentCompanyIcon={companyIcon}
+                    managedCompanies={managedCompanies}
+                />
             </div>
 
             <nav className="flex-1 space-y-1 px-3 py-2">

@@ -46,7 +46,7 @@ interface Stats {
     missingInput: number
 }
 
-interface OpsDashboardProps {
+interface AdminDashboardProps {
     initialDate: string
     initialRows: SelectionRow[]
     totalRows: number
@@ -63,14 +63,14 @@ import { fetcher } from "@/lib/fetcher"
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 
-export function OpsDashboard({
+export function AdminDashboard({
     initialDate,
     initialRows,
     totalRows,
     initialStats,
     basePath = "/ops",
     isAdminPortal = false,
-}: OpsDashboardProps) {
+}: AdminDashboardProps) {
     const headingFontStyle = { fontFamily: "var(--font-heading)" } as const
     const router = useRouter()
     const pathname = usePathname()

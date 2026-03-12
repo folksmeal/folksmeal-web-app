@@ -5,7 +5,7 @@
 [![Prisma](https://img.shields.io/badge/Prisma-6.19-2D3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
 
-A production-grade meal selection and management system designed for corporate employees and operations teams. This platform streamlines the process of meal planning, selection, and reporting with enterprise-level robustness.
+A modern, agile meal selection and management system built for high-growth startups and mid-market companies. This platform streamlines daily food logistics, allowing lean teams to manage employee meal preferences and vendor coordination with ease.
 
 ---
 
@@ -26,16 +26,16 @@ A production-grade meal selection and management system designed for corporate e
 - **Reporting & Analytics**: Generate meal selection reports for kitchen and logistics planning.
 - **Excel Support**: Bulk import/export capabilities for menus and reports.
 
-### 🛡️ Enterprise Architecture
+### 🛠️ Agile & Scalable Architecture
 - **IST-Only Timezone**: All time operations are locked to `Asia/Kolkata` (IST) to ensure consistency between server and client.
-- **Hardened Security**: 
+- **Modern Security**: 
   - NextAuth v5 (Auth.js) for secure, session-based authentication.
-  - Rate-limiting proxy implemented at the middleware level.
+  - Rate-limiting proxy implemented at the middleware level to prevent abuse.
   - Protected API routes with centralized session and validation logic.
-- **Robust Data Handling**: 
-  - Zod-powered schema validation for all inputs.
-  - Centralized error handling wrapper for consistent API responses.
-  - SWR for efficient data fetching and state synchronization.
+- **Developer Experience (DX)**: 
+  - Zod-powered schema validation for type-safety from DB to Frontend.
+  - Centralized error handling wrapper for consistent and predictable API responses.
+  - SWR for real-time data sync and optimistic UI updates.
 
 ---
 

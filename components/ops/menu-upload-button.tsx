@@ -12,7 +12,7 @@ export function MenuUploadButton({ addressId }: { addressId: string }) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>
+                <Button className="h-10 rounded-xl px-4">
                     <Upload className="h-4 w-4 mr-2" /> Upload Menu
                 </Button>
             </DialogTrigger>

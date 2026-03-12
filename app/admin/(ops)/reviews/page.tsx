@@ -1,4 +1,4 @@
-import { ReviewsDashboard } from "@/components/ops/reviews-dashboard"
+import { AdminReviewsDashboard } from "@/components/admin/admin-reviews-dashboard"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
@@ -74,5 +74,5 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         }
     }
 
-    return <ReviewsDashboard initialDays={days} initialData={reviewsData} basePath="/admin" />
+    return <AdminReviewsDashboard initialDays={days} initialData={reviewsData} basePath="/admin" />
 }

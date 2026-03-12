@@ -39,6 +39,7 @@ const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 const PAGE_SIZE = 10
 
 export function CompanyManagement({ initialCompanies, totalCompanies }: { initialCompanies: Company[], totalCompanies: number }) {
+    const headingFontStyle = { fontFamily: "var(--font-heading)" } as const
     const [search, setSearch] = useState("")
     const [debouncedSearch, setDebouncedSearch] = useState("")
     const sentinelRef = useRef<HTMLDivElement>(null)
@@ -100,31 +101,38 @@ export function CompanyManagement({ initialCompanies, totalCompanies }: { initia
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
-                <h1 className="text-lg font-semibold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-                    Company Management
-                </h1>
-                <div className="flex items-center gap-2">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            placeholder="Search companies..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="h-10 w-60 pl-8 text-sm rounded-xl"
-                        />
+            <div className="rounded-lg border border-border bg-card px-4 py-3 sm:px-5 sm:py-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="space-y-0.5">
+                        <h1 className="text-lg font-semibold text-foreground" style={headingFontStyle}>
+                            Company Management
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Manage companies, locations, and rollout settings from one place.
+                        </p>
                     </div>
-                    <Dialog open={companyDialogOpen} onOpenChange={(open) => { setCompanyDialogOpen(open); if (!open) setEditingCompany(null) }}>
-                        <DialogTrigger asChild>
-                            <Button><Plus className="h-4 w-4 mr-2" /> Add Company</Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md">
-                            <DialogHeader>
-                                <DialogTitle>{editingCompany ? "Edit Company" : "Add Company"}</DialogTitle>
-                            </DialogHeader>
-                            <CompanyForm company={editingCompany} onSuccess={() => { setCompanyDialogOpen(false); setEditingCompany(null); handleMutate() }} />
-                        </DialogContent>
-                    </Dialog>
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-end">
+                        <div className="relative w-full xl:max-w-sm">
+                            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Search companies..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="h-10 rounded-xl pl-8 text-sm"
+                            />
+                        </div>
+                        <Dialog open={companyDialogOpen} onOpenChange={(open) => { setCompanyDialogOpen(open); if (!open) setEditingCompany(null) }}>
+                            <DialogTrigger asChild>
+                                <Button className="h-10 rounded-xl px-4"><Plus className="mr-2 h-4 w-4" /> Add Company</Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>{editingCompany ? "Edit Company" : "Add Company"}</DialogTitle>
+                                </DialogHeader>
+                                <CompanyForm company={editingCompany} onSuccess={() => { setCompanyDialogOpen(false); setEditingCompany(null); handleMutate() }} />
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
             </div>
 
@@ -308,7 +316,7 @@ function CompanyForm({ company, onSuccess }: { company: Company | null; onSucces
     }
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4" autoComplete="off">
             <div className="flex flex-col gap-2">
                 <Label>Company Icon</Label>
                 <div className="flex items-center gap-4">
@@ -365,8 +373,8 @@ function CompanyForm({ company, onSuccess }: { company: Company | null; onSucces
                     />
                 </div>
             </div>
-            <div className="flex flex-col gap-2"><Label>Company Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} required /></div>
-            <div className="flex flex-col gap-2"><Label>Domain (optional)</Label><Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="example.com" /></div>
+            <div className="flex flex-col gap-2"><Label>Company Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} required autoComplete="off" /></div>
+            <div className="flex flex-col gap-2"><Label>Domain (optional)</Label><Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="example.com" autoComplete="off" /></div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2 justify-end">
                 <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
@@ -412,15 +420,15 @@ function AddressForm({ address, companyId, onSuccess }: { address: Address | nul
     }
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4" autoComplete="off">
             <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2"><Label>City</Label><Input value={city} onChange={(e) => setCity(e.target.value)} required /></div>
-                <div className="flex flex-col gap-2"><Label>State</Label><Input value={state} onChange={(e) => setState(e.target.value)} /></div>
+                <div className="flex flex-col gap-2"><Label>City</Label><Input value={city} onChange={(e) => setCity(e.target.value)} required autoComplete="off" /></div>
+                <div className="flex flex-col gap-2"><Label>State</Label><Input value={state} onChange={(e) => setState(e.target.value)} autoComplete="off" /></div>
             </div>
-            <div className="flex flex-col gap-2"><Label>Full Address</Label><Input value={fullAddress} onChange={(e) => setFullAddress(e.target.value)} /></div>
+            <div className="flex flex-col gap-2"><Label>Full Address</Label><Input value={fullAddress} onChange={(e) => setFullAddress(e.target.value)} autoComplete="off" /></div>
             <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2"><Label>Cutoff Time</Label><Input type="time" value={cutoffTime} onChange={(e) => setCutoffTime(e.target.value)} /></div>
-                <div className="flex flex-col gap-2"><Label>Timezone</Label><Input value={timezone} onChange={(e) => setTimezone(e.target.value)} /></div>
+                <div className="flex flex-col gap-2"><Label>Timezone</Label><Input value={timezone} onChange={(e) => setTimezone(e.target.value)} autoComplete="off" /></div>
             </div>
             <div className="flex flex-col gap-2">
                 <Label>Working Days</Label>

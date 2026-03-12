@@ -32,17 +32,31 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
 
     return (
         <div className="flex flex-col h-full gap-6 overflow-hidden">
-            <div className="shrink-0 flex items-center justify-between">
-                <h1
-                    className="text-lg font-semibold text-foreground"
-                    style={{ fontFamily: "var(--font-heading)" }}
-                >
-                    Menu Management
-                </h1>
-                {effectiveAddressId && <MenuUploadButton addressId={effectiveAddressId} />}
+            <div className="rounded-lg border border-border bg-card px-4 py-3 sm:px-5 sm:py-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="min-w-0 space-y-0.5">
+                        <h1 className="text-lg font-semibold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
+                            Menu Management
+                        </h1>
+                        <p className="max-w-2xl text-sm text-muted-foreground">
+                            Review uploaded menus and publish weekly meal plans for the selected location.
+                        </p>
+                    </div>
+                    {effectiveAddressId && (
+                        <div className="flex shrink-0 items-center justify-start lg:justify-end">
+                            <MenuUploadButton addressId={effectiveAddressId} />
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="shrink-0 border-b border-border bg-slate-50/80 px-4 py-3 sm:px-5">
+                    <p className="text-sm font-semibold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>Uploaded Menus</p>
+                    <p className="text-xs text-muted-foreground">
+                        {totalItems} menu entr{totalItems === 1 ? "y" : "ies"}
+                    </p>
+                </div>
                 <div className="shrink-0 border-b border-border bg-slate-50">
                     <table className="w-full text-sm">
                         <thead>
@@ -83,13 +97,15 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
                         </tbody>
                     </table>
                 </div>
-                <PaginationFooter
-                    page={page}
-                    totalPages={totalPages}
-                    totalItems={totalItems}
-                    pageSize={take}
-                    hrefPrefix="/ops/menus?page="
-                />
+                <div className="shrink-0 border-t border-border bg-card">
+                    <PaginationFooter
+                        page={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        pageSize={take}
+                        hrefPrefix="/ops/menus?page="
+                    />
+                </div>
             </div>
         </div>
     )

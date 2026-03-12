@@ -1,4 +1,4 @@
-import { UserManagement } from "@/components/ops/user-management"
+import { AdminEmployeeManagement } from "@/components/admin/admin-employee-management"
 import { auth } from "@/lib/auth"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
 import { prisma } from "@/lib/prisma"
@@ -46,7 +46,7 @@ export default async function AdminEmployeesPage({
         name: e.name,
         employeeCode: e.employeeCode,
         email: e.email,
-        defaultPreference: e.defaultPreference as any,
+        defaultPreference: (e.defaultPreference as "VEG" | "NONVEG" | null) ?? "VEG",
         companyId: e.companyId,
         addressId: e.addressId,
         companyName: e.company.name,
@@ -55,14 +55,15 @@ export default async function AdminEmployeesPage({
     }))
 
     return (
-        <div className="flex-1 p-6 h-full overflow-hidden">
-            <UserManagement
+        <div className="flex-1 h-full overflow-hidden">
+            <AdminEmployeeManagement
                 effectiveAddressId={effectiveAddressId || undefined}
                 initialEmployees={serializedEmployees}
                 totalEmployees={totalEmployees}
                 initialUsers={[]}
                 totalUsers={0}
                 isAdminPortal={true}
+                apiBasePath="/admin"
             />
         </div>
     )

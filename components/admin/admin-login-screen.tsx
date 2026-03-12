@@ -80,7 +80,7 @@ export function AdminLoginScreen() {
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-5" autoComplete="off">
                     <div className="flex flex-col gap-1.5">
                         <Label
                             htmlFor="admin-email"

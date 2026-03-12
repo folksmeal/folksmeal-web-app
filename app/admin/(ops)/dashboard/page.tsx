@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getTomorrowMidnightInTimezone } from "@/lib/utils/time"
-import { OpsDashboard } from "@/components/ops/ops-dashboard"
+import { AdminDashboard } from "@/components/admin/admin-dashboard"
 
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
 
@@ -51,22 +51,22 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
 
     const totalEmployees = allEmployees.length
 
-    const selectionEmployeeIds = new Set(selections.map((s) => s.employeeId))
+    const selectionEmployeeIds = new Set(selections.map((s: { employeeId: string }) => s.employeeId))
     const employeesWithoutSelection = allEmployees.filter(
-        (e) => !selectionEmployeeIds.has(e.id)
+        (e: { id: string }) => !selectionEmployeeIds.has(e.id)
     )
 
     const stats = {
         total: selections.length,
-        optedIn: selections.filter((s) => s.status === "OPT_IN").length,
-        optedOut: selections.filter((s) => s.status === "OPT_OUT").length,
-        vegCount: selections.filter((s) => s.status === "OPT_IN" && s.preference === "VEG").length,
-        nonvegCount: selections.filter((s) => s.status === "OPT_IN" && s.preference === "NONVEG").length,
+        optedIn: selections.filter((s: { status: string }) => s.status === "OPT_IN").length,
+        optedOut: selections.filter((s: { status: string }) => s.status === "OPT_OUT").length,
+        vegCount: selections.filter((s: { status: string; preference: string | null }) => s.status === "OPT_IN" && s.preference === "VEG").length,
+        nonvegCount: selections.filter((s: { status: string; preference: string | null }) => s.status === "OPT_IN" && s.preference === "NONVEG").length,
         totalEmployees,
         missingInput: employeesWithoutSelection.length,
     }
 
-    const selectionRows = selections.map((s) => ({
+    const selectionRows = selections.map((s: any) => ({
         employeeName: s.employee.name,
         employeeCode: s.employee.employeeCode,
         company: `${s.employee.company.name} - ${s.employee.address.city}`,
@@ -76,7 +76,7 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
         updatedAt: s.updatedAt.toISOString(),
     }))
 
-    const noSelectionRows = employeesWithoutSelection.map((e) => ({
+    const noSelectionRows = employeesWithoutSelection.map((e: any) => ({
         employeeName: e.name,
         employeeCode: e.employeeCode,
         company: `${e.company.name} - ${e.address.city}`,
@@ -88,7 +88,7 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
 
     const allRows = [...selectionRows, ...noSelectionRows]
 
-    const filteredRows = allRows.filter((row) => {
+    const filteredRows = allRows.filter((row: { status: string }) => {
         if (statusParam === "all") return true
         if (statusParam === "opted_in") return row.status === "OPT_IN"
         if (statusParam === "opted_out") return row.status === "OPT_OUT"
@@ -113,14 +113,13 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
     }
 
     return (
-        <OpsDashboard
-            userName={sessionUser.name || "Admin"}
-            companyName={companyName}
+        <AdminDashboard
             initialDate={targetDate.toISOString().split("T")[0]}
             initialRows={paginatedRows}
             totalRows={totalRows}
             initialStats={stats}
             basePath="/admin"
+            isAdminPortal={true}
         />
     )
 }

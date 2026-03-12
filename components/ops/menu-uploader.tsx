@@ -102,13 +102,13 @@ export function MenuUploader({ addressId, onClose: _onClose }: MenuUploaderProps
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
-                        className="h-10 px-8 rounded-full"
+                        className="h-10 rounded-xl px-6"
                     >
                         <Upload className="mr-2 h-4 w-4" />
                         Choose File
                     </Button>
                     {selectedFile && (
-                        <span className="text-xs font-medium text-primary bg-primary/5 px-3 py-1 rounded-full border border-primary/10 truncate max-w-64">
+                        <span className="max-w-64 truncate rounded-xl border border-primary/10 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
                             {selectedFile.name}
                         </span>
                     )}
@@ -118,7 +118,7 @@ export function MenuUploader({ addressId, onClose: _onClose }: MenuUploaderProps
                     <Button
                         onClick={handleUpload}
                         disabled={uploading}
-                        className="h-10 px-10 rounded-full"
+                        className="h-10 rounded-xl px-8"
                     >
                         {uploading ? (
                             <>
