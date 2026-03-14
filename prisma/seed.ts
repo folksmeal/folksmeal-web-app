@@ -47,20 +47,19 @@ async function main() {
         })
     }
     console.log(`✅ ${companies.length} Company admin feature configs seeded`)
-
     // ─── Company Addresses ────────────────────────────────────────────
     const addresses = [
-        { id: "addr-tech-noida", companyId: "company-techsolutions", city: "Noida", state: "Uttar Pradesh", address: "A-62, Sector 132, Noida Expressway", cutoffTime: "18:00", timezone: "Asia/Kolkata", workingDays: [1, 2, 3, 4, 5] },
-        { id: "addr-tech-bangalore", companyId: "company-techsolutions", city: "Bangalore", state: "Karnataka", address: "2nd Floor, RMZ Ecoworld, Outer Ring Road, Bellandur", cutoffTime: "18:00", timezone: "Asia/Kolkata", workingDays: [1, 2, 3, 4, 5] },
-        { id: "addr-green-mumbai", companyId: "company-greenleaf", city: "Mumbai", state: "Maharashtra", address: "Tower B, Piramal Agastya, Lower Parel", cutoffTime: "17:30", timezone: "Asia/Kolkata", workingDays: [1, 2, 3, 4, 5] },
-        { id: "addr-green-hyderabad", companyId: "company-greenleaf", city: "Hyderabad", state: "Telangana", address: "Plot 18, HITEC City, Madhapur", cutoffTime: "17:30", timezone: "Asia/Kolkata", workingDays: [1, 2, 3, 4, 5] },
-        { id: "addr-stellar-pune", companyId: "company-stellar", city: "Pune", state: "Maharashtra", address: "6th Floor, Cerebrum IT Park, Kalyani Nagar", cutoffTime: "18:30", timezone: "Asia/Kolkata", workingDays: [1, 2, 3, 4, 5] },
-        { id: "addr-stellar-gurgaon", companyId: "company-stellar", city: "Gurgaon", state: "Haryana", address: "DLF Cyber City, Tower C, Sector 25A", cutoffTime: "18:00", timezone: "Asia/Kolkata", workingDays: [1, 2, 3, 4, 5] },
-        { id: "addr-urban-delhi", companyId: "company-urbancraft", city: "New Delhi", state: "Delhi", address: "301, Connaught Place, Block A", cutoffTime: "17:00", timezone: "Asia/Kolkata", workingDays: [1, 2, 3, 4, 5] },
+        { id: "addr-tech-noida", companyId: "company-techsolutions", city: "Noida", state: "Uttar Pradesh", address: "A-62, Sector 132, Noida Expressway", cutoffTime: "18:00", timezone: "Asia/Kolkata", workingDays: [0, 1, 2, 3, 4, 5, 6] },
+        { id: "addr-tech-bangalore", companyId: "company-techsolutions", city: "Bangalore", state: "Karnataka", address: "2nd Floor, RMZ Ecoworld, Outer Ring Road, Bellandur", cutoffTime: "18:00", timezone: "Asia/Kolkata", workingDays: [0, 1, 2, 3, 4, 5, 6] },
+        { id: "addr-green-mumbai", companyId: "company-greenleaf", city: "Mumbai", state: "Maharashtra", address: "Tower B, Piramal Agastya, Lower Parel", cutoffTime: "17:30", timezone: "Asia/Kolkata", workingDays: [0, 1, 2, 3, 4, 5, 6] },
+        { id: "addr-green-hyderabad", companyId: "company-greenleaf", city: "Hyderabad", state: "Telangana", address: "Plot 18, HITEC City, Madhapur", cutoffTime: "17:30", timezone: "Asia/Kolkata", workingDays: [0, 1, 2, 3, 4, 5, 6] },
+        { id: "addr-stellar-pune", companyId: "company-stellar", city: "Pune", state: "Maharashtra", address: "6th Floor, Cerebrum IT Park, Kalyani Nagar", cutoffTime: "18:30", timezone: "Asia/Kolkata", workingDays: [0, 1, 2, 3, 4, 5, 6] },
+        { id: "addr-stellar-gurgaon", companyId: "company-stellar", city: "Gurgaon", state: "Haryana", address: "DLF Cyber City, Tower C, Sector 25A", cutoffTime: "18:00", timezone: "Asia/Kolkata", workingDays: [0, 1, 2, 3, 4, 5, 6] },
+        { id: "addr-urban-delhi", companyId: "company-urbancraft", city: "New Delhi", state: "Delhi", address: "301, Connaught Place, Block A", cutoffTime: "17:00", timezone: "Asia/Kolkata", workingDays: [0, 1, 2, 3, 4, 5, 6] },
     ]
 
     for (const a of addresses) {
-        await prisma.companyAddress.upsert({ where: { id: a.id }, update: {}, create: a })
+        await prisma.companyAddress.upsert({ where: { id: a.id }, update: { workingDays: a.workingDays }, create: a })
     }
     console.log(`✅ ${addresses.length} Addresses seeded`)
 

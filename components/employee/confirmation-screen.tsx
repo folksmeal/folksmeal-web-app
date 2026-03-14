@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { CheckCircle2, XCircle, ArrowLeft, LogOut, Building, Star, Loader2 } from "lucide-react"
+import { CheckCircle2, XCircle, ArrowLeft, LogOut, Building, Star, Loader2, Edit2 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { submitMealRating } from "@/app/actions/meal-rating"
 
@@ -85,71 +85,85 @@ function StarRating({ mealDate, existingRating }: { mealDate: string; existingRa
   }, [rating, comment, mealDate, inCooldown])
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
-      <p className="text-sm font-semibold text-foreground">
-        {submitted ? "Thanks for your feedback!" : "Rate today's meal"}
-      </p>
-      <div className="mt-3 flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => { setRating(star); setSubmitted(false) }}
-            onMouseEnter={() => setHoveredStar(star)}
-            onMouseLeave={() => setHoveredStar(0)}
-            className="p-0.5 transition-transform hover:scale-110 cursor-pointer"
-          >
-            <Star
-              className={`h - 7 w - 7 transition - colors ${star <= (hoveredStar || rating)
-                ? "fill-amber-400 text-amber-400"
-                : "text-muted-foreground/30"
-                } `}
+    <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+      <div className="space-y-4">
+        <div className="flex h-9 items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">
+            {submitted ? "Thank you for the rating!" : "Rate your meal"}
+          </p>
+          {submitted && (
+            <Button
+              variant="outline"
+              onClick={() => setSubmitted(false)}
+              disabled={inCooldown}
+            >
+              <Edit2 className="h-2.5 w-2.5 text-primary" />
+              <span>Edit</span>
+            </Button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => {
+                setRating(star)
+                if (submitted) setSubmitted(false)
+              }}
+              onMouseEnter={() => setHoveredStar(star)}
+              onMouseLeave={() => setHoveredStar(0)}
+              className="p-0.5 cursor-pointer"
+            >
+              <Star
+                className={`h-8 w-8 transition-colors duration-200 ${star <= (hoveredStar || rating)
+                  ? "fill-amber-400 text-amber-400"
+                  : "text-muted-foreground/30"
+                  }`}
+              />
+            </button>
+          ))}
+        </div>
+
+        {rating > 0 && !submitted && (
+          <div className="pt-2 space-y-4">
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Any feedback? (optional)"
+              rows={3}
+              maxLength={500}
+              className="w-full rounded-xl border border-input bg-muted/20 px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
             />
-          </button>
-        ))}
-        {rating > 0 && (
-          <span className="ml-2 text-xs text-muted-foreground">{rating}/5</span>
+            <Button
+              onClick={handleSubmitRating}
+              disabled={submitting}
+              className="relative w-full sm:w-32 rounded-xl h-10 overflow-hidden"
+            >
+              {submitting ? (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
+                </div>
+              ) : (
+                "Submit"
+              )}
+            </Button>
+          </div>
+        )}
+
+        {errorResult && (
+          <p className="text-xs font-medium text-destructive mt-1">
+            {errorResult}
+          </p>
+        )}
+
+        {submitted && comment && (
+          <p className="text-sm text-muted-foreground italic bg-muted/30 p-3 rounded-xl border border-border/50">
+            "{comment}"
+          </p>
         )}
       </div>
-      {rating > 0 && !submitted && (
-        <div className="mt-3 flex flex-col gap-2">
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Any feedback? (optional)"
-            rows={2}
-            maxLength={500}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-          />
-          <Button
-            size="sm"
-            onClick={handleSubmitRating}
-            disabled={submitting}
-            className="w-fit"
-          >
-            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-            Submit Rating
-          </Button>
-        </div>
-      )}
-      {errorResult && (
-        <p className="mt-2 text-xs text-destructive">
-          {errorResult}
-        </p>
-      )}
-
-      {submitted && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          You rated this meal {rating} star{rating !== 1 ? "s" : ""}.{" "}
-          <button
-            onClick={() => setSubmitted(false)}
-            disabled={inCooldown}
-            className="text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            Edit
-          </button>
-        </p>
-      )}
     </div>
   )
 }
@@ -253,7 +267,7 @@ export function ConfirmationScreen({
           <div className="rounded-lg border border-border bg-card p-5">
             <div className="flex flex-col items-center gap-4 py-4 text-center">
               <Icon
-                className={`h - 10 w - 10 ${cfg.iconClass} `}
+                className={`h-10 w-10 ${cfg.iconClass}`}
                 strokeWidth={1.5}
               />
               <div className="flex flex-col gap-1.5">
@@ -263,10 +277,10 @@ export function ConfirmationScreen({
                 {cfg.badgeBorder && (
                   <div className="flex items-center justify-center gap-2">
                     <span
-                      className={`flex h - 4 w - 4 shrink - 0 items - center justify - center rounded - sm border - 2 ${cfg.badgeBorder} `}
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 ${cfg.badgeBorder}`}
                       aria-hidden="true"
                     >
-                      <span className={`h - 2 w - 2 rounded - full ${cfg.badgeDot} `} />
+                      <span className={`h-2 w-2 rounded-full ${cfg.badgeDot}`} />
                     </span>
                     <span className="text-sm text-muted-foreground">
                       {cfg.badgeLabel}
