@@ -13,12 +13,12 @@ export function MenuItemUploadButton() {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button className="h-10 rounded-xl px-4">
-                    <Upload className="h-4 w-4 mr-2" /> Upload Library Items
+                    <Upload className="h-4 w-4 mr-2" /> Upload Menu Items
                 </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Upload Menu Items Library</DialogTitle>
+                    <DialogTitle>Upload Menu Items</DialogTitle>
                 </DialogHeader>
                 <MenuItemUploader onClose={() => setOpen(false)} />
             </DialogContent>

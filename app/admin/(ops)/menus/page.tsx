@@ -64,76 +64,78 @@ export default async function MenusPage() {
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {weekDays.map((day) => {
-                    const key = format(day, "yyyy-MM-dd")
-                    const menu = menuByDate.get(key)
-                    const today = isToday(day)
+            <div className="flex-1 min-h-0 overflow-auto">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {weekDays.map((day) => {
+                        const key = format(day, "yyyy-MM-dd")
+                        const menu = menuByDate.get(key)
+                        const today = isToday(day)
 
-                    return (
-                        <div
-                            key={key}
-                            className={[
-                                "rounded-lg border bg-card p-5 shadow-sm transition-colors",
-                                today ? "border-primary bg-primary/5" : "border-border",
-                            ].join(" ")}
-                        >
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="space-y-1">
-                                    <p
-                                        className="text-sm font-semibold text-foreground"
-                                        style={{ fontFamily: "var(--font-heading)" }}
-                                    >
-                                        {format(day, "EEEE")}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {format(day, "dd MMM yyyy")}
-                                    </p>
+                        return (
+                            <div
+                                key={key}
+                                className={[
+                                    "rounded-lg border bg-card p-5 shadow-sm transition-colors",
+                                    today ? "border-primary bg-primary/5" : "border-border",
+                                ].join(" ")}
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="space-y-1">
+                                        <p
+                                            className="text-sm font-semibold text-foreground"
+                                            style={{ fontFamily: "var(--font-heading)" }}
+                                        >
+                                            {format(day, "EEEE")}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {format(day, "dd MMM yyyy")}
+                                        </p>
+                                    </div>
+                                    {today && (
+                                        <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
+                                            Today
+                                        </span>
+                                    )}
                                 </div>
-                                {today && (
-                                    <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
-                                        Today
-                                    </span>
+
+                                {menu ? (
+                                    <div className="mt-5 space-y-4">
+                                        <div className="space-y-1">
+                                            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Veg</p>
+                                            <p className="text-sm font-medium text-foreground">{menu.vegItem}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Non-Veg</p>
+                                            <p className="text-sm text-foreground">{menu.nonvegItem || "Not available"}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Side / Beverage</p>
+                                            <p className="text-sm text-foreground">{menu.sideBeverage || "Not available"}</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="mt-5 rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center">
+                                        <p className="text-sm font-medium text-muted-foreground">No menu published</p>
+                                        <p className="mt-1 text-xs text-muted-foreground">Nothing has been uploaded for this day yet.</p>
+                                    </div>
                                 )}
                             </div>
+                        )
+                    })}
+                </div>
 
-                            {menu ? (
-                                <div className="mt-5 space-y-4">
-                                    <div className="space-y-1">
-                                        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Veg</p>
-                                        <p className="text-sm font-medium text-foreground">{menu.vegItem}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Non-Veg</p>
-                                        <p className="text-sm text-foreground">{menu.nonvegItem || "Not available"}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Side / Beverage</p>
-                                        <p className="text-sm text-foreground">{menu.sideBeverage || "Not available"}</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="mt-5 rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center">
-                                    <p className="text-sm font-medium text-muted-foreground">No menu published</p>
-                                    <p className="mt-1 text-xs text-muted-foreground">Nothing has been uploaded for this day yet.</p>
-                                </div>
-                            )}
-                        </div>
-                    )
-                })}
+                {weekDays.length === 0 && (
+                    <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground">
+                        No working days are configured for this location.
+                    </div>
+                )}
+
+                {weekDays.length > 0 && menus.length === 0 && (
+                    <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground mt-4">
+                        No menus uploaded for this week.
+                    </div>
+                )}
             </div>
-
-            {weekDays.length === 0 && (
-                <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground">
-                    No working days are configured for this location.
-                </div>
-            )}
-
-            {weekDays.length > 0 && menus.length === 0 && (
-                <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground">
-                    No menus uploaded for this week.
-                </div>
-            )}
         </div>
     )
 }

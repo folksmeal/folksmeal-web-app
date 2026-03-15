@@ -99,7 +99,7 @@ export function AdminReviewsDashboard({ initialDays, initialData, basePath = "/o
                         <Star className="h-8 w-8 fill-amber-400 text-amber-400" />
                         <span className="text-4xl font-bold text-foreground">{data?.averageRating ?? 0}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">{data?.totalRatings ?? 0} ratings</p>
+
                 </div>
 
                 <div className="rounded-lg border border-border bg-card p-6">

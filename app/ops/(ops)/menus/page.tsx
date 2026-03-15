@@ -56,9 +56,6 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
                 <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
                     <div className="shrink-0 border-b border-border bg-slate-50/80 px-4 py-3 sm:px-5">
                         <p className="text-sm font-semibold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>Uploaded Menus</p>
-                        <p className="text-xs text-muted-foreground">
-                            {totalItems} menu entr{totalItems === 1 ? "y" : "ies"}
-                        </p>
                     </div>
                     <div className="shrink-0 border-b border-border bg-slate-50">
                         <table className="w-full text-sm">
@@ -67,8 +64,7 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
                                     <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[20%]">Date</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[25%]">Veg Item</th>
                                     <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[25%]">Non-Veg Item</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Side/Beverage</th>
-                                    <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Actions</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[20%]">Side/Beverage</th>
                                 </tr>
                             </thead>
                         </table>
@@ -78,12 +74,12 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
                             <tbody>
                                 {menus.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                                        <td colSpan={4} className="px-4 py-12 text-center text-sm text-muted-foreground">
                                             No menus uploaded yet
                                         </td>
                                     </tr>
                                 ) : (
-                                    menus.map((menu, _i) => (
+                                    menus.map((menu: any, _i: number) => (
                                         <tr key={menu.id} className="transition-colors hover:bg-muted/30 border-b border-border">
                                             <td className="truncate px-4 py-3 font-medium text-foreground w-[20%]">
                                                 {format(menu.date, "EEE, dd MMM yyyy")}
@@ -97,7 +93,7 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
                                                                 <Info className="h-3 w-3 shrink-0 text-primary opacity-50" />
                                                             </TooltipTrigger>
                                                             <TooltipContent>
-                                                                <p className="text-[10px]">Linked to library</p>
+                                                                <p className="text-[10px]">Linked to Menu Items</p>
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     )}
@@ -112,16 +108,13 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
                                                                 <Info className="h-3 w-3 shrink-0 text-primary opacity-50" />
                                                             </TooltipTrigger>
                                                             <TooltipContent>
-                                                                <p className="text-[10px]">Linked to library</p>
+                                                                <p className="text-[10px]">Linked to master catalog</p>
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="truncate px-4 py-3 text-muted-foreground w-[15%]">{menu.sideBeverage || "—"}</td>
-                                            <td className="whitespace-nowrap px-4 py-3 text-right w-[15%]">
-                                                <span className="text-xs text-muted-foreground/30">—</span>
-                                            </td>
+                                            <td className="truncate px-4 py-3 text-muted-foreground w-[30%]">{menu.sideBeverage || "—"}</td>
                                         </tr>
                                     ))
                                 )}

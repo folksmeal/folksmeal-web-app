@@ -9,6 +9,8 @@ import {
 } from "lucide-react"
 import ExcelJS from "exceljs"
 
+import { SearchInput } from "@/components/ui/search-input"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -159,127 +161,119 @@ export function UserManagement({
     const totalAdminPages = Math.ceil(finalTotalUsers / itemsPerPage)
 
     return (
-        <div className="flex h-full flex-col gap-6 overflow-hidden">
-            <div className="rounded-lg border border-border bg-card px-4 py-3 sm:px-5 sm:py-4">
-                <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="space-y-0.5">
-                            <h1 className="text-lg font-semibold text-foreground" style={headingFontStyle}>
-                                {isAdminPortal ? "Employee Management" : "User Management"}
-                            </h1>
-                            <p className="text-sm text-muted-foreground">
-                                {isAdminPortal
-                                    ? "Manage employee records, credentials, and location assignments."
-                                    : "Manage employees and admin users from one shared control surface."}
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            <ExportButton effectiveAddressId={effectiveAddressId} />
-
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" className="h-10 rounded-xl px-4">
-                                        <Upload className="mr-2 h-4 w-4" />
-                                        Bulk Upload
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-md">
-                                    <DialogHeader>
-                                        <DialogTitle>Bulk Upload Employees</DialogTitle>
-                                    </DialogHeader>
-                                    <BulkUploadForm defaultAddressId={effectiveAddressId} onSuccess={mutateEmp} isAdminPortal={isAdminPortal} />
-                                </DialogContent>
-                            </Dialog>
-
-                            <Dialog open={empDialogOpen} onOpenChange={(open) => { setEmpDialogOpen(open); if (!open) setEditingEmployee(null) }}>
-                                <DialogTrigger asChild>
-                                    <Button variant={isAdminPortal ? "default" : "outline"} className="h-10 rounded-xl px-4">
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        Add Employee
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-md">
-                                    <DialogHeader>
-                                        <DialogTitle>{editingEmployee ? "Edit Employee" : "Add Employee"}</DialogTitle>
-                                    </DialogHeader>
-                                    <EmployeeForm
-                                        employee={editingEmployee}
-                                        defaultAddressId={effectiveAddressId}
-                                        onSuccess={() => { setEmpDialogOpen(false); setEditingEmployee(null); mutateEmp() }}
-                                        isAdminPortal={isAdminPortal}
-                                    />
-                                </DialogContent>
-                            </Dialog>
-
-                            {!isAdminPortal && (
-                                <Dialog open={userDialogOpen} onOpenChange={(open) => { setUserDialogOpen(open); if (!open) setEditingUser(null) }}>
-                                    <DialogTrigger asChild>
-                                        <Button className="h-10 rounded-xl px-4">
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Create User
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="max-w-md">
-                                        <DialogHeader>
-                                            <DialogTitle>{editingUser ? "Edit User" : "Create User"}</DialogTitle>
-                                        </DialogHeader>
-                                        <AdminUserForm user={editingUser} onSuccess={() => { setUserDialogOpen(false); setEditingUser(null); mutateUser() }} />
-                                    </DialogContent>
-                                </Dialog>
-                            )}
-                        </div>
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col gap-6 overflow-hidden">
+            <div className="rounded-xl border border-border bg-card shadow-sm px-4 py-4 sm:px-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="space-y-1">
+                        <h1 className="text-xl font-bold tracking-tight text-foreground" style={headingFontStyle}>
+                            {isAdminPortal ? "Employee Management" : "User Management"}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            {isAdminPortal
+                                ? "Manage employee records, credentials, and location assignments."
+                                : "Manage employees and admin users from one shared control surface."}
+                        </p>
                     </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <ExportButton effectiveAddressId={effectiveAddressId} />
 
-                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                        <div className="relative w-full xl:max-w-sm">
-                            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                placeholder="Search by name, ID, or email..."
-                                value={searchInput}
-                                onChange={(e) => setSearchInput(e.target.value)}
-                                className="h-10 rounded-xl border-border pl-8 text-sm"
-                            />
-                        </div>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" className="h-10 rounded-xl px-4">
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Bulk Upload
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Bulk Upload Employees</DialogTitle>
+                                </DialogHeader>
+                                <BulkUploadForm defaultAddressId={effectiveAddressId} onSuccess={mutateEmp} isAdminPortal={isAdminPortal} />
+                            </DialogContent>
+                        </Dialog>
+
+                        <Dialog open={empDialogOpen} onOpenChange={(open) => { setEmpDialogOpen(open); if (!open) setEditingEmployee(null) }}>
+                            <DialogTrigger asChild>
+                                <Button variant={isAdminPortal ? "default" : "outline"} className="h-10 rounded-xl px-4">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Employee
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>{editingEmployee ? "Edit Employee" : "Add Employee"}</DialogTitle>
+                                </DialogHeader>
+                                <EmployeeForm
+                                    employee={editingEmployee}
+                                    defaultAddressId={effectiveAddressId}
+                                    onSuccess={() => { setEmpDialogOpen(false); setEditingEmployee(null); mutateEmp() }}
+                                    isAdminPortal={isAdminPortal}
+                                />
+                            </DialogContent>
+                        </Dialog>
 
                         {!isAdminPortal && (
-                            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full xl:w-auto">
-                                <TabsList className="grid h-10 w-full grid-cols-2 rounded-xl border border-border bg-muted/50 p-1 xl:w-70">
-                                    {["employees", "admins"].map((tab) => {
-                                        const isSelected = activeTab === tab
-                                        return (
-                                            <TabsTrigger
-                                                key={tab}
-                                                value={tab}
-                                                className="relative rounded-lg px-4 text-sm font-medium text-muted-foreground transition-colors data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                                            >
-                                                {isSelected && (
-                                                    <motion.div
-                                                        layoutId="activeTab"
-                                                        className="absolute inset-0 rounded-lg border border-border bg-background"
-                                                        transition={{ type: "spring", bounce: 0.15, duration: 0.45 }}
-                                                    />
-                                                )}
-                                                <span className="relative z-10" style={headingFontStyle}>
-                                                    {tab === "employees" ? "Employees" : "Admin Users"}
-                                                </span>
-                                            </TabsTrigger>
-                                        )
-                                    })}
-                                </TabsList>
-                            </Tabs>
+                            <Dialog open={userDialogOpen} onOpenChange={(open) => { setUserDialogOpen(open); if (!open) setEditingUser(null) }}>
+                                <DialogTrigger asChild>
+                                    <Button className="h-10 rounded-xl px-4 shadow-sm">
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Create User
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle>{editingUser ? "Edit User" : "Create User"}</DialogTitle>
+                                    </DialogHeader>
+                                    <AdminUserForm user={editingUser} onSuccess={() => { setUserDialogOpen(false); setEditingUser(null); mutateUser() }} />
+                                </DialogContent>
+                            </Dialog>
                         )}
                     </div>
                 </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-0 flex-1 flex-col">
                 <TabsContent value="employees" className="m-0 flex min-h-0 flex-1 flex-col">
-                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-                        <div className="shrink-0 border-b border-border bg-slate-50/80 px-4 py-3 sm:px-5">
-                            <p className="text-sm font-semibold text-foreground" style={headingFontStyle}>Employees</p>
-                            <p className="text-xs text-muted-foreground">
-                                {finalTotalEmployees} total employee{finalTotalEmployees === 1 ? "" : "s"}
-                            </p>
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                        <div className="shrink-0 border-b border-border bg-slate-50/80 px-4 py-3 sm:px-6 flex items-center justify-between gap-4">
+                            <p className="text-sm font-bold text-foreground shrink-0" style={headingFontStyle}>Employees</p>
+
+                            <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl">
+                                <div className="w-full max-w-xs">
+                                    <SearchInput
+                                        placeholder="Search employees..."
+                                        value={searchInput}
+                                        onChange={(e) => setSearchInput(e.target.value)}
+                                        onClear={() => setSearchInput("")}
+                                    />
+                                </div>
+
+                                {!isAdminPortal && (
+                                    <TabsList className="h-9 rounded-lg border border-border bg-muted/50 p-1">
+                                        {["employees", "admins"].map((tab) => {
+                                            const isSelected = activeTab === tab
+                                            return (
+                                                <TabsTrigger
+                                                    key={tab}
+                                                    value={tab}
+                                                    className="relative h-7 rounded-md px-4 text-xs font-semibold text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                                                >
+                                                    {isSelected && (
+                                                        <motion.div
+                                                            layoutId="activeTabHeader"
+                                                            className="absolute inset-0 rounded-md border border-border bg-background"
+                                                            transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
+                                                        />
+                                                    )}
+                                                    <span className="relative z-10" style={headingFontStyle}>
+                                                        {tab === "employees" ? "Employees" : "Admins"}
+                                                    </span>
+                                                </TabsTrigger>
+                                            )
+                                        })}
+                                    </TabsList>
+                                )}
+                            </div>
                         </div>
                         <EmployeeTable
                             employees={employees}
@@ -303,12 +297,44 @@ export function UserManagement({
                 </TabsContent>
 
                 <TabsContent value="admins" className="m-0 flex min-h-0 flex-1 flex-col">
-                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-                        <div className="shrink-0 border-b border-border bg-slate-50/80 px-4 py-3 sm:px-5">
-                            <p className="text-sm font-semibold text-foreground" style={headingFontStyle}>Admin Users</p>
-                            <p className="text-xs text-muted-foreground">
-                                {finalTotalUsers} total admin user{finalTotalUsers === 1 ? "" : "s"}
-                            </p>
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                        <div className="shrink-0 border-b border-border bg-slate-50/80 px-4 py-3 sm:px-6 flex items-center justify-between gap-4">
+                            <p className="text-sm font-bold text-foreground shrink-0" style={headingFontStyle}>Admins</p>
+
+                            <div className="flex items-center gap-3 flex-1 justify-end max-w-2xl">
+                                <div className="w-full max-w-xs">
+                                    <SearchInput
+                                        placeholder="Search admins..."
+                                        value={searchInput}
+                                        onChange={(e) => setSearchInput(e.target.value)}
+                                        onClear={() => setSearchInput("")}
+                                    />
+                                </div>
+
+                                <TabsList className="h-9 rounded-lg border border-border bg-muted/50 p-1">
+                                    {["employees", "admins"].map((tab) => {
+                                        const isSelected = activeTab === tab
+                                        return (
+                                            <TabsTrigger
+                                                key={tab}
+                                                value={tab}
+                                                className="relative h-7 rounded-md px-4 text-xs font-semibold text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                                            >
+                                                {isSelected && (
+                                                    <motion.div
+                                                        layoutId="activeTabHeaderAdmins"
+                                                        className="absolute inset-0 rounded-md border border-border bg-background"
+                                                        transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
+                                                    />
+                                                )}
+                                                <span className="relative z-10" style={headingFontStyle}>
+                                                    {tab === "employees" ? "Employees" : "Admins"}
+                                                </span>
+                                            </TabsTrigger>
+                                        )
+                                    })}
+                                </TabsList>
+                            </div>
                         </div>
                         <AdminUserTable
                             users={users}
@@ -329,8 +355,8 @@ export function UserManagement({
                         </div>
                     </div>
                 </TabsContent>
-            </Tabs>
-        </div>
+            </div>
+        </Tabs>
     )
 }
 

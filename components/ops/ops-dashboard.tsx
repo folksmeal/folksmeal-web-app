@@ -217,7 +217,7 @@ export function OpsDashboard({
                             value={statusFilter}
                             onValueChange={(val) => handleStatusChange(val as StatusFilter)}
                         >
-                            <SelectTrigger className="h-10 w-[190px] rounded-xl border-border bg-card">
+                            <SelectTrigger className="h-10 w-47.5 rounded-xl border-border bg-card">
                                 <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
                                 <SelectValue placeholder="Select status" />
                             </SelectTrigger>
@@ -278,12 +278,10 @@ export function OpsDashboard({
                 ))}
             </div>
 
+
             <div className="rounded-lg border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden">
                 <div className="shrink-0 border-b border-border bg-slate-50/80 px-4 py-3 sm:px-5">
                     <p className="text-sm font-semibold text-foreground" style={headingFontStyle}>Selection Details</p>
-                    <p className="text-xs text-muted-foreground">
-                        {totalCount} record{totalCount === 1 ? "" : "s"} for {format(parseISO(date), "dd MMM yyyy")}
-                    </p>
                 </div>
                 <div className="shrink-0 border-b border-border bg-slate-50">
                     <table className="w-full text-sm">
@@ -316,7 +314,7 @@ export function OpsDashboard({
                             ) : rows.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                                        No employees found for {format(parseISO(date), "dd MMM yyyy")}
+                                        No employees found
                                     </td>
                                 </tr>
                             ) : (

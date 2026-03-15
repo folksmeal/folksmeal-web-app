@@ -15,14 +15,27 @@ import {
     LogOut,
     Menu,
     X,
+    ChevronDown,
+    ListFilter,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { CompanySwitcher, type ManagedCompany } from "@/components/ops/company-switcher"
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 const navItems = [
     { href: "/ops/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/ops/menus", label: "Menu Management", icon: UtensilsCrossed },
-    { href: "/ops/menu-items", label: "Menu Items", icon: Menu },
+    {
+        label: "Menu Management",
+        icon: UtensilsCrossed,
+        children: [
+            { href: "/ops/menus", label: "Daily Menus", icon: ListFilter },
+            { href: "/ops/menu-items", label: "Menu Items", icon: Menu },
+        ]
+    },
     { href: "/ops/users", label: "User Management", icon: Users },
     { href: "/ops/companies", label: "Company Management", icon: Building2 },
     { href: "/ops/app-config", label: "App Config", icon: SlidersHorizontal },
@@ -38,6 +51,7 @@ interface OpsSidebarProps {
 export function OpsSidebar({ companyName, companyIcon, managedCompanies }: OpsSidebarProps) {
     const pathname = usePathname()
     const [mobileOpen, setMobileOpen] = useState(false)
+    const [menuOpen, setMenuOpen] = useState(true)
 
     const sidebarContent = (
         <div className="flex h-full flex-col">
@@ -62,11 +76,65 @@ export function OpsSidebar({ companyName, companyIcon, managedCompanies }: OpsSi
 
             <nav className="flex-1 space-y-1 px-3 py-2">
                 {navItems.map((item) => {
+                    if (item.children) {
+                        const isChildActive = item.children.some(child =>
+                            pathname === child.href || pathname.startsWith(child.href + "/")
+                        )
+                        return (
+                            <Collapsible
+                                key={item.label}
+                                open={menuOpen}
+                                onOpenChange={setMenuOpen}
+                                className="space-y-1"
+                            >
+                                <CollapsibleTrigger asChild>
+                                    <button
+                                        className={cn(
+                                            "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer",
+                                            isChildActive
+                                                ? "bg-primary/5 text-primary"
+                                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <item.icon className="h-4 w-4 shrink-0" />
+                                            {item.label}
+                                        </div>
+                                        <ChevronDown className={cn(
+                                            "h-4 w-4 shrink-0 transition-transform duration-200",
+                                            menuOpen ? "rotate-180" : ""
+                                        )} />
+                                    </button>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="space-y-1 pl-6 mt-1 relative">
+                                    {item.children.map((child) => {
+                                        const isActive = pathname === child.href || pathname.startsWith(child.href + "/")
+                                        return (
+                                            <Link
+                                                key={child.href}
+                                                href={child.href}
+                                                onClick={() => setMobileOpen(false)}
+                                                className={cn(
+                                                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors relative",
+                                                    isActive
+                                                        ? "bg-primary/10 text-primary font-semibold"
+                                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground line-clamp-1"
+                                                )}
+                                            >
+                                                <span>{child.label}</span>
+                                            </Link>
+                                        )
+                                    })}
+                                </CollapsibleContent>
+                            </Collapsible>
+                        )
+                    }
+
                     const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                     return (
                         <Link
                             key={item.href}
-                            href={item.href}
+                            href={item.href || "#"}
                             onClick={() => setMobileOpen(false)}
                             className={cn(
                                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",

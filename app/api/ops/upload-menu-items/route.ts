@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     return handleApiRequest(async () => {
         const user = await requireAdmin()
         if (!user || user.role !== "SUPERADMIN") {
-            return apiError("Forbidden: Only Super Admins can manage the global library", 403)
+            return apiError("Forbidden: Only Super Admins can manage Menu Items", 403)
         }
 
         const formData = await request.formData()

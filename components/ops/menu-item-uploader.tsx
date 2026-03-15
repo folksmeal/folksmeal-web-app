@@ -118,12 +118,12 @@ export function MenuItemUploader({ onClose }: MenuItemUploaderProps) {
                         {uploading ? (
                             <>
                                 <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                                Processing Library...
+                                Submitting...
                             </>
                         ) : (
                             <>
                                 <Upload className="mr-2 h-3.5 w-3.5" />
-                                Sync Library
+                                Submit
                             </>
                         )}
                     </Button>

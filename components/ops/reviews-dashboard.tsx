@@ -93,13 +93,14 @@ export function ReviewsDashboard({ initialDays, initialData, basePath = "/ops" }
                 </div>
             </div>
 
+
             <div className="grid gap-4 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
                 <div className="rounded-lg border border-border bg-card p-6 flex flex-col items-center justify-center gap-2">
                     <div className="flex items-center gap-2">
                         <Star className="h-8 w-8 fill-amber-400 text-amber-400" />
                         <span className="text-4xl font-bold text-foreground">{data?.averageRating ?? 0}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">{data?.totalRatings ?? 0} ratings</p>
+
                 </div>
 
                 <div className="rounded-lg border border-border bg-card p-6">

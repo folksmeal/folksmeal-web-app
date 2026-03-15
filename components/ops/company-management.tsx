@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog"
-import { Plus, Pencil, Trash2, Loader2, Building2, MapPin, Search } from "lucide-react"
+import { SearchInput } from "@/components/ui/search-input"
+import { Plus, Pencil, Trash2, Loader2, Building2, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Address {
@@ -112,13 +113,12 @@ export function CompanyManagement({ initialCompanies, totalCompanies }: { initia
                         </p>
                     </div>
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-end">
-                        <div className="relative w-full xl:max-w-sm">
-                            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                            <Input
+                        <div className="w-full xl:max-w-sm">
+                            <SearchInput
                                 placeholder="Search companies..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="h-10 rounded-xl pl-8 text-sm"
+                                onClear={() => setSearch("")}
                             />
                         </div>
                         <Dialog open={companyDialogOpen} onOpenChange={(open) => { setCompanyDialogOpen(open); if (!open) setEditingCompany(null) }}>
@@ -174,9 +174,6 @@ export function CompanyManagement({ initialCompanies, totalCompanies }: { initia
                                     </div>
                                     <div>
                                         <p className="font-semibold text-foreground">{company.name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {company.employeeCount} employees · {company.addresses.length} location{company.addresses.length !== 1 ? "s" : ""}
-                                        </p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1">
