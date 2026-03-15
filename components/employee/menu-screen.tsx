@@ -8,8 +8,16 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { isPastCutoffInTimezone } from "@/lib/utils/time"
-import { Clock, Check, X, LogOut, Loader2, AlertCircle, Building } from "lucide-react"
+import { Clock, Check, X, LogOut, Loader2, AlertCircle, Building, Info } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { submitMealSelection } from "@/app/actions/meal-selection"
 
@@ -18,7 +26,9 @@ export interface MenuData {
   date: string
   day: string | null
   vegItem: string | null
+  vegItemDescription: string | null
   nonvegItem: string | null
+  nonvegItemDescription: string | null
   sideBeverage: string | null
   notes: string | null
   available: boolean
@@ -300,16 +310,48 @@ export function MenuScreen({
                     className="mt-0.5 shrink-0"
                   />
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 border-veg"
-                        aria-hidden="true"
-                      >
-                        <span className="h-2 w-2 rounded-full bg-veg" />
-                      </span>
-                      <span className="text-sm font-medium text-foreground">
-                        Veg Meal
-                      </span>
+                    <div className="flex w-full items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 border-veg"
+                          aria-hidden="true"
+                        >
+                          <span className="h-2 w-2 rounded-full bg-veg" />
+                        </span>
+                        <span className="text-sm font-medium text-foreground">
+                          Veg Meal
+                        </span>
+                      </div>
+                      {menu.vegItemDescription?.trim() && (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <button
+                              type="button"
+                              className="rounded-full p-1.5 hover:bg-veg/10 transition-colors cursor-pointer text-muted-foreground hover:text-veg"
+                              title="View item description"
+                              aria-label={`View description for ${menu.vegItem}`}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                              }}
+                            >
+                              <Info className="h-4 w-4" />
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-[calc(100vw-2rem)] rounded-2xl sm:max-w-md p-0 overflow-hidden border-none shadow-2xl">
+                            <div className="bg-veg/5 p-6 pb-4 border-b border-veg/10">
+                              <DialogHeader>
+                                <DialogTitle className="text-foreground text-xl font-bold tracking-tight">{menu.vegItem}</DialogTitle>
+                              </DialogHeader>
+                            </div>
+                            <ScrollArea className="max-h-[60vh] p-6 pt-4">
+                              <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                                {menu.vegItemDescription}
+                              </div>
+                            </ScrollArea>
+                          </DialogContent>
+                        </Dialog>
+                      )}
                     </div>
                     <p className="text-xs leading-relaxed text-muted-foreground">
                       {menu.vegItem}
@@ -339,16 +381,48 @@ export function MenuScreen({
                     className="mt-0.5 shrink-0"
                   />
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 border-nonveg"
-                        aria-hidden="true"
-                      >
-                        <span className="h-2 w-2 rounded-full bg-nonveg" />
-                      </span>
-                      <span className="text-sm font-medium text-foreground">
-                        Non-Veg Meal
-                      </span>
+                    <div className="flex w-full items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 border-nonveg"
+                          aria-hidden="true"
+                        >
+                          <span className="h-2 w-2 rounded-full bg-nonveg" />
+                        </span>
+                        <span className="text-sm font-medium text-foreground">
+                          Non-Veg Meal
+                        </span>
+                      </div>
+                      {menu.nonvegItemDescription?.trim() && (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <button
+                              type="button"
+                              className="rounded-full p-1.5 hover:bg-nonveg/10 transition-colors cursor-pointer text-muted-foreground hover:text-nonveg"
+                              title="View item description"
+                              aria-label={`View description for ${menu.nonvegItem}`}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                              }}
+                            >
+                              <Info className="h-4 w-4" />
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-[calc(100vw-2rem)] rounded-2xl sm:max-w-md p-0 overflow-hidden border-none shadow-2xl">
+                            <div className="bg-nonveg/5 p-6 pb-4 border-b border-nonveg/10">
+                              <DialogHeader>
+                                <DialogTitle className="text-foreground text-xl font-bold tracking-tight">{menu.nonvegItem}</DialogTitle>
+                              </DialogHeader>
+                            </div>
+                            <ScrollArea className="max-h-[60vh] p-6 pt-4">
+                              <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                                {menu.nonvegItemDescription}
+                              </div>
+                            </ScrollArea>
+                          </DialogContent>
+                        </Dialog>
+                      )}
                     </div>
                     <p className="text-xs leading-relaxed text-muted-foreground">
                       {nonvegAvailable

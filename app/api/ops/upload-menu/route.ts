@@ -83,6 +83,44 @@ export async function POST(request: NextRequest) {
         // Prepare bulk upserts
         const upserts: ReturnType<typeof prisma.menu.upsert>[] = []
 
+        const extractStringValue = (row: ExcelJS.Row, colIdx: number | undefined): string | null => {
+            if (!colIdx) return null
+            const val = row.getCell(colIdx).value
+            if (val === null || val === undefined) return null
+            if (typeof val === "object" && "richText" in val) {
+                return (val as { richText: { text: string }[] }).richText
+                    .map((rt) => rt.text)
+                    .join("")
+            }
+            if (typeof val === "object" && "result" in val) {
+                return String((val as { result: unknown }).result)
+            }
+            return String(val).trim()
+        }
+
+        // 1. First Pass: Collect all unique item names to fetch from library in bulk
+        const uniqueItemNames = new Set<string>()
+        for (let rowNum = 2; rowNum <= sheet.rowCount; rowNum++) {
+            const row = sheet.getRow(rowNum)
+            const veg = extractStringValue(row, headers["veg_item"])
+            const nonveg = extractStringValue(row, headers["nonveg_item"])
+            if (veg) uniqueItemNames.add(veg)
+            if (nonveg) uniqueItemNames.add(nonveg)
+        }
+
+        const libraryItems = await prisma.menuItem.findMany({
+            where: {
+                name: {
+                    in: Array.from(uniqueItemNames),
+                    mode: "insensitive",
+                },
+            },
+            select: { id: true, name: true }
+        })
+
+        const libraryMap = new Map(libraryItems.map(m => [m.name.toLowerCase().trim(), m.id]))
+
+        // 2. Second Pass: Prepare upserts using the libraryMap
         for (let rowNum = 2; rowNum <= sheet.rowCount; rowNum++) {
             const row = sheet.getRow(rowNum)
             let isEmpty = true
@@ -90,13 +128,13 @@ export async function POST(request: NextRequest) {
             if (isEmpty) continue
 
             const rawDate = row.getCell(headers["date"]).value
-            const rawVegItem = row.getCell(headers["veg_item"]).value
+            const vegItem = extractStringValue(row, headers["veg_item"]) || ""
 
             if (!rawDate) {
                 errors.push({ row: rowNum, error: "Missing date" })
                 continue
             }
-            if (!rawVegItem) {
+            if (!vegItem) {
                 errors.push({ row: rowNum, error: "Missing veg_item" })
                 continue
             }
@@ -105,7 +143,6 @@ export async function POST(request: NextRequest) {
             if (rawDate instanceof Date) {
                 parsedDate = rawDate
             } else if (typeof rawDate === "number") {
-                // Excel serial date number
                 parsedDate = new Date((rawDate - 25569) * 86400 * 1000)
             } else if (typeof rawDate === "string") {
                 parsedDate = new Date(rawDate)
@@ -124,35 +161,22 @@ export async function POST(request: NextRequest) {
 
             parsedDate.setHours(0, 0, 0, 0)
 
-            const extractStringValue = (colName: string): string | null => {
-                const colIdx = headers[colName]
-                if (!colIdx) return null
-                const val = row.getCell(colIdx).value
-                if (val === null || val === undefined) return null
-                if (typeof val === "object" && "richText" in val) {
-                    return (val as { richText: { text: string }[] }).richText
-                        .map((rt) => rt.text)
-                        .join("")
-                }
-                if (typeof val === "object" && "result" in val) {
-                    return String((val as { result: unknown }).result)
-                }
-                return String(val).trim()
-            }
+            const nonvegItem = extractStringValue(row, headers["nonveg_item"])
+            const sideBeverage = extractStringValue(row, headers["side_beverage"])
+            const notes = extractStringValue(row, headers["notes"])
+            const day = extractStringValue(row, headers["day"])
 
-            const vegItem = extractStringValue("veg_item") || ""
-            const nonvegItem = extractStringValue("nonveg_item")
-            const sideBeverage = extractStringValue("side_beverage")
-            const notes = extractStringValue("notes")
-            const day = extractStringValue("day")
+            // Linking
+            const vegItemId = libraryMap.get(vegItem.toLowerCase().trim()) || null
+            const nonvegItemId = nonvegItem ? (libraryMap.get(nonvegItem.toLowerCase().trim()) || null) : null
 
             upserts.push(
                 prisma.menu.upsert({
                     where: {
                         addressId_date: { addressId, date: parsedDate },
                     },
-                    update: { day, vegItem, nonvegItem, sideBeverage, notes },
-                    create: { addressId, date: parsedDate, day, vegItem, nonvegItem, sideBeverage, notes },
+                    update: { day, vegItem, vegItemId, nonvegItem, nonvegItemId, sideBeverage, notes },
+                    create: { addressId, date: parsedDate, day, vegItem, vegItemId, nonvegItem, nonvegItemId, sideBeverage, notes },
                 })
             )
 
@@ -164,9 +188,11 @@ export async function POST(request: NextRequest) {
             })
         }
 
-        // Execute all upserts in a single transaction
-        if (upserts.length > 0) {
-            await prisma.$transaction(upserts)
+        // Execute in batches to prevent transaction timeout if there are many entries
+        const batchSize = 100
+        for (let i = 0; i < upserts.length; i += batchSize) {
+            const batch = upserts.slice(i, i + batchSize)
+            await prisma.$transaction(batch)
         }
 
         return apiResponse({

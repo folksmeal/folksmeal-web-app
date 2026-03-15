@@ -113,20 +113,39 @@ model Employee {
   @@map("employees")
 }
 
+model MenuItem {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  vegMenus    Menu[]   @relation("VegItem")
+  nonvegMenus Menu[]   @relation("NonvegItem")
+
+  @@map("menu_items")
+}
+
 model Menu {
   id           String         @id @default(cuid())
   addressId    String         @map("address_id")
   date         DateTime       @db.Date
   day          String?
   vegItem      String         @map("veg_item")
+  vegItemId    String?        @map("veg_item_id")
   nonvegItem   String?        @map("nonveg_item")
+  nonvegItemId String?        @map("nonveg_item_id")
   sideBeverage String?        @map("side_beverage")
   notes        String?
 
   address      CompanyAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  vegItemRef    MenuItem?      @relation("VegItem", fields: [vegItemId], references: [id], onDelete: SetNull)
+  nonvegItemRef MenuItem?      @relation("NonvegItem", fields: [nonvegItemId], references: [id], onDelete: SetNull)
 
   @@index([addressId])
   @@index([date])
+  @@index([vegItemId])
+  @@index([nonvegItemId])
   @@unique([addressId, date])
   @@map("menus")
 }

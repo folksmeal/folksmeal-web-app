@@ -36,6 +36,17 @@ export default async function DashboardPage({
     const todayISO = today.toISOString().split("T")[0]
     const todayMidnight = new Date(`${todayISO}T00:00:00.000Z`)
 
+    interface MenuWithLibrary {
+        date: Date;
+        day: string | null;
+        vegItem: string;
+        nonvegItem: string | null;
+        sideBeverage: string | null;
+        notes: string | null;
+        vegItemRef: { description: string | null } | null;
+        nonvegItemRef: { description: string | null } | null;
+    }
+
     const [address, menu, selection, todaySelection, todayMenu] = await Promise.all([
         prisma.companyAddress.findUnique({
             where: { id: addressId },
@@ -43,8 +54,8 @@ export default async function DashboardPage({
         }),
         prisma.menu.findUnique({
             where: { addressId_date: { addressId, date: tomorrow } },
-            select: { date: true, day: true, vegItem: true, nonvegItem: true, sideBeverage: true, notes: true },
-        }),
+            select: { date: true, day: true, vegItem: true, nonvegItem: true, sideBeverage: true, notes: true, vegItemRef: { select: { description: true } }, nonvegItemRef: { select: { description: true } } },
+        }) as Promise<MenuWithLibrary | null>,
         prisma.mealSelection.findUnique({
             where: { employeeId_date: { employeeId: id, date: tomorrow } },
             select: { status: true, preference: true, updatedAt: true },
@@ -66,7 +77,9 @@ export default async function DashboardPage({
             date: menu.date.toISOString(),
             day: menu.day,
             vegItem: menu.vegItem,
+            vegItemDescription: menu.vegItemRef?.description || null,
             nonvegItem: menu.nonvegItem,
+            nonvegItemDescription: menu.nonvegItemRef?.description || null,
             sideBeverage: menu.sideBeverage,
             notes: menu.notes,
             available: true,
@@ -76,7 +89,9 @@ export default async function DashboardPage({
             date: tomorrow.toISOString(),
             day: null,
             vegItem: null,
+            vegItemDescription: null,
             nonvegItem: null,
+            nonvegItemDescription: null,
             sideBeverage: null,
             notes: null,
             available: false,

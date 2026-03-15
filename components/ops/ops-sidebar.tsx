@@ -22,6 +22,7 @@ import { CompanySwitcher, type ManagedCompany } from "@/components/ops/company-s
 const navItems = [
     { href: "/ops/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/ops/menus", label: "Menu Management", icon: UtensilsCrossed },
+    { href: "/ops/menu-items", label: "Menu Items", icon: Menu },
     { href: "/ops/users", label: "User Management", icon: Users },
     { href: "/ops/companies", label: "Company Management", icon: Building2 },
     { href: "/ops/app-config", label: "App Config", icon: SlidersHorizontal },
