@@ -2,13 +2,13 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { MenuScreen } from "@/components/employee/menu-screen"
 import { ConfirmationScreen } from "@/components/employee/confirmation-screen"
-import { getTomorrowMidnightInTimezone } from "@/lib/utils/time"
+import { getTomorrowMidnightInTimezone, getTodayMidnightInTimezone, getISTDate, getISTDateString } from "@/lib/utils/time"
 import { redirect } from "next/navigation"
 
 export default async function DashboardPage({
     searchParams,
 }: {
-    searchParams: Promise<{ submitted?: string }>
+    searchParams: Promise<{ submitted?: string, edit?: string }>
 }) {
     const session = await auth()
     if (!session?.user) redirect("/")
@@ -29,12 +29,9 @@ export default async function DashboardPage({
 
     const timezone = locationTimezone || "Asia/Kolkata"
     const tomorrow = getTomorrowMidnightInTimezone(timezone)
-
-    const today = new Date()
-    // Shift system time to location timezone accurately
-    today.setMinutes(today.getMinutes() - today.getTimezoneOffset())
-    const todayISO = today.toISOString().split("T")[0]
-    const todayMidnight = new Date(`${todayISO}T00:00:00.000Z`)
+    const todayMidnight = getTodayMidnightInTimezone(timezone)
+    const { hour: currentHourInIST, dayOfWeek } = getISTDate()
+    const todayISO = getISTDateString()
 
     interface MenuWithLibrary {
         date: Date;
@@ -83,7 +80,7 @@ export default async function DashboardPage({
             sideBeverage: menu.sideBeverage,
             notes: menu.notes,
             available: true,
-            isWorkingDay: address?.workingDays.includes(tomorrow.getDay()) ?? true,
+            isWorkingDay: address?.workingDays.includes(tomorrow.getUTCDay()) ?? true,
         }
         : {
             date: tomorrow.toISOString(),
@@ -95,7 +92,7 @@ export default async function DashboardPage({
             sideBeverage: null,
             notes: null,
             available: false,
-            isWorkingDay: address?.workingDays.includes(tomorrow.getDay()) ?? true,
+            isWorkingDay: address?.workingDays.includes(tomorrow.getUTCDay()) ?? true,
         }
 
     const existingSelection = selection
@@ -107,18 +104,17 @@ export default async function DashboardPage({
         : null
 
     const params = await searchParams
-    const justSubmitted = params.submitted === "true"
+    const isEditing = params.edit === "true"
     const fullLocationName = `${companyName} - ${addressCity}`
 
-    if (justSubmitted && existingSelection) {
+    if (existingSelection && !isEditing) {
         // Evaluate if the user is eligible to rate TODAY's meal
-        const isTodayWorkingDay = address?.workingDays.includes(todayMidnight.getDay()) ?? true
+        const isTodayWorkingDay = address?.workingDays.includes(dayOfWeek) ?? true
         const didOptInToday = todaySelection?.status === "OPT_IN"
         const hasMenuToday = !!todayMenu
 
-        // Is it past 2:00 PM (14:00) in the user's local timezone?
-        const currentHourInLocation = today.getHours()
-        const isPast2PM = currentHourInLocation >= 14
+        // Is it past 2:00 PM (14:00) in the user's local timezone (IST)?
+        const isPast2PM = currentHourInIST >= 14
 
         const promptRating = isTodayWorkingDay && didOptInToday && hasMenuToday && isPast2PM
 
@@ -138,8 +134,6 @@ export default async function DashboardPage({
         return (
             <ConfirmationScreen
                 employeeCode={employeeCode}
-                companyName={fullLocationName}
-                companyIcon={companyIcon}
                 status={existingSelection.status}
                 preference={existingSelection.preference}
                 updatedAt={existingSelection.updatedAt}
@@ -154,8 +148,6 @@ export default async function DashboardPage({
         <MenuScreen
             employeeCode={employeeCode}
             employeeName={session.user.name || "Employee"}
-            companyName={fullLocationName}
-            companyIcon={companyIcon}
             timezone={timezone}
             cutoffTime={cutoffTime}
             menu={menuData}

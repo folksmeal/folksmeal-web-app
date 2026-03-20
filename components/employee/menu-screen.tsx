@@ -42,15 +42,14 @@ export interface ExistingSelection {
 interface MenuScreenProps {
   employeeCode: string
   employeeName: string
-  companyName: string
-  companyIcon?: string | null
   timezone: string
   cutoffTime: string
   menu: MenuData | null
   existingSelection: ExistingSelection | null
 }
 function formatDate(dateStr: string) {
-  return format(parseISO(dateStr), "EEEE, dd MMM yyyy")
+  const [y, m, d] = dateStr.split('T')[0].split('-').map(Number)
+  return format(new Date(y, m - 1, d), "EEEE, dd MMM yyyy")
 }
 
 function formatCutoff(cutoffTime: string) {
@@ -62,8 +61,6 @@ function formatCutoff(cutoffTime: string) {
 }
 export function MenuScreen({
   employeeName,
-  companyName,
-  companyIcon,
   timezone,
   cutoffTime,
   menu,
@@ -80,9 +77,10 @@ export function MenuScreen({
   const cutoffLabel = useMemo(() => formatCutoff(cutoffTime), [cutoffTime])
   const tomorrowLabel = useMemo(() => {
     if (menu?.date) return formatDate(menu.date)
-    const d = new Date()
-    d.setDate(d.getDate() + 1)
-    return formatDate(d.toISOString())
+    const istToday = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
+    const istTomorrow = new Date(Date.UTC(istToday.getFullYear(), istToday.getMonth(), istToday.getDate()))
+    istTomorrow.setUTCDate(istTomorrow.getUTCDate() + 1)
+    return formatDate(istTomorrow.toISOString().split('T')[0])
   }, [menu?.date])
   const handleSubmit = useCallback(
     async (status: "OPT_IN" | "OPT_OUT") => {
@@ -109,76 +107,9 @@ export function MenuScreen({
     },
     [selected, router]
   )
-  const handleLogout = useCallback(async () => {
-    await signOut({ callbackUrl: "/" })
-  }, [])
   const nonvegAvailable = Boolean(menu?.nonvegItem)
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      { }
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/logo-large.png"
-              alt="FolksMeal"
-              width={130}
-              height={34}
-              className="h-8 w-auto"
-              priority
-            />
-            { }
-            <div className="h-8 w-px bg-border max-sm:hidden" />
-            <div className="hidden h-10 items-center gap-2.5 rounded-xl border border-input bg-card px-4 py-2 sm:flex">
-              {companyIcon ? (
-                <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md border border-border/50 bg-muted/30">
-                  <Image
-                    src={companyIcon}
-                    alt={companyName}
-                    fill
-                    className="object-contain p-0.5"
-                    unoptimized
-                  />
-                </div>
-              ) : (
-                <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
-              )}
-              <span className="text-sm font-semibold text-foreground">
-                {companyName}
-              </span>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            onClick={handleLogout}
-            className="h-10 rounded-xl border-input bg-card px-5 font-semibold transition-all hover:bg-destructive/5 hover:text-destructive hover:border-destructive/30"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Sign Out
-          </Button>
-        </div>
-        <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
-          <div className="flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-input bg-card px-4 py-2 shadow-sm">
-            {companyIcon ? (
-              <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md border border-border/50 bg-muted/30">
-                <Image
-                  src={companyIcon}
-                  alt={companyName}
-                  fill
-                  className="object-contain p-0.5"
-                  unoptimized
-                />
-              </div>
-            ) : (
-              <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
-            )}
-            <span className="text-sm font-semibold text-foreground truncate max-w-50">
-              {companyName}
-            </span>
-          </div>
-        </div>
-      </header>
-      { }
+    <div className="flex flex-col flex-1">
       <main
         className={`mx-auto w-full max-w-7xl flex-1 px-6 py-6 ${menu?.isWorkingDay === false ? "flex flex-col justify-center items-center" : ""
           }`}

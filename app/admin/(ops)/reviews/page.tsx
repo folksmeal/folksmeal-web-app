@@ -2,6 +2,7 @@ import { AdminReviewsDashboard } from "@/components/admin/admin-reviews-dashboar
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
+import { getTodayMidnightInTimezone } from "@/lib/utils/time"
 import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
 import { redirect } from "next/navigation"
 
@@ -20,8 +21,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
     const limit = 15
     const skip = (pageParam - 1) * limit
 
-    const since = new Date()
-    since.setDate(since.getDate() - days)
+    const since = getTodayMidnightInTimezone()
+    since.setUTCDate(since.getUTCDate() - days)
 
     const whereClause: {
         date: { gte: Date };

@@ -81,7 +81,7 @@ export function MenuUploader({ addressId, onClose: _onClose }: MenuUploaderProps
         } finally {
             setUploading(false)
         }
-    }, [selectedFile, session])
+    }, [selectedFile, session, addressId])
 
     return (
         <div className="flex flex-col items-center justify-center gap-6 py-4 text-center">
@@ -154,7 +154,7 @@ export function MenuUploader({ addressId, onClose: _onClose }: MenuUploaderProps
                                     <div className="ml-6 text-xs text-muted-foreground space-y-0.5">
                                         {result.results.slice(0, 7).map((r, i) => (
                                             <p key={i}>
-                                                {format(parseISO(r.date), "dd MMM")}: {r.vegItem}
+                                                {format(new Date(r.date.split("T")[0] + "T00:00:00"), "dd MMM")}: {r.vegItem}
                                                 {r.nonvegItem ? ` | ${r.nonvegItem}` : ""}
                                             </p>
                                         ))}

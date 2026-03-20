@@ -61,7 +61,7 @@ export async function submitMealSelection(formData: {
 
         if (
             address.workingDays &&
-            !address.workingDays.includes(tomorrow.getDay())
+            !address.workingDays.includes(tomorrow.getUTCDay())
         ) {
             return { success: false, error: "Tomorrow is a non-working day. Meal selection is disabled." }
         }

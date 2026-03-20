@@ -881,7 +881,8 @@ function ExportButton({ effectiveAddressId, apiBasePath }: { effectiveAddressId?
             const url = window.URL.createObjectURL(blob)
             const a = document.createElement("a")
             a.href = url
-            a.download = `employee_credentials_${new Date().toISOString().split("T")[0]}.xlsx`
+            const istDate = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+            a.download = `employee_credentials_${istDate}.xlsx`
             document.body.appendChild(a)
             a.click()
             document.body.removeChild(a)

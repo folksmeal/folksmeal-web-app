@@ -11,8 +11,6 @@ import { submitMealRating } from "@/app/actions/meal-rating"
 
 interface ConfirmationScreenProps {
   employeeCode: string
-  companyName: string
-  companyIcon?: string | null
   status: "OPT_IN" | "OPT_OUT"
   preference: "VEG" | "NONVEG" | null
   updatedAt: string
@@ -56,6 +54,7 @@ function getStatusConfig(
 }
 
 function formatTimestamp(iso: string) {
+  // Use a local date for the "Last Updated" timestamp to show the user's actual relative time
   return format(parseISO(iso), "dd MMM yyyy, hh:mm a")
 }
 
@@ -72,58 +71,57 @@ function StarRating({ mealDate, existingRating }: { mealDate: string; existingRa
     if (rating === 0 || inCooldown) return
     setErrorResult(null)
 
+    // Optimistic: show success immediately
+    setSubmitted(true)
+    setInCooldown(true)
+
     startTransition(async () => {
       const result = await submitMealRating({ rating, comment: comment || undefined, date: mealDate })
       if (result.success) {
-        setSubmitted(true)
-        setInCooldown(true)
         setTimeout(() => setInCooldown(false), 5000)
       } else {
+        // Rollback on failure
+        setSubmitted(false)
+        setInCooldown(false)
         setErrorResult(result.error || "Failed to submit rating")
       }
     })
   }, [rating, comment, mealDate, inCooldown])
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-      <div className="space-y-4">
-        <div className="flex h-9 items-center justify-between">
+    <div className="rounded-xl border border-border bg-card p-6 shadow-sm flex items-center justify-between">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-foreground">
             {submitted ? "Thank you for the rating!" : "Rate your meal"}
           </p>
-          {submitted && (
-            <Button
-              variant="outline"
-              onClick={() => setSubmitted(false)}
-              disabled={inCooldown}
-            >
-              <Edit2 className="h-2.5 w-2.5 text-primary" />
-              <span>Edit</span>
-            </Button>
-          )}
         </div>
 
         <div className="flex items-center gap-1.5">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              onClick={() => {
-                setRating(star)
-                if (submitted) setSubmitted(false)
-              }}
-              onMouseEnter={() => setHoveredStar(star)}
-              onMouseLeave={() => setHoveredStar(0)}
-              className="p-0.5 cursor-pointer"
-            >
-              <Star
-                className={`h-8 w-8 transition-colors duration-200 ${star <= (hoveredStar || rating)
-                  ? "fill-amber-400 text-amber-400"
-                  : "text-muted-foreground/30"
-                  }`}
-              />
-            </button>
-          ))}
+          {[1, 2, 3, 4, 5].map((star) => {
+            const isActive = star <= (submitted ? rating : (hoveredStar || rating))
+            return (
+              <button
+                key={star}
+                type="button"
+                disabled={submitted}
+                onClick={() => {
+                  if (!submitted) setRating(star)
+                }}
+                onMouseEnter={() => { if (!submitted) setHoveredStar(star) }}
+                onMouseLeave={() => { if (!submitted) setHoveredStar(0) }}
+                className={`p-0.5 ${submitted ? "cursor-default opacity-70" : "cursor-pointer"}`}
+              >
+                <Star
+                  className={`h-8 w-8 transition-all duration-150 ease-out ${isActive
+                    ? "fill-amber-400 text-amber-400"
+                    : "fill-transparent text-muted-foreground/30"
+                    }`}
+                  style={{ transitionDelay: `${(star - 1) * 30}ms` }}
+                />
+              </button>
+            )
+          })}
         </div>
 
         {rating > 0 && !submitted && (
@@ -164,13 +162,21 @@ function StarRating({ mealDate, existingRating }: { mealDate: string; existingRa
           </p>
         )}
       </div>
+      {submitted && (
+        <Button
+          variant="outline"
+          onClick={() => setSubmitted(false)}
+          disabled={inCooldown}
+        >
+          <Edit2 className="h-2.5 w-2.5 text-primary" />
+          <span>Edit</span>
+        </Button>
+      )}
     </div>
   )
 }
 
 export function ConfirmationScreen({
-  companyName,
-  companyIcon,
   status,
   preference,
   updatedAt,
@@ -183,78 +189,13 @@ export function ConfirmationScreen({
   const Icon = cfg.icon
 
   const handleBack = useCallback(() => {
-    router.push("/dashboard")
+    router.push("/dashboard?edit=true")
     router.refresh()
   }, [router])
 
-  const handleLogout = useCallback(async () => {
-    await signOut({ callbackUrl: "/" })
-  }, [])
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/logo-large.png"
-              alt="FolksMeal"
-              width={130}
-              height={34}
-              className="h-8 w-auto"
-              priority
-            />
-            <div className="h-8 w-px bg-border max-sm:hidden" />
-            <div className="hidden h-10 items-center justify-center gap-2.5 rounded-xl border border-input bg-card px-4 py-2 sm:flex shadow-sm">
-              {companyIcon ? (
-                <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md border border-border/50 bg-muted/30">
-                  <Image
-                    src={companyIcon}
-                    alt={companyName}
-                    fill
-                    className="object-contain p-0.5"
-                    unoptimized
-                  />
-                </div>
-              ) : (
-                <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
-              )}
-              <span className="text-sm font-semibold text-foreground">
-                {companyName}
-              </span>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            onClick={handleLogout}
-            aria-label="Sign out"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            <span>Sign Out</span>
-          </Button>
-        </div>
-        <div className="mx-auto flex max-w-7xl items-center px-6 pb-3 sm:hidden">
-          <div className="flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-input bg-card px-4 py-2">
-            {companyIcon ? (
-              <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md border border-border/50 bg-muted/30">
-                <Image
-                  src={companyIcon}
-                  alt={companyName}
-                  fill
-                  className="object-contain p-0.5"
-                  unoptimized
-                />
-              </div>
-            ) : (
-              <Building className="h-4 w-4 shrink-0 text-muted-foreground" />
-            )}
-            <span className="text-sm font-semibold text-foreground truncate max-w-50">
-              {companyName}
-            </span>
-          </div>
-        </div>
-      </header>
-
+    <div className="flex flex-col flex-1">
       <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-6">
         <div className="flex flex-col gap-6">
           <h1

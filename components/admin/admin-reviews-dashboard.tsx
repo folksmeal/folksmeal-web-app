@@ -163,7 +163,7 @@ export function AdminReviewsDashboard({ initialDays, initialData, basePath = "/o
                                             )}
                                         </td>
                                         <td className="truncate px-4 py-3 text-muted-foreground text-[11px] w-[15%]">
-                                            {format(parseISO(review.date), "EEE, dd MMM yyyy")}
+                                            {format(new Date(review.date.split("T")[0] + "T00:00:00"), "EEE, dd MMM yyyy")}
                                         </td>
                                     </tr>
                                 ))

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
+import { getISTDateString, getISTHours } from "@/lib/utils/time"
 
 const ratingSchema = z.object({
     rating: z.number().int().min(1).max(5),
@@ -43,16 +44,14 @@ export async function submitMealRating(formData: {
         }
 
         // Only allow rating meals for the current day
-        const now = new Date()
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-        const currentDateStr = now.toISOString().split("T")[0]
+        const currentDateStr = getISTDateString()
 
         if (date !== currentDateStr) {
             return { success: false, error: "You can only rate today's meal" }
         }
 
-        // Must be past 2:00 PM local time
-        if (now.getHours() < 14) {
+        // Must be past 2:00 PM (14:00) IST
+        if (getISTHours() < 14) {
             return { success: false, error: "Meal rating opens at 2:00 PM." }
         }
 
@@ -71,7 +70,7 @@ export async function submitMealRating(formData: {
             })
         ])
 
-        if (!address?.workingDays.includes(targetDate.getDay())) {
+        if (!address?.workingDays.includes(targetDate.getUTCDay())) {
             return { success: false, error: "Cannot rate meals on non-working days" }
         }
 

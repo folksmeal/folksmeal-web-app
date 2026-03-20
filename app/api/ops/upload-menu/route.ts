@@ -159,7 +159,8 @@ export async function POST(request: NextRequest) {
                 continue
             }
 
-            parsedDate.setHours(0, 0, 0, 0)
+            // Normalize to UTC 00:00:00 for the database field
+            parsedDate = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate()))
 
             const nonvegItem = extractStringValue(row, headers["nonveg_item"])
             const sideBeverage = extractStringValue(row, headers["side_beverage"])

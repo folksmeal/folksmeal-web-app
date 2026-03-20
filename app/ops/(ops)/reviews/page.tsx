@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
 import { Prisma } from "@prisma/client"
+import { getTodayMidnightInTimezone } from "@/lib/utils/time"
 
 export default async function ReviewsPage({ searchParams }: { searchParams: Promise<{ days?: string, page?: string }> }) {
     const session = await auth()
@@ -17,8 +18,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
     const limit = 15
     const skip = (pageParam - 1) * limit
 
-    const since = new Date()
-    since.setDate(since.getDate() - days)
+    const since = getTodayMidnightInTimezone()
+    since.setUTCDate(since.getUTCDate() - days)
 
     const whereClause: Prisma.MealRatingWhereInput = {
         date: { gte: since },

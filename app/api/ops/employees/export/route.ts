@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAdmin, getEffectiveAddressId } from "@/lib/auth-helpers"
 import { apiError, handleApiRequest } from "@/lib/api-utils"
+import { getISTDateString } from "@/lib/utils/time"
 import { decryptText } from "@/lib/encryption"
 import ExcelJS from "exceljs"
 import { MealPreference } from "@prisma/client"
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
         return new NextResponse(buffer, {
             headers: {
                 "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "Content-Disposition": `attachment; filename="employees_export_${new Date().toISOString().split("T")[0]}.xlsx"`,
+                "Content-Disposition": `attachment; filename="employees_export_${getISTDateString()}.xlsx"`,
             },
         })
     })

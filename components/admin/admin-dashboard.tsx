@@ -137,7 +137,7 @@ export function AdminDashboard({
             ...(isAdminPortal ? [] : [r.company]),
             r.status === "OPT_IN" ? "Opted In" : r.status === "OPT_OUT" ? "Opted Out" : "No Selection",
             r.preference || "-",
-            format(parseISO(r.date), "dd MMM yyyy"),
+            format(new Date(r.date.split("T")[0] + "T00:00:00"), "dd MMM yyyy"),
             r.updatedAt ? format(parseISO(r.updatedAt), "dd MMM yyyy, hh:mm a") : "-",
         ])
         csvRows.push([])
@@ -194,13 +194,13 @@ export function AdminDashboard({
                                     )}
                                 >
                                     <CalendarDays className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-                                    {date ? format(parseISO(date), "dd MMM yyyy") : <span>Pick a date</span>}
+                                    {date ? format(new Date(date + "T00:00:00"), "dd MMM yyyy") : <span>Pick a date</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto overflow-hidden rounded-xl p-0" align="start">
                                 <Calendar
                                     mode="single"
-                                    selected={parseISO(date)}
+                                    selected={new Date(date + "T00:00:00")}
                                     onSelect={(val) => {
                                         if (val) {
                                             const d = new Date(val)
@@ -345,7 +345,7 @@ export function AdminDashboard({
                                             )}
                                         </td>
                                         <td className="truncate px-4 py-3 text-muted-foreground text-[11px] w-[20%]">
-                                            {format(parseISO(row.date), "EEE, dd MMM yyyy")}
+                                            {format(new Date(row.date.split("T")[0] + "T00:00:00"), "EEE, dd MMM yyyy")}
                                         </td>
                                     </tr>
                                 ))

@@ -1,6 +1,7 @@
 import { MealPreference, SelectionStatus } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { prisma } from "../lib/prisma"
+import { getTodayMidnightInTimezone } from "../lib/utils/time"
 
 const SEED_PASSWORD = process.env.SEED_PASSWORD || "password123"
 
@@ -190,16 +191,14 @@ async function main() {
         "Rooh Afza",
     ]
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const today = getTodayMidnightInTimezone()
 
     let menuCount = 0
     for (const addr of addresses) {
         for (let i = -14; i <= 16; i++) {
             const date = new Date(today)
-            date.setDate(today.getDate() + i)
-            date.setHours(0, 0, 0, 0)
-            const dow = date.getDay()
+            date.setUTCDate(today.getUTCDate() + i)
+            const dow = date.getUTCDay()
 
             if (!addr.workingDays.includes(dow)) continue
 
@@ -252,9 +251,8 @@ async function main() {
 
         for (let i = -14; i <= -1; i++) {
             const date = new Date(today)
-            date.setDate(today.getDate() + i)
-            date.setHours(0, 0, 0, 0)
-            const dow = date.getDay()
+            date.setUTCDate(today.getUTCDate() + i)
+            const dow = date.getUTCDay()
 
             if (!addr.workingDays.includes(dow)) continue
 
@@ -297,9 +295,8 @@ async function main() {
         // Today and tomorrow selections (future — opt-in only, no rating)
         for (let i = 0; i <= 1; i++) {
             const date = new Date(today)
-            date.setDate(today.getDate() + i)
-            date.setHours(0, 0, 0, 0)
-            const dow = date.getDay()
+            date.setUTCDate(today.getUTCDate() + i)
+            const dow = date.getUTCDay()
 
             if (!addr.workingDays.includes(dow)) continue
 
@@ -322,8 +319,7 @@ async function main() {
 
     // Ensure yesterday has deterministic rating data for key demo locations.
     const yesterday = new Date(today)
-    yesterday.setDate(today.getDate() - 1)
-    yesterday.setHours(0, 0, 0, 0)
+    yesterday.setUTCDate(today.getUTCDate() - 1)
 
     const guaranteedYesterdayRatings = [
         {
@@ -342,7 +338,7 @@ async function main() {
 
     for (const guaranteedEntry of guaranteedYesterdayRatings) {
         const address = addresses.find((addr) => addr.id === guaranteedEntry.addressId)
-        if (!address || !address.workingDays.includes(yesterday.getDay())) continue
+        if (!address || !address.workingDays.includes(yesterday.getUTCDay())) continue
 
         const employee = employeeData.find((emp) => emp.id === guaranteedEntry.employeeId)
         if (!employee) continue

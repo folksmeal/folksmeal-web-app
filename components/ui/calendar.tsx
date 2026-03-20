@@ -19,6 +19,7 @@ function Calendar({
   buttonVariant = 'ghost',
   formatters,
   components,
+  today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })),
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>['variant']
@@ -164,6 +165,7 @@ function Calendar({
         },
         ...components,
       }}
+      today={today}
       {...props} />
   )
 }

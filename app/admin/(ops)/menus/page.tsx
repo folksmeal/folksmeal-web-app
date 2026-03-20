@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
 import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
 import { redirect } from "next/navigation"
-import { format, startOfWeek, endOfWeek, isToday, eachDayOfInterval } from "date-fns"
+import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns"
+import { getISTDate, getISTDateString } from "@/lib/utils/time"
 
 export default async function MenusPage() {
     const session = await auth()
@@ -13,9 +14,23 @@ export default async function MenusPage() {
 
     const effectiveAddressId = await getEffectiveAddressId(session.user)
 
-    const now = new Date()
-    const start = startOfWeek(now, { weekStartsOn: 1 })
-    const end = endOfWeek(now, { weekStartsOn: 1 })
+    const istDate = getISTDate()
+    const now = new Date(Date.UTC(istDate.year, istDate.month, istDate.day))
+    const todayStr = getISTDateString()
+
+    // Use UTC-safe start/end of week logic
+    const startOfWk = new Date(now)
+    const day = now.getUTCDay()
+    const diff = now.getUTCDate() - day + (day === 0 ? -6 : 1) // Adjust for week starting Monday (1)
+    startOfWk.setUTCDate(diff)
+    startOfWk.setUTCHours(0, 0, 0, 0)
+
+    const endOfWk = new Date(startOfWk)
+    endOfWk.setUTCDate(startOfWk.getUTCDate() + 6)
+    endOfWk.setUTCHours(23, 59, 59, 999)
+
+    const start = startOfWk
+    const end = endOfWk
 
     const [activeAddress, menus] = await Promise.all([
         effectiveAddressId
@@ -37,8 +52,18 @@ export default async function MenusPage() {
     ])
 
     const workingDays = activeAddress?.workingDays?.length ? activeAddress.workingDays : [1, 2, 3, 4, 5]
-    const weekDays = eachDayOfInterval({ start, end }).filter((day) => workingDays.includes(day.getDay()))
-    const menuByDate = new Map(menus.map((menu) => [format(menu.date, "yyyy-MM-dd"), menu]))
+
+    // Manual interval generation to keep UTC-midnight objects
+    const weekDays: Date[] = []
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(start)
+        d.setUTCDate(start.getUTCDate() + i)
+        if (workingDays.includes(d.getUTCDay())) {
+            weekDays.push(d)
+        }
+    }
+
+    const menuByDate = new Map(menus.map((menu) => [menu.date.toISOString().split("T")[0], menu]))
     const locationLabel = activeAddress ? `${activeAddress.company.name} - ${activeAddress.city}` : "Selected location"
 
     return (
@@ -69,7 +94,7 @@ export default async function MenusPage() {
                     {weekDays.map((day) => {
                         const key = format(day, "yyyy-MM-dd")
                         const menu = menuByDate.get(key)
-                        const today = isToday(day)
+                        const today = key === todayStr
 
                         return (
                             <div

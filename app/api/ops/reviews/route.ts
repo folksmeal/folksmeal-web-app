@@ -4,6 +4,7 @@ import { requireAdmin, getEffectiveAddressId } from "@/lib/auth-helpers"
 import { Prisma } from "@prisma/client"
 import { apiResponse, apiError, handleApiRequest } from "@/lib/api-utils"
 import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
+import { getTodayMidnightInTimezone } from "@/lib/utils/time"
 
 export async function GET(request: NextRequest) {
     return handleApiRequest(async () => {
@@ -27,8 +28,8 @@ export async function GET(request: NextRequest) {
             return apiError("Days must be between 1 and 365", 400, "INVALID_DAYS")
         }
 
-        const since = new Date()
-        since.setDate(since.getDate() - days)
+        const since = getTodayMidnightInTimezone()
+        since.setUTCDate(since.getUTCDate() - days)
 
         const whereClause: Prisma.MealRatingWhereInput = {
             date: { gte: since },
