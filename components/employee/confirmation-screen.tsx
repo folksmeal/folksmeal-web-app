@@ -1,11 +1,9 @@
 "use client"
 import { useState, useCallback, useTransition } from "react"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { CheckCircle2, XCircle, ArrowLeft, LogOut, Building, Star, Loader2, Edit2 } from "lucide-react"
+import { CheckCircle2, XCircle, ArrowLeft, Star, Loader2, Edit2 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { submitMealRating } from "@/app/actions/meal-rating"
 
@@ -17,6 +15,7 @@ interface ConfirmationScreenProps {
   mealDate: string
   existingRating?: { rating: number; comment: string | null } | null
   promptRating?: boolean
+  addons?: { addon: { name: string }; quantity: number; priceAtSelection: number }[]
 }
 
 function getStatusConfig(
@@ -183,6 +182,7 @@ export function ConfirmationScreen({
   mealDate,
   existingRating,
   promptRating = false,
+  addons = [],
 }: ConfirmationScreenProps) {
   const router = useRouter()
   const cfg = getStatusConfig(status, preference)
@@ -205,40 +205,74 @@ export function ConfirmationScreen({
             Your Selection
           </h1>
 
-          <div className="rounded-lg border border-border bg-card p-5">
-            <div className="flex flex-col items-center gap-4 py-4 text-center">
-              <Icon
-                className={`h-10 w-10 ${cfg.iconClass}`}
-                strokeWidth={1.5}
-              />
-              <div className="flex flex-col gap-1.5">
-                <p className="text-base font-semibold text-foreground">
-                  {cfg.label}
-                </p>
-                {cfg.badgeBorder && (
-                  <div className="flex items-center justify-center gap-2">
-                    <span
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 ${cfg.badgeBorder}`}
-                      aria-hidden="true"
-                    >
-                      <span className={`h-2 w-2 rounded-full ${cfg.badgeDot}`} />
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {cfg.badgeLabel}
-                    </span>
-                  </div>
-                )}
-                {!cfg.badgeBorder && (
-                  <p className="text-sm text-muted-foreground">
-                    {cfg.badgeLabel}
-                  </p>
-                )}
+          <div className="relative overflow-hidden rounded-xl border border-border bg-card">
+            <div className="bg-muted/30 px-6 py-4 border-b border-border/50 flex justify-between items-center">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-widest pl-1">Order Details</h3>
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-50 border border-emerald-100">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="text-[10px] font-bold text-emerald-700 uppercase">Confirmed</span>
               </div>
             </div>
-            <Separator />
-            <p className="pt-4 text-center text-xs text-muted-foreground">
-              Last updated: {formatTimestamp(updatedAt)}
-            </p>
+
+            <div className="p-6 space-y-6">
+              <div className="flex flex-col items-center gap-4 py-2 text-center">
+                <Icon
+                  className={`h-10 w-10 ${cfg.iconClass}`}
+                  strokeWidth={1.5}
+                />
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-base font-bold text-foreground">
+                    {cfg.label}
+                  </p>
+                  {cfg.badgeBorder && (
+                    <div className="flex items-center justify-center gap-2">
+                      <span
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border-2 ${cfg.badgeBorder}`}
+                        aria-hidden="true"
+                      >
+                        <span className={`h-2 w-2 rounded-full ${cfg.badgeDot}`} />
+                      </span>
+                      <span className="text-sm text-muted-foreground font-medium">
+                        {cfg.badgeLabel}
+                      </span>
+                    </div>
+                  )}
+                  {!cfg.badgeBorder && (
+                    <p className="text-sm text-muted-foreground font-medium">
+                      {cfg.badgeLabel}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {addons.length > 0 && (
+                <div className="w-full space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Extra Add-ons</h3>
+                    <div className="px-2 py-1 rounded-md bg-amber-50 border border-amber-100">
+                      <span className="text-[10px] font-bold text-amber-700 uppercase">Payroll Deduction</span>
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    {addons.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center rounded-xl border border-border bg-muted/5 px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-5 w-5 items-center justify-center rounded bg-primary/10 text-[10px] font-bold text-primary">{item.quantity}x</span>
+                          <span className="text-sm font-medium text-foreground/80">{item.addon.name}</span>
+                        </div>
+                        <span className="text-sm font-bold text-foreground">₹{item.priceAtSelection * item.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <footer className="pt-4 border-t border-border mt-4">
+                <p className="text-center text-[10px] font-medium text-muted-foreground uppercase tracking-tight">
+                  Selection updated: {formatTimestamp(updatedAt)}
+                </p>
+              </footer>
+            </div>
           </div>
 
           {promptRating && (

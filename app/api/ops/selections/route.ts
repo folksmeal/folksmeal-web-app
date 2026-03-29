@@ -44,6 +44,9 @@ export async function GET(request: NextRequest) {
                     employee: {
                         include: { company: true, address: true },
                     },
+                    addons: {
+                        include: { addon: true }
+                    }
                 },
                 orderBy: { employee: { name: "asc" } },
             }),
@@ -80,6 +83,9 @@ export async function GET(request: NextRequest) {
             company: `${s.employee.company.name} - ${s.employee.address.city}`,
             status: s.status,
             preference: s.preference || null,
+            addons: s.addons
+                .map(a => `${a.quantity}x ${a.addon.name}`)
+                .join(", "),
             date: dateStr,
             updatedAt: s.updatedAt.toISOString(),
         }))
@@ -90,6 +96,7 @@ export async function GET(request: NextRequest) {
             company: `${e.company.name} - ${e.address.city}`,
             status: "NO_SELECTION" as const,
             preference: null,
+            addons: "",
             date: dateStr,
             updatedAt: "",
         }))

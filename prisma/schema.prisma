@@ -64,6 +64,7 @@ model CompanyAdminFeatureConfig {
   employeeManagementEnabled Boolean  @default(true) @map("employee_management_enabled")
   menuEnabled               Boolean  @default(true) @map("menu_enabled")
   reviewsEnabled            Boolean  @default(true) @map("reviews_enabled")
+  addonsEnabled             Boolean  @default(false) @map("addons_enabled")
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")
 
@@ -151,20 +152,62 @@ model Menu {
 }
 
 model MealSelection {
-  id         String          @id @default(cuid())
-  employeeId String          @map("employee_id")
-  date       DateTime        @db.Date
+  id         String               @id @default(cuid())
+  employeeId String               @map("employee_id")
+  date       DateTime             @db.Date
   status     SelectionStatus
   preference MealPreference?
-  createdAt  DateTime        @default(now()) @map("created_at")
-  updatedAt  DateTime        @updatedAt @map("updated_at")
+  createdAt  DateTime             @default(now()) @map("created_at")
+  updatedAt  DateTime             @updatedAt @map("updated_at")
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee   Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  addons     MealSelectionAddon[]
 
   @@index([date])
   @@index([employeeId])
   @@unique([employeeId, date])
   @@map("meal_selections")
+}
+
+enum AddonType {
+  MAIN_REPEAT
+  PROTEIN_SIDE
+  BEVERAGE
+  SIDE_DESSERT
+  BREAD_ADDITION
+}
+
+model Addon {
+  id             String               @id @default(cuid())
+  name           String               @unique
+  unitPrice      Float                @map("unit_price")
+  maxQty         Int                  @map("max_qty")
+  isRepeatable   Boolean              @default(false) @map("is_repeatable")
+  isLinkedToMenu Boolean              @default(false) @map("is_linked_to_menu")
+  type           AddonType
+  active         Boolean              @default(true)
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+
+  selections     MealSelectionAddon[]
+
+  @@map("addons")
+}
+
+model MealSelectionAddon {
+  id               String        @id @default(cuid())
+  mealSelectionId  String        @map("meal_selection_id")
+  addonId          String        @map("addon_id")
+  quantity         Int
+  priceAtSelection Float         @map("price_at_selection")
+
+  mealSelection    MealSelection @relation(fields: [mealSelectionId], references: [id], onDelete: Cascade)
+  addon            Addon         @relation(fields: [addonId], references: [id], onDelete: Restrict)
+
+  @@index([mealSelectionId])
+  @@index([addonId])
+  @@unique([mealSelectionId, addonId])
+  @@map("meal_selection_addons")
 }
 
 model MealRating {

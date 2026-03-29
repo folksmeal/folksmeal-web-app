@@ -10,6 +10,7 @@ const updateConfigSchema = z.object({
     employeeManagementEnabled: z.boolean(),
     menuEnabled: z.boolean(),
     reviewsEnabled: z.boolean(),
+    addonsEnabled: z.boolean(),
 })
 
 export async function GET() {
@@ -34,6 +35,7 @@ export async function GET() {
                     employeeManagementEnabled: config.employeeManagementEnabled,
                     menuEnabled: config.menuEnabled,
                     reviewsEnabled: config.reviewsEnabled,
+                    addonsEnabled: config.addonsEnabled,
                 },
             ])
         )
@@ -53,6 +55,7 @@ export async function GET() {
                     employeeManagementEnabled: configByCompanyId.get(company.id)?.employeeManagementEnabled ?? true,
                     menuEnabled: configByCompanyId.get(company.id)?.menuEnabled ?? true,
                     reviewsEnabled: configByCompanyId.get(company.id)?.reviewsEnabled ?? true,
+                    addonsEnabled: configByCompanyId.get(company.id)?.addonsEnabled ?? false,
                 },
             })),
         })
@@ -72,12 +75,14 @@ export async function PUT(request: NextRequest) {
                 employeeManagementEnabled: body.employeeManagementEnabled,
                 menuEnabled: body.menuEnabled,
                 reviewsEnabled: body.reviewsEnabled,
+                addonsEnabled: body.addonsEnabled,
             },
             create: {
                 companyId: body.companyId,
                 employeeManagementEnabled: body.employeeManagementEnabled,
                 menuEnabled: body.menuEnabled,
                 reviewsEnabled: body.reviewsEnabled,
+                addonsEnabled: body.addonsEnabled,
             },
         })
 
@@ -88,6 +93,7 @@ export async function PUT(request: NextRequest) {
                 employeeManagementEnabled: config.employeeManagementEnabled,
                 menuEnabled: config.menuEnabled,
                 reviewsEnabled: config.reviewsEnabled,
+                addonsEnabled: config.addonsEnabled,
             },
         })
     })

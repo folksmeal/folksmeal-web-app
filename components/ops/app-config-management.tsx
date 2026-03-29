@@ -21,6 +21,7 @@ interface CompanyConfigRow {
         employeeManagementEnabled: boolean
         menuEnabled: boolean
         reviewsEnabled: boolean
+        addonsEnabled: boolean
     }
 }
 
@@ -34,7 +35,7 @@ export function AppConfigManagement() {
 
     const handleFeatureToggle = (
         companyId: string,
-        feature: "employeeManagementEnabled" | "menuEnabled" | "reviewsEnabled",
+        feature: "employeeManagementEnabled" | "menuEnabled" | "reviewsEnabled" | "addonsEnabled",
         nextValue: boolean
     ) => {
         setPendingCompanyId(companyId)
@@ -72,6 +73,10 @@ export function AppConfigManagement() {
                             feature === "reviewsEnabled"
                                 ? nextValue
                                 : companies.find((company) => company.id === companyId)?.features.reviewsEnabled ?? true,
+                        addonsEnabled:
+                            feature === "addonsEnabled"
+                                ? nextValue
+                                : companies.find((company) => company.id === companyId)?.features.addonsEnabled ?? false,
                     }),
                 })
 
@@ -173,6 +178,19 @@ export function AppConfigManagement() {
                                                 checked={company.features.reviewsEnabled}
                                                 disabled={isUpdating}
                                                 onCheckedChange={(checked) => handleFeatureToggle(company.id, "reviewsEnabled", checked)}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="text-sm font-semibold text-foreground">Meal Add-ons</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Enable the 3-step meal selection flow with add-on items for employees.
+                                                </p>
+                                            </div>
+                                            <Switch
+                                                checked={company.features.addonsEnabled}
+                                                disabled={isUpdating}
+                                                onCheckedChange={(checked) => handleFeatureToggle(company.id, "addonsEnabled", checked)}
                                             />
                                         </div>
                                     </div>

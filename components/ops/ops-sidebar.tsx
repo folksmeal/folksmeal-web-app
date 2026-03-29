@@ -34,6 +34,7 @@ const navItems = [
         children: [
             { href: "/ops/menus", label: "Daily Menus", icon: ListFilter },
             { href: "/ops/menu-items", label: "Menu Items", icon: Menu },
+            { href: "/ops/addons", label: "Add-ons", icon: ListFilter },
         ]
     },
     { href: "/ops/users", label: "User Management", icon: Users },

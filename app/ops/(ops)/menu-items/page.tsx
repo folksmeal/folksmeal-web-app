@@ -90,7 +90,7 @@ export default async function MenuItemsPage({ searchParams }: { searchParams: Pr
                                     </td>
                                 </tr>
                             ) : (
-                                items.map((item: any) => (
+                                items.map((item) => (
                                     <tr key={item.id} className="transition-colors hover:bg-muted/30 border-b border-border">
                                         <td className="px-4 py-3 font-medium text-foreground w-[30%]">
                                             {item.name}

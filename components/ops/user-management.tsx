@@ -4,7 +4,7 @@ import useSWR from "swr"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-    Plus, Pencil, Trash2, Loader2, Search, Eye, EyeOff,
+    Plus, Pencil, Trash2, Loader2, Eye, EyeOff,
     Upload, Download, X, AlertCircle
 } from "lucide-react"
 import ExcelJS from "exceljs"
@@ -396,10 +396,15 @@ function EmployeeTable({ employees, onEdit, onDelete, isAdminPortal }: { employe
                                         <p className="truncate">{emp.email || "-"}</p>
                                     </td>
                                     <td className="w-[10%] px-4 py-3">
-                                        <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                                            <span className={cn("h-2.5 w-2.5 rounded-full", emp.defaultPreference === "VEG" ? "bg-veg" : "bg-nonveg")} />
-                                            <span className="text-[13px]">{emp.defaultPreference === "VEG" ? "Veg" : "Non-Veg"}</span>
-                                        </div>
+                                        {emp.defaultPreference === "VEG" ? (
+                                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200/50">
+                                                Veg
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700 border border-red-200/50">
+                                                Non-Veg
+                                            </span>
+                                        )}
                                     </td>
                                     {!isAdminPortal && (
                                         <td className="w-[20%] px-4 py-3 text-muted-foreground">
@@ -459,7 +464,15 @@ function AdminUserTable({ users, onEdit, onDelete }: { users: User[], onEdit: (_
                                         <p className="truncate">{user.email}</p>
                                     </td>
                                     <td className="w-[14%] px-4 py-3">
-                                        <p className="truncate text-sm text-foreground">{user.role === "SUPERADMIN" ? "Super Admin" : "Company Admin"}</p>
+                                        {user.role === "SUPERADMIN" ? (
+                                            <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-bold text-indigo-700 border border-indigo-200/50 tracking-wide uppercase">
+                                                Super Admin
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200/50 tracking-wide uppercase">
+                                                Company Admin
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="w-[24%] px-4 py-3 text-muted-foreground">
                                         <p className="truncate">{user.companyName ?? "All companies"}</p>

@@ -11,10 +11,13 @@ async function main() {
     console.log("🌱 Seeding database...\n")
 
     // Clean existing data (order matters due to foreign keys)
+    await prisma.mealSelectionAddon.deleteMany()
     await prisma.mealRating.deleteMany()
     await prisma.mealSelection.deleteMany()
+    await prisma.addon.deleteMany()
     await prisma.menu.deleteMany()
     await prisma.employee.deleteMany()
+    await prisma.companyAdminFeatureConfig.deleteMany()
     await prisma.companyAddress.deleteMany()
     await prisma.company.deleteMany()
     await prisma.user.deleteMany()
@@ -44,6 +47,7 @@ async function main() {
                 employeeManagementEnabled: true,
                 menuEnabled: true,
                 reviewsEnabled: true,
+                addonsEnabled: company.id === "company-techsolutions", // Enable addons for TechSolutions as demo
             },
         })
     }
@@ -371,6 +375,28 @@ async function main() {
             },
         })
     }
+
+    // ─── Addon Catalog ────────────────────────────────────────────────
+    const addonCatalog = [
+        { name: "Repeat Today's Veg Meal", unitPrice: 109, maxQty: 2, isRepeatable: true, isLinkedToMenu: true, type: "MAIN_REPEAT" as const },
+        { name: "Repeat Today's Non-Veg Meal", unitPrice: 129, maxQty: 2, isRepeatable: true, isLinkedToMenu: true, type: "MAIN_REPEAT" as const },
+        { name: "Boiled Egg (2)", unitPrice: 30, maxQty: 2, isRepeatable: false, isLinkedToMenu: false, type: "PROTEIN_SIDE" as const },
+        { name: "Masala Omelette", unitPrice: 60, maxQty: 1, isRepeatable: false, isLinkedToMenu: false, type: "PROTEIN_SIDE" as const },
+        { name: "Buttermilk (200ml)", unitPrice: 30, maxQty: 2, isRepeatable: false, isLinkedToMenu: false, type: "BEVERAGE" as const },
+        { name: "Fruit Bowl", unitPrice: 60, maxQty: 1, isRepeatable: false, isLinkedToMenu: false, type: "SIDE_DESSERT" as const },
+        { name: "Extra Roti", unitPrice: 10, maxQty: 3, isRepeatable: false, isLinkedToMenu: false, type: "BREAD_ADDITION" as const },
+    ]
+
+    const seededAddons: { id: string; unitPrice: number; maxQty: number }[] = []
+    for (const addon of addonCatalog) {
+        const created = await prisma.addon.upsert({
+            where: { name: addon.name },
+            update: {},
+            create: addon,
+        })
+        seededAddons.push({ id: created.id, unitPrice: created.unitPrice, maxQty: created.maxQty })
+    }
+    console.log(`✅ ${addonCatalog.length} Addons seeded`)
 
     // ─── Summary ─────────────────────────────────────────────────────
     console.log("\n🎉 Seed complete!\n")

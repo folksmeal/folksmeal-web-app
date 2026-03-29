@@ -2,7 +2,7 @@
 import useSWR from "swr"
 import { Star, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { format, parseISO } from "date-fns"
+import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { PaginationFooter } from "@/components/ops/pagination-footer"
 

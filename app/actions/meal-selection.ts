@@ -13,6 +13,10 @@ const mealSelectionSchema = z
     .object({
         status: z.enum(["OPT_IN", "OPT_OUT"]),
         preference: z.enum(["VEG", "NONVEG"]).nullable().optional(),
+        addons: z.array(z.object({
+            addonId: z.string(),
+            quantity: z.number().int().min(1)
+        })).optional().default([])
     })
     .refine(
         (data) => {
@@ -30,6 +34,7 @@ const mealSelectionSchema = z
 export async function submitMealSelection(formData: {
     status: "OPT_IN" | "OPT_OUT"
     preference?: "VEG" | "NONVEG" | null
+    addons?: { addonId: string; quantity: number }[]
 }) {
     try {
         const session = await auth()
@@ -41,7 +46,7 @@ export async function submitMealSelection(formData: {
         if (!parsedData.success) {
             return { success: false, error: parsedData.error.errors[0].message }
         }
-        const { status, preference } = parsedData.data
+        const { status, preference, addons } = parsedData.data
 
         const { addressId } = session.user
         if (!addressId) {
@@ -70,6 +75,8 @@ export async function submitMealSelection(formData: {
             return { success: false, error: `Cutoff time (${address.cutoffTime}) has passed. Selection is locked.` }
         }
 
+        const validatedAddons: { addonId: string; quantity: number; priceAtSelection: number }[] = []
+
         if (status === "OPT_IN") {
             const menu = await prisma.menu.findUnique({
                 where: {
@@ -87,25 +94,91 @@ export async function submitMealSelection(formData: {
             if (preference === "NONVEG" && !menu.nonvegItem) {
                 return { success: false, error: "Non-veg option is not available for tomorrow." }
             }
+
+            // Server-side guard: only process addons if the company feature flag is on
+            let effectiveAddons = addons
+            if (addons.length > 0) {
+                const companyConfig = await prisma.companyAdminFeatureConfig.findUnique({
+                    where: { companyId: address.companyId },
+                    select: { addonsEnabled: true },
+                })
+                if (!companyConfig?.addonsEnabled) {
+                    effectiveAddons = [] // silently strip addons if feature is off
+                }
+            }
+
+            if (effectiveAddons.length > 0) {
+                const addonIds = effectiveAddons.map(a => a.addonId)
+                const dbAddons = await prisma.addon.findMany({
+                    where: { id: { in: addonIds }, active: true }
+                })
+
+                const dbAddonsMap = new Map<string, { id: string; name: string; unitPrice: number; maxQty: number }>(dbAddons.map((a: { id: string; name: string; unitPrice: number; maxQty: number }) => [a.id, a]))
+
+                for (const requestedAddon of effectiveAddons) {
+                    const dbAddon = dbAddonsMap.get(requestedAddon.addonId)
+                    if (!dbAddon) {
+                        return { success: false, error: "One or more selected add-ons are unavailable." }
+                    }
+                    if (requestedAddon.quantity > dbAddon.maxQty) {
+                        return { success: false, error: `Quantity for ${dbAddon.name} exceeds maximum allowed.` }
+                    }
+                    validatedAddons.push({
+                        addonId: dbAddon.id,
+                        quantity: requestedAddon.quantity,
+                        priceAtSelection: dbAddon.unitPrice
+                    })
+                }
+            }
         }
 
-        const selection = await prisma.mealSelection.upsert({
+        // We use a transaction to handle upsert properly if we need to replace previous Addons
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await prisma.$transaction(async (tx: any) => {
+            const selection = await tx.mealSelection.upsert({
+                where: {
+                    employeeId_date: {
+                        employeeId: session.user.id!,
+                        date: tomorrow,
+                    },
+                },
+                update: {
+                    status,
+                    preference: status === "OPT_IN" ? preference : null,
+                },
+                create: {
+                    employeeId: session.user.id!,
+                    date: tomorrow,
+                    status,
+                    preference: status === "OPT_IN" ? preference : null,
+                },
+            })
+
+            // Clear previous addons
+            await tx.mealSelectionAddon.deleteMany({
+                where: { mealSelectionId: selection.id }
+            })
+
+            // Create new addons if any
+            if (validatedAddons.length > 0 && status === "OPT_IN") {
+                await tx.mealSelectionAddon.createMany({
+                    data: validatedAddons.map(a => ({
+                        mealSelectionId: selection.id,
+                        addonId: a.addonId,
+                        quantity: a.quantity,
+                        priceAtSelection: a.priceAtSelection
+                    }))
+                })
+            }
+        })
+
+        const selection = await prisma.mealSelection.findUnique({
             where: {
                 employeeId_date: {
                     employeeId: session.user.id!,
                     date: tomorrow,
                 },
-            },
-            update: {
-                status,
-                preference: status === "OPT_IN" ? preference : null,
-            },
-            create: {
-                employeeId: session.user.id!,
-                date: tomorrow,
-                status,
-                preference: status === "OPT_IN" ? preference : null,
-            },
+            }
         })
 
         revalidatePath("/dashboard")
@@ -113,9 +186,9 @@ export async function submitMealSelection(formData: {
         return {
             success: true,
             selection: {
-                status: selection.status,
-                preference: selection.preference,
-                updatedAt: selection.updatedAt.toISOString(),
+                status: selection!.status,
+                preference: selection!.preference,
+                updatedAt: selection!.updatedAt.toISOString(),
             },
         }
     } catch (error) {

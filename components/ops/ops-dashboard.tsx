@@ -32,6 +32,7 @@ interface SelectionRow {
     company: string
     status: string
     preference: string | null
+    addons?: string
     date: string
     updatedAt: string
 }
@@ -128,6 +129,7 @@ export function OpsDashboard({
             ...(isAdminPortal ? [] : ["Company"]),
             "Opt Status",
             "Veg/NonVeg",
+            "Add-ons",
             "Date",
             "Last Updated",
         ]
@@ -137,6 +139,7 @@ export function OpsDashboard({
             ...(isAdminPortal ? [] : [r.company]),
             r.status === "OPT_IN" ? "Opted In" : r.status === "OPT_OUT" ? "Opted Out" : "No Selection",
             r.preference || "-",
+            r.addons || "-",
             format(new Date(r.date.split("T")[0] + "T00:00:00"), "dd MMM yyyy"),
             r.updatedAt ? format(parseISO(r.updatedAt), "dd MMM yyyy, hh:mm a") : "-",
         ])
@@ -288,11 +291,12 @@ export function OpsDashboard({
                         <thead>
                             <tr>
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[20%]">Employee Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Employee ID</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[12%]">Employee ID</th>
                                 {!isAdminPortal && <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Company</th>}
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Opt Status</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[15%]">Veg/NonVeg</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[20%]">Date</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[12%]">Opt Status</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[12%]">Veg/NonVeg</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[17%]">Add-ons</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-[12%]">Date</th>
                             </tr>
                         </thead>
                     </table>
@@ -304,11 +308,12 @@ export function OpsDashboard({
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={`skeleton-${i}`} className="border-b border-border last:border-0">
                                         <td className="px-4 py-4 w-[20%]"><Skeleton className="h-4 w-32" /></td>
-                                        <td className="px-4 py-4 w-[15%]"><Skeleton className="h-4 w-24" /></td>
-                                        {!isAdminPortal && <td className="px-4 py-4 w-[15%]"><Skeleton className="h-4 w-40" /></td>}
-                                        <td className="px-4 py-4 w-[15%]"><Skeleton className="h-6 w-20 rounded-full" /></td>
-                                        <td className="px-4 py-4 w-[15%]"><Skeleton className="h-4 w-28" /></td>
-                                        <td className="px-4 py-4 w-[20%]"><Skeleton className="h-4 w-24" /></td>
+                                        <td className="px-4 py-4 w-[12%]"><Skeleton className="h-4 w-20" /></td>
+                                        {!isAdminPortal && <td className="px-4 py-4 w-[15%]"><Skeleton className="h-4 w-32" /></td>}
+                                        <td className="px-4 py-4 w-[12%]"><Skeleton className="h-6 w-20 rounded-full" /></td>
+                                        <td className="px-4 py-4 w-[12%]"><Skeleton className="h-4 w-20" /></td>
+                                        <td className="px-4 py-4 w-[17%]"><Skeleton className="h-4 w-28" /></td>
+                                        <td className="px-4 py-4 w-[12%]"><Skeleton className="h-4 w-24" /></td>
                                     </tr>
                                 ))
                             ) : rows.length === 0 ? (
@@ -321,9 +326,9 @@ export function OpsDashboard({
                                 rows.map((row, i) => (
                                     <tr key={i} className="transition-colors hover:bg-muted/30 border-b border-border">
                                         <td className="truncate px-4 py-3 font-medium text-foreground w-[20%]">{row.employeeName}</td>
-                                        <td className="truncate px-4 py-3 text-muted-foreground w-[15%]">{row.employeeCode}</td>
+                                        <td className="truncate px-4 py-3 text-muted-foreground w-[12%]">{row.employeeCode}</td>
                                         {!isAdminPortal && <td className="truncate px-4 py-3 text-muted-foreground w-[15%]">{row.company}</td>}
-                                        <td className="whitespace-nowrap px-4 py-3 w-[15%]">
+                                        <td className="whitespace-nowrap px-4 py-3 w-[12%]">
                                             <span className={cn(
                                                 "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
                                                 row.status === "OPT_IN" && "bg-primary/10 text-primary",
@@ -333,7 +338,7 @@ export function OpsDashboard({
                                                 {row.status === "OPT_IN" ? "Opted In" : row.status === "OPT_OUT" ? "Opted Out" : "No Selection"}
                                             </span>
                                         </td>
-                                        <td className="whitespace-nowrap px-4 py-3 w-[15%]">
+                                        <td className="whitespace-nowrap px-4 py-3 w-[12%]">
                                             {row.preference ? (
                                                 <div className="inline-flex items-center gap-2">
                                                     <span className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border-2 ${row.preference === "VEG" ? "border-veg" : "border-nonveg"}`}>
@@ -345,7 +350,10 @@ export function OpsDashboard({
                                                 <span className="text-xs text-muted-foreground/40">—</span>
                                             )}
                                         </td>
-                                        <td className="truncate px-4 py-3 text-muted-foreground text-[11px] w-[20%]">
+                                        <td className="truncate px-4 py-3 text-xs text-muted-foreground w-[17%]">
+                                            {row.addons || <span className="opacity-50">—</span>}
+                                        </td>
+                                        <td className="truncate px-4 py-3 text-muted-foreground text-[11px] w-[12%]">
                                             {format(new Date(row.date.split("T")[0] + "T00:00:00"), "EEE, dd MMM yyyy")}
                                         </td>
                                     </tr>

@@ -40,6 +40,7 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
             },
             include: {
                 employee: { include: { company: true, address: true } },
+                addons: { include: { addon: true } },
             },
             orderBy: { employee: { name: "asc" } },
         }),
@@ -51,7 +52,7 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
     ])
 
     type SelectionWithEmployee = Prisma.MealSelectionGetPayload<{
-        include: { employee: { include: { company: true; address: true } } }
+        include: { employee: { include: { company: true; address: true } }; addons: { include: { addon: true } } }
     }>
     type EmployeeWithRelations = Prisma.EmployeeGetPayload<{
         include: { company: true; address: true }
@@ -80,6 +81,7 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
         company: `${s.employee.company.name} - ${s.employee.address.city}`,
         status: s.status,
         preference: s.preference,
+        addons: s.addons ? s.addons.map(a => `${a.quantity}x ${a.addon.name}`).join(", ") : "",
         date: s.date.toISOString().split("T")[0],
         updatedAt: s.updatedAt.toISOString(),
     }))
@@ -90,6 +92,7 @@ export default async function OpsDashboardPage({ searchParams }: { searchParams:
         company: `${e.company.name} - ${e.address.city}`,
         status: "NO_SELECTION" as const,
         preference: null,
+        addons: "",
         date: targetDate.toISOString().split("T")[0],
         updatedAt: "",
     }))

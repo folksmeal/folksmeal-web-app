@@ -79,7 +79,7 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
                                         </td>
                                     </tr>
                                 ) : (
-                                    menus.map((menu: any, _i: number) => (
+                                    menus.map((menu, _i) => (
                                         <tr key={menu.id} className="transition-colors hover:bg-muted/30 border-b border-border">
                                             <td className="truncate px-4 py-3 font-medium text-foreground w-[20%]">
                                                 {format(menu.date, "EEE, dd MMM yyyy")}

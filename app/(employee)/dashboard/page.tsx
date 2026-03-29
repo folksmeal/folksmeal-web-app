@@ -25,7 +25,7 @@ export default async function DashboardPage({
         locationTimezone: string;
     }
 
-    const { id, addressId, employeeCode, companyName, companyIcon, addressCity, locationTimezone } = session.user as AuthenticatedUser
+    const { id, addressId, employeeCode, locationTimezone } = session.user as AuthenticatedUser
 
     const timezone = locationTimezone || "Asia/Kolkata"
     const tomorrow = getTomorrowMidnightInTimezone(timezone)
@@ -44,10 +44,10 @@ export default async function DashboardPage({
         nonvegItemRef: { description: string | null } | null;
     }
 
-    const [address, menu, selection, todaySelection, todayMenu] = await Promise.all([
+    const [address, menu, selection, todaySelection, todayMenu, addons, employee] = await Promise.all([
         prisma.companyAddress.findUnique({
             where: { id: addressId },
-            select: { cutoffTime: true, workingDays: true },
+            select: { cutoffTime: true, workingDays: true, companyId: true },
         }),
         prisma.menu.findUnique({
             where: { addressId_date: { addressId, date: tomorrow } },
@@ -55,7 +55,7 @@ export default async function DashboardPage({
         }) as Promise<MenuWithLibrary | null>,
         prisma.mealSelection.findUnique({
             where: { employeeId_date: { employeeId: id, date: tomorrow } },
-            select: { status: true, preference: true, updatedAt: true },
+            select: { status: true, preference: true, updatedAt: true, addons: { include: { addon: true } } },
         }),
         prisma.mealSelection.findUnique({
             where: { employeeId_date: { employeeId: id, date: todayMidnight } },
@@ -65,7 +65,26 @@ export default async function DashboardPage({
             where: { addressId_date: { addressId, date: todayMidnight } },
             select: { id: true },
         }),
+        prisma.addon.findMany({
+            where: { active: true },
+            orderBy: [{ type: "asc" }, { name: "asc" }],
+        }),
+        prisma.employee.findUnique({
+            where: { id },
+            select: { companyId: true },
+        })
     ])
+
+    // Look up feature flag for this company
+    const companyId = employee?.companyId || address?.companyId
+    let addonsEnabled = false
+    if (companyId) {
+        const config = await prisma.companyAdminFeatureConfig.findUnique({
+            where: { companyId },
+            select: { addonsEnabled: true },
+        })
+        addonsEnabled = config?.addonsEnabled ?? false
+    }
 
     const cutoffTime = address?.cutoffTime || "18:00"
 
@@ -100,12 +119,12 @@ export default async function DashboardPage({
             status: selection.status as "OPT_IN" | "OPT_OUT",
             preference: selection.preference as "VEG" | "NONVEG" | null,
             updatedAt: selection.updatedAt.toISOString(),
+            addons: selection.addons
         }
         : null
 
     const params = await searchParams
     const isEditing = params.edit === "true"
-    const fullLocationName = `${companyName} - ${addressCity}`
 
     if (existingSelection && !isEditing) {
         // Evaluate if the user is eligible to rate TODAY's meal
@@ -140,6 +159,7 @@ export default async function DashboardPage({
                 mealDate={todayISO} // Pass today for rating, not tomorrow
                 existingRating={existingRating}
                 promptRating={promptRating}
+                addons={existingSelection.addons}
             />
         )
     }
@@ -152,6 +172,8 @@ export default async function DashboardPage({
             cutoffTime={cutoffTime}
             menu={menuData}
             existingSelection={existingSelection}
+            availableAddons={addonsEnabled ? addons : []}
+            addonsEnabled={addonsEnabled}
         />
     )
 }
