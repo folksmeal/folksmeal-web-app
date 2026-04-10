@@ -2,7 +2,6 @@
 import { useState, useCallback, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { CheckCircle2, XCircle, ArrowLeft, Star, Loader2, Edit2 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { submitMealRating } from "@/app/actions/meal-rating"

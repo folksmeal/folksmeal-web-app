@@ -28,7 +28,7 @@ export async function GET() {
             prisma.companyAdminFeatureConfig.findMany(),
         ])
 
-        const configByCompanyId = new Map<string, { employeeManagementEnabled: boolean; menuEnabled: boolean; reviewsEnabled: boolean }>(
+        const configByCompanyId = new Map<string, { employeeManagementEnabled: boolean; menuEnabled: boolean; reviewsEnabled: boolean; addonsEnabled: boolean }>(
             configs.map((config: CompanyAdminFeatureConfig) => [
                 config.companyId,
                 {
