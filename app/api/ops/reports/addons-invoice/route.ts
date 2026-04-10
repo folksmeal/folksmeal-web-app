@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { format, endOfMonth, startOfMonth, parseISO } from "date-fns"
+import { getEffectiveAddressId } from "@/lib/auth-helpers"
 
 export async function GET(req: NextRequest) {
     try {
@@ -10,14 +11,15 @@ export async function GET(req: NextRequest) {
             return new NextResponse("Unauthorized", { status: 401 })
         }
 
+        const effectiveAddressId = await getEffectiveAddressId(session.user)
+
         const { searchParams } = new URL(req.url)
-        const monthParam = searchParams.get("month") // e.g. "2026-03"
+        const monthParam = searchParams.get("month")
 
         if (!monthParam) {
             return new NextResponse("Month parameter is required (YYYY-MM)", { status: 400 })
         }
 
-        // Parse start and end of the requested month
         const startDate = startOfMonth(parseISO(`${monthParam}-01T00:00:00Z`))
         const endDate = endOfMonth(startDate)
 
@@ -28,6 +30,11 @@ export async function GET(req: NextRequest) {
                         gte: startDate,
                         lte: endDate,
                     },
+                    ...(effectiveAddressId && {
+                        employee: {
+                            addressId: effectiveAddressId,
+                        },
+                    }),
                 },
             },
             include: {

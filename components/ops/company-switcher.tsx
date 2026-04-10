@@ -90,7 +90,7 @@ export function CompanySwitcher({
             {isSwitching && (
                 <div className="fixed inset-0 z-100 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="mt-4 text-sm font-medium text-muted-foreground">Switching context...</p>
+                    <p className="mt-4 text-sm font-medium text-muted-foreground">Switching address...</p>
                 </div>
             )}
 

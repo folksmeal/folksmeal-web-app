@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { format, parseISO } from "date-fns"
+import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
@@ -122,50 +122,13 @@ export function AdminDashboard({
     }
 
     const handleExportCSV = useCallback(() => {
-        if (!rows.length) return
-        const headers = [
-            "Employee Name",
-            "Employee ID",
-            ...(isAdminPortal ? [] : ["Company"]),
-            "Opt Status",
-            "Veg/NonVeg",
-            "Add-ons",
-            "Date",
-            "Last Updated",
-        ]
-        const csvRows = rows.map((r) => [
-            r.employeeName,
-            r.employeeCode,
-            ...(isAdminPortal ? [] : [r.company]),
-            r.status === "OPT_IN" ? "Opted In" : r.status === "OPT_OUT" ? "Opted Out" : "No Selection",
-            r.preference || "-",
-            r.addons || "-",
-            format(new Date(r.date.split("T")[0] + "T00:00:00"), "dd MMM yyyy"),
-            r.updatedAt ? format(parseISO(r.updatedAt), "dd MMM yyyy, hh:mm a") : "-",
-        ])
-        csvRows.push([])
-        csvRows.push(["--- SUMMARY ---"])
-        csvRows.push(["Total Employees", String(stats.totalEmployees)])
-        csvRows.push(["Opted In", String(stats.optedIn)])
-        csvRows.push(["Veg Count", String(stats.vegCount)])
-        csvRows.push(["Non-Veg Count", String(stats.nonvegCount)])
-        csvRows.push(["Opted Out", String(stats.optedOut)])
-        csvRows.push(["Missing Input", String(stats.missingInput)])
-        const csv = [headers, ...csvRows]
-            .map((row) =>
-                (row as string[])
-                    .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
-                    .join(",")
-            )
-            .join("\n")
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = url
-        a.download = `folksmeal-prep-sheet-${date}.csv`
-        a.click()
-        URL.revokeObjectURL(url)
-    }, [rows, stats, date])
+        const params = new URLSearchParams()
+        params.set("date", date)
+        params.set("status", statusFilter)
+        params.set("isAdminPortal", String(isAdminPortal))
+
+        window.location.href = `/api/ops/selections/export?${params.toString()}`
+    }, [date, statusFilter, isAdminPortal])
 
     const filterOptions: { value: StatusFilter; label: string }[] = [
         { value: "all", label: "All Employees" },
