@@ -7,8 +7,7 @@ import crypto from "crypto"
 import { encryptText } from "@/lib/encryption"
 import ExcelJS from "exceljs"
 import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
-
-type MealPreference = "VEG" | "NONVEG"
+import type { MealPreference } from "@/types/employee"
 
 interface BulkEmployeeData {
     employeeCode: string

@@ -4,6 +4,7 @@ import { getEffectiveAddressId } from "@/lib/auth-helpers"
 import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
+import type { MealPreference } from "@/types/employee"
 
 export default async function AdminEmployeesPage({
     searchParams
@@ -50,7 +51,7 @@ export default async function AdminEmployeesPage({
         name: e.name,
         employeeCode: e.employeeCode,
         email: e.email,
-        defaultPreference: (e.defaultPreference as "VEG" | "NONVEG" | null) ?? "VEG",
+        defaultPreference: (e.defaultPreference as MealPreference | null) ?? "VEG",
         companyId: e.companyId,
         addressId: e.addressId,
         companyName: e.company.name,

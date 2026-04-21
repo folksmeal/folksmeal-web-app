@@ -5,21 +5,11 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle2, XCircle, ArrowLeft, Star, Loader2, Edit2 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { submitMealRating } from "@/app/actions/meal-rating"
-
-interface ConfirmationScreenProps {
-  employeeCode: string
-  status: "OPT_IN" | "OPT_OUT"
-  preference: "VEG" | "NONVEG" | null
-  updatedAt: string
-  mealDate: string
-  existingRating?: { rating: number; comment: string | null } | null
-  promptRating?: boolean
-  addons?: { addon: { name: string }; quantity: number; priceAtSelection: number }[]
-}
+import type { ConfirmationScreenProps, MealPreference, SelectionStatus } from "@/types/employee"
 
 function getStatusConfig(
-  status: "OPT_IN" | "OPT_OUT",
-  preference: "VEG" | "NONVEG" | null
+  status: SelectionStatus,
+  preference: MealPreference | null
 ) {
   if (status === "OPT_OUT") {
     return {

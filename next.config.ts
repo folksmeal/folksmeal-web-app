@@ -84,6 +84,8 @@ const nextConfig: NextConfig = {
                             "img-src 'self' data: blob: https:",
                             "font-src 'self' data:",
                             "connect-src 'self' https://va.vercel-scripts.com https://*.supabase.com",
+                            "worker-src 'self' blob:",
+                            "manifest-src 'self'",
                             "frame-ancestors 'none'",
                             "base-uri 'self'",
                             "form-action 'self'",
@@ -149,5 +151,15 @@ export default async function config() {
     const withBundleAnalyzer = (await import("@next/bundle-analyzer")).default({
         enabled: process.env.ANALYZE === "true",
     })
-    return withBundleAnalyzer(nextConfig)
+
+    const withPWA = (await import("next-pwa")).default({
+        dest: "public",
+        register: true,
+        skipWaiting: true,
+        disable: process.env.NODE_ENV === "development",
+        runtimeCaching: (await import("next-pwa/cache")).default,
+        buildExcludes: [/middleware-manifest\.json$/],
+    })
+
+    return withBundleAnalyzer(withPWA(nextConfig))
 }

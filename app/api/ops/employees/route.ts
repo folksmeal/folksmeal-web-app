@@ -7,8 +7,7 @@ import { apiResponse, apiError, handleApiRequest, parseBody } from "@/lib/api-ut
 import crypto from "crypto"
 import { encryptText, decryptText } from "@/lib/encryption"
 import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
-
-type MealPreference = "VEG" | "NONVEG"
+import type { MealPreference } from "@/types/employee"
 
 const createEmployeeSchema = z.object({
     name: z.string().min(1, "Name is required").max(100),

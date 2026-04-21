@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { getISTDateString, getISTHours } from "@/lib/utils/time"
+import type { AuthenticatedSession } from "@/types/auth"
 
 const ratingSchema = z.object({
     rating: z.number().int().min(1).max(5),
@@ -12,12 +13,10 @@ const ratingSchema = z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
 })
 
-interface AuthenticatedSession {
-    user: {
-        id: string;
-        addressId: string;
-        locationTimezone: string;
-    }
+type RatingSessionUser = {
+    id: string
+    addressId: string
+    locationTimezone: string
 }
 
 export async function submitMealRating(formData: {
@@ -26,7 +25,7 @@ export async function submitMealRating(formData: {
     date: string
 }) {
     try {
-        const session = await auth() as AuthenticatedSession | null
+        const session = await auth() as AuthenticatedSession<RatingSessionUser> | null
         if (!session?.user) {
             return { success: false, error: "Unauthorized" }
         }

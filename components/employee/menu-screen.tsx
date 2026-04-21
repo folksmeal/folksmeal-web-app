@@ -18,8 +18,9 @@ import { isPastCutoffInTimezone } from "@/lib/utils/time"
 import { Clock, X, Loader2, AlertCircle, Info, ArrowRight, ArrowLeft, Plus, Minus, Receipt } from "lucide-react"
 import { format } from "date-fns"
 import { submitMealSelection } from "@/app/actions/meal-selection"
+import type { MealPreference, SelectionStatus } from "@/types/employee"
 
-export type MealChoice = "VEG" | "NONVEG"
+export type MealChoice = MealPreference
 type AddonType = "MAIN_REPEAT" | "PROTEIN_SIDE" | "BEVERAGE" | "SIDE_DESSERT" | "BREAD_ADDITION"
 
 export interface Addon {
@@ -47,7 +48,7 @@ export interface MenuData {
 }
 
 export interface ExistingSelection {
-  status: "OPT_IN" | "OPT_OUT"
+  status: SelectionStatus
   preference: MealChoice | null
   updatedAt: string
   addons?: { addonId: string; quantity: number }[]
@@ -109,7 +110,7 @@ export function MenuScreen({
     return init
   })
 
-  const [loadingAction, setLoadingAction] = useState<"OPT_IN" | "OPT_OUT" | null>(null)
+  const [loadingAction, setLoadingAction] = useState<SelectionStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Clear mismatched MAIN_REPEAT addons when selection changes
@@ -176,7 +177,7 @@ export function MenuScreen({
   }
 
   const handleSubmit = useCallback(
-    async (status: "OPT_IN" | "OPT_OUT") => {
+    async (status: SelectionStatus) => {
       setLoadingAction(status)
       setError(null)
       try {

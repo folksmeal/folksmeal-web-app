@@ -9,12 +9,26 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 
 export const metadata: Metadata = {
-  title: "FolksMeal - Corporate Meal Selection",
+  applicationName: "FolksMeal",
+  title: "FolksMeal - Corporate Meals",
   description:
-    "Simple internal corporate meal selection tool for employees. Choose your meal preference for tomorrow.",
+    "Corporate meal ordering and management with reporting and analytics.",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#4F624F",
   icons: {
-    icon: "/favicon.png",
-    apple: "/favicon.png",
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "FolksMeal",
+  },
+  formatDetection: {
+    telephone: false,
   },
   robots: {
     index: false,

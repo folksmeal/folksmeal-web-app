@@ -4,6 +4,7 @@ import { MenuScreen } from "@/components/employee/menu-screen"
 import { ConfirmationScreen } from "@/components/employee/confirmation-screen"
 import { getTomorrowMidnightInTimezone, getTodayMidnightInTimezone, getISTDate, getISTDateString } from "@/lib/utils/time"
 import { redirect } from "next/navigation"
+import type { EmployeeDashboardSessionUser, MealPreference, SelectionStatus } from "@/types/employee"
 
 export default async function DashboardPage({
     searchParams,
@@ -13,19 +14,7 @@ export default async function DashboardPage({
     const session = await auth()
     if (!session?.user) redirect("/")
 
-    interface AuthenticatedUser {
-        id: string;
-        name: string | null;
-        role: string;
-        addressId: string;
-        employeeCode: string;
-        companyName: string;
-        companyIcon?: string | null;
-        addressCity: string;
-        locationTimezone: string;
-    }
-
-    const { id, addressId, employeeCode, locationTimezone } = session.user as AuthenticatedUser
+    const { id, addressId, employeeCode, locationTimezone } = session.user as EmployeeDashboardSessionUser
 
     const timezone = locationTimezone || "Asia/Kolkata"
     const tomorrow = getTomorrowMidnightInTimezone(timezone)
@@ -116,8 +105,8 @@ export default async function DashboardPage({
 
     const existingSelection = selection
         ? {
-            status: selection.status as "OPT_IN" | "OPT_OUT",
-            preference: selection.preference as "VEG" | "NONVEG" | null,
+            status: selection.status as SelectionStatus,
+            preference: selection.preference as MealPreference | null,
             updatedAt: selection.updatedAt.toISOString(),
             addons: selection.addons
         }

@@ -1,0 +1,27 @@
+name: Supabase DB keepalive
+
+on:
+  schedule:
+    # Every day at 05:00 UTC
+    - cron: "0 5 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping keepalive endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "Missing GitHub Secret: CRON_SECRET" >&2
+            exit 1
+          fi
+          curl -fsS -H "Authorization: Bearer ${CRON_SECRET}" "https://app.folksmeal.com/api/cron/keepalive"
+

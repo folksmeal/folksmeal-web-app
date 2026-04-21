@@ -8,6 +8,7 @@ import {
 } from "@/lib/utils/time"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
+import { Prisma } from "@prisma/client"
 
 const mealSelectionSchema = z
     .object({
@@ -31,11 +32,9 @@ const mealSelectionSchema = z
         }
     )
 
-export async function submitMealSelection(formData: {
-    status: "OPT_IN" | "OPT_OUT"
-    preference?: "VEG" | "NONVEG" | null
-    addons?: { addonId: string; quantity: number }[]
-}) {
+type SubmitMealSelectionInput = z.input<typeof mealSelectionSchema>
+
+export async function submitMealSelection(formData: SubmitMealSelectionInput) {
     try {
         const session = await auth()
         if (!session?.user) {
@@ -133,8 +132,7 @@ export async function submitMealSelection(formData: {
         }
 
         // We use a transaction to handle upsert properly if we need to replace previous Addons
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await prisma.$transaction(async (tx: any) => {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const selection = await tx.mealSelection.upsert({
                 where: {
                     employeeId_date: {

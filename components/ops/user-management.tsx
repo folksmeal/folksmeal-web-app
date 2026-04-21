@@ -26,8 +26,7 @@ import { PaginationFooter } from "@/components/ops/pagination-footer"
 import { cn } from "@/lib/utils"
 import { fetcher } from "@/lib/fetcher"
 import { toast } from "sonner"
-
-export type MealPreference = "VEG" | "NONVEG"
+import type { MealPreference } from "@/types/employee"
 
 interface Employee {
     id: string

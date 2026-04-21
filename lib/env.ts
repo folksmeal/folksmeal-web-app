@@ -9,6 +9,9 @@ const envSchema = z.object({
     AUTH_SECRET: z.string().min(1, "AUTH_SECRET is required"),
     AUTH_URL: z.string().url().optional(),
 
+    // Cron / automation (optional, but required by protected cron routes)
+    CRON_SECRET: z.string().min(16).optional(),
+
     // App Environment
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 })
