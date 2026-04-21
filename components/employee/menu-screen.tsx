@@ -14,9 +14,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { isPastCutoffInTimezone } from "@/lib/utils/time"
+import {
+  addDaysToISTDateString,
+  formatISTDisplayDate,
+  getISTDateString,
+  isPastCutoffInTimezone,
+} from "@/lib/utils/time"
 import { Clock, X, Loader2, AlertCircle, Info, ArrowRight, ArrowLeft, Plus, Minus, Receipt } from "lucide-react"
-import { format } from "date-fns"
 import { submitMealSelection } from "@/app/actions/meal-selection"
 import type { MealPreference, SelectionStatus } from "@/types/employee"
 
@@ -71,11 +75,6 @@ const TYPE_LABELS: Record<AddonType, string> = {
   BEVERAGE: "Beverages",
   SIDE_DESSERT: "Sides & Desserts",
   BREAD_ADDITION: "Breads",
-}
-
-function formatDate(dateStr: string) {
-  const [y, m, d] = dateStr.split('T')[0].split('-').map(Number)
-  return format(new Date(y, m - 1, d), "EEEE, dd MMM yyyy")
 }
 
 function formatCutoff(cutoffTime: string) {
@@ -137,11 +136,8 @@ export function MenuScreen({
   const pastCutoff = useMemo(() => isPastCutoffInTimezone(cutoffTime, timezone), [cutoffTime, timezone])
   const cutoffLabel = useMemo(() => formatCutoff(cutoffTime), [cutoffTime])
   const tomorrowLabel = useMemo(() => {
-    if (menu?.date) return formatDate(menu.date)
-    const istToday = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
-    const istTomorrow = new Date(Date.UTC(istToday.getFullYear(), istToday.getMonth(), istToday.getDate()))
-    istTomorrow.setUTCDate(istTomorrow.getUTCDate() + 1)
-    return formatDate(istTomorrow.toISOString().split('T')[0])
+    const ymd = menu?.date ? menu.date.split("T")[0] : addDaysToISTDateString(getISTDateString(), 1)
+    return formatISTDisplayDate(ymd)
   }, [menu?.date])
 
   const nonvegAvailable = Boolean(menu?.nonvegItem)

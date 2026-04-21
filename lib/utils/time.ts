@@ -1,4 +1,7 @@
-const IST = 'Asia/Kolkata'
+export const IST_TIMEZONE = 'Asia/Kolkata' as const
+const IST = IST_TIMEZONE
+
+type ISTWeekdayStyle = 'short' | 'long' | 'narrow'
 
 /**
  * Returns a formatter for a specific timezone and configuration.
@@ -7,6 +10,90 @@ function getFormatter(options: Intl.DateTimeFormatOptions, timezone: string = IS
     return new Intl.DateTimeFormat('en-US', {
         ...options,
         timeZone: timezone,
+    })
+}
+
+function parseYMD(ymd: string): { y: number; m: number; d: number } {
+    const [yRaw, mRaw, dRaw] = ymd.split('-')
+    const y = Number(yRaw)
+    const m = Number(mRaw)
+    const d = Number(dRaw)
+    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+        throw new Error(`Invalid YYYY-MM-DD date string: ${ymd}`)
+    }
+    return { y, m, d }
+}
+
+/**
+ * When you only have a date (no time), anchor it at noon UTC to avoid
+ * accidental day shifts around timezone boundaries.
+ */
+function toUTCNoonFromYMD(ymd: string): Date {
+    const { y, m, d } = parseYMD(ymd)
+    return new Date(Date.UTC(y, m - 1, d, 12, 0, 0))
+}
+
+export function formatInIST(date: Date, options: Intl.DateTimeFormatOptions): string {
+    return getFormatter(options, IST).format(date)
+}
+
+export function formatYMDInIST(
+    ymd: string,
+    options: Intl.DateTimeFormatOptions
+): string {
+    return formatInIST(toUTCNoonFromYMD(ymd), options)
+}
+
+export function formatISOInIST(
+    iso: string,
+    options: Intl.DateTimeFormatOptions
+): string {
+    return formatInIST(new Date(iso), options)
+}
+
+export function formatISTDisplayDate(ymd: string): string {
+    return formatYMDInIST(ymd, {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    })
+}
+
+export function formatISTDisplayDateWithWeekday(ymd: string): string {
+    return formatYMDInIST(ymd, {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    })
+}
+
+export function formatISTDisplayDayName(date: Date, style: ISTWeekdayStyle = 'long'): string {
+    return formatInIST(date, { weekday: style })
+}
+
+export function formatISTDisplayMonthDay(date: Date): string {
+    return formatInIST(date, { day: '2-digit', month: 'short' })
+}
+
+export function formatISTDisplayMonthDayYear(date: Date): string {
+    return formatInIST(date, { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+export function formatISTDisplayRange(start: Date, end: Date): string {
+    const left = formatISTDisplayMonthDay(start)
+    const right = formatISTDisplayMonthDayYear(end)
+    return `${left} - ${right}`
+}
+
+export function formatISTDisplayDateTime(iso: string): string {
+    return formatISOInIST(iso, {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
     })
 }
 
@@ -78,6 +165,23 @@ export function getISTDateString(date: Date = new Date()): string {
 export function getISTHours(): number {
     const { hour } = getISTDate()
     return hour
+}
+
+export function addDaysToISTDateString(ymd: string, days: number): string {
+    const base = toUTCNoonFromYMD(ymd)
+    base.setUTCDate(base.getUTCDate() + days)
+    return getISTDateString(base)
+}
+
+export function getISTTomorrowDateString(): string {
+    return addDaysToISTDateString(getISTDateString(), 1)
+}
+
+export function getISTYearMonth(date: Date = new Date()): string {
+    return formatInIST(date, {
+        year: "numeric",
+        month: "2-digit",
+    })
 }
 
 /**

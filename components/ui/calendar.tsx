@@ -19,7 +19,9 @@ function Calendar({
   buttonVariant = 'ghost',
   formatters,
   components,
-  today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })),
+  today = new Date(
+    new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
+  ),
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>['variant']
@@ -37,7 +39,7 @@ function Calendar({
       captionLayout={captionLayout}
       formatters={{
         formatMonthDropdown: (date) =>
-          date.toLocaleString('default', { month: 'short' }),
+          date.toLocaleString('en-US', { month: 'short' }),
         ...formatters,
       }}
       classNames={{
@@ -188,7 +190,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString()}
+      data-day={day.date.toLocaleDateString('en-CA')}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

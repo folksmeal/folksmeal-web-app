@@ -26,7 +26,6 @@ const nextConfig: NextConfig = {
         serverMinification: true,
         optimizePackageImports: [
             "lucide-react",
-            "date-fns",
             "recharts",
             "@radix-ui/react-icons",
             "framer-motion",

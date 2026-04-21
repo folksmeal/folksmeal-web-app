@@ -19,12 +19,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PaginationFooter } from "@/components/ops/pagination-footer"
+import { formatISTDisplayDate, formatISTDisplayDateWithWeekday } from "@/lib/utils/time"
 
 interface SelectionRow {
     employeeName: string
@@ -160,7 +160,7 @@ export function OpsDashboard({
                                     )}
                                 >
                                     <CalendarDays className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-                                    {date ? format(new Date(date + "T00:00:00"), "dd MMM yyyy") : <span>Pick a date</span>}
+                                    {date ? formatISTDisplayDate(date) : <span>Pick a date</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto overflow-hidden rounded-xl p-0" align="start">
@@ -317,7 +317,7 @@ export function OpsDashboard({
                                             {row.addons || <span className="opacity-50">—</span>}
                                         </td>
                                         <td className="truncate px-4 py-3 text-muted-foreground text-[11px] w-[12%]">
-                                            {format(new Date(row.date.split("T")[0] + "T00:00:00"), "EEE, dd MMM yyyy")}
+                                            {formatISTDisplayDateWithWeekday(row.date.split("T")[0])}
                                         </td>
                                     </tr>
                                 ))

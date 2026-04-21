@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { format, endOfMonth, startOfMonth, parseISO } from "date-fns"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
+import { formatInIST } from "@/lib/utils/time"
 
 export async function GET(req: NextRequest) {
     try {
@@ -20,8 +20,17 @@ export async function GET(req: NextRequest) {
             return new NextResponse("Month parameter is required (YYYY-MM)", { status: 400 })
         }
 
-        const startDate = startOfMonth(parseISO(`${monthParam}-01T00:00:00Z`))
-        const endDate = endOfMonth(startDate)
+        const [yearRaw, monthRaw] = monthParam.split("-")
+        const year = Number(yearRaw)
+        const month = Number(monthRaw)
+        if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+            return new NextResponse("Invalid month format. Expected YYYY-MM", { status: 400 })
+        }
+
+        // Meal selection dates are stored as UTC-midnight instants representing the IST day.
+        // Compute an equivalent UTC range for the IST calendar month.
+        const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0))
+        const endDate = new Date(Date.UTC(year, month, 0, 0, 0, 0, 0))
 
         const addonSelections = await prisma.mealSelectionAddon.findMany({
             where: {
@@ -69,7 +78,11 @@ export async function GET(req: NextRequest) {
         ]
 
         const csvRows = addonSelections.map((selection) => {
-            const date = format(selection.mealSelection.date, "dd MMM yyyy")
+            const date = formatInIST(selection.mealSelection.date, {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+            })
             const company = selection.mealSelection.employee.company.name
             const empName = selection.mealSelection.employee.name
             const empCode = selection.mealSelection.employee.employeeCode

@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
 import { MenuUploadButton } from "@/components/ops/menu-upload-button"
 import { PaginationFooter } from "@/components/ops/pagination-footer"
-import { format } from "date-fns"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Info } from "lucide-react"
+import { formatInIST } from "@/lib/utils/time"
 
 export default async function MenusPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
     const session = await auth()
@@ -82,7 +82,12 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
                                     menus.map((menu, _i) => (
                                         <tr key={menu.id} className="transition-colors hover:bg-muted/30 border-b border-border">
                                             <td className="truncate px-4 py-3 font-medium text-foreground w-[20%]">
-                                                {format(menu.date, "EEE, dd MMM yyyy")}
+                                                {formatInIST(menu.date, {
+                                                    weekday: "short",
+                                                    day: "2-digit",
+                                                    month: "short",
+                                                    year: "numeric",
+                                                })}
                                             </td>
                                             <td className="truncate px-4 py-3 text-muted-foreground w-[25%]">
                                                 <div className="flex items-center gap-2 overflow-hidden">

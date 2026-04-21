@@ -2,9 +2,9 @@
 import useSWR from "swr"
 import { Star, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { PaginationFooter } from "@/components/ops/pagination-footer"
+import { formatISTDisplayDateWithWeekday } from "@/lib/utils/time"
 
 interface Review {
     id: string
@@ -163,7 +163,7 @@ export function AdminReviewsDashboard({ initialDays, initialData, basePath = "/o
                                             )}
                                         </td>
                                         <td className="truncate px-4 py-3 text-muted-foreground text-[11px] w-[15%]">
-                                            {format(new Date(review.date.split("T")[0] + "T00:00:00"), "EEE, dd MMM yyyy")}
+                                            {formatISTDisplayDateWithWeekday(review.date.split("T")[0])}
                                         </td>
                                     </tr>
                                 ))

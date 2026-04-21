@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAdmin, getEffectiveAddressId } from "@/lib/auth-helpers"
-import { getTomorrowMidnightInTimezone } from "@/lib/utils/time"
-import { format } from "date-fns"
+import { formatInIST, getTomorrowMidnightInTimezone } from "@/lib/utils/time"
 
 export async function GET(request: NextRequest) {
     try {
@@ -77,7 +76,11 @@ export async function GET(request: NextRequest) {
         }
 
         const dateStr = targetDate.toISOString().split("T")[0]
-        const formattedTargetDate = format(targetDate, "dd MMM yyyy")
+        const formattedTargetDate = formatInIST(targetDate, {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        })
 
         const selectionRows = selections.map((s) => ({
             employeeName: s.employee.name,
@@ -89,7 +92,16 @@ export async function GET(request: NextRequest) {
                 .map(a => `${a.quantity}x ${a.addon.name} (₹${a.priceAtSelection})`)
                 .join(", "),
             date: formattedTargetDate,
-            updatedAt: s.updatedAt ? format(s.updatedAt, "dd MMM yyyy, hh:mm a") : "-",
+            updatedAt: s.updatedAt
+                ? formatInIST(s.updatedAt, {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                })
+                : "-",
         }))
 
         const noSelectionRows = employeesWithoutSelection.map((e) => ({

@@ -3,8 +3,15 @@ import { prisma } from "@/lib/prisma"
 import { getEffectiveAddressId } from "@/lib/auth-helpers"
 import { isCompanyAdminFeatureEnabled } from "@/lib/company-admin-features"
 import { redirect } from "next/navigation"
-import { format } from "date-fns"
-import { getISTDate, getISTDateString } from "@/lib/utils/time"
+import {
+    formatISTDisplayDayName,
+    formatISTDisplayMonthDay,
+    formatISTDisplayMonthDayYear,
+    formatISTDisplayRange,
+    formatInIST,
+    getISTDate,
+    getISTDateString
+} from "@/lib/utils/time"
 
 export default async function MenusPage() {
     const session = await auth()
@@ -83,7 +90,7 @@ export default async function MenusPage() {
                             This Week
                         </p>
                         <p className="mt-1 text-sm font-medium text-foreground">
-                            {format(start, "dd MMM")} - {format(end, "dd MMM yyyy")}
+                            {formatISTDisplayRange(start, end)}
                         </p>
                     </div>
                 </div>
@@ -92,7 +99,7 @@ export default async function MenusPage() {
             <div className="flex-1 min-h-0 overflow-auto">
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {weekDays.map((day) => {
-                        const key = format(day, "yyyy-MM-dd")
+                        const key = getISTDateString(day)
                         const menu = menuByDate.get(key)
                         const today = key === todayStr
 
@@ -110,10 +117,10 @@ export default async function MenusPage() {
                                             className="text-sm font-semibold text-foreground"
                                             style={{ fontFamily: "var(--font-heading)" }}
                                         >
-                                            {format(day, "EEEE")}
+                                            {formatISTDisplayDayName(day, "long")}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            {format(day, "dd MMM yyyy")}
+                                            {formatISTDisplayMonthDayYear(day)}
                                         </p>
                                     </div>
                                     {today && (

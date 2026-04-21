@@ -3,8 +3,8 @@ import { useState, useCallback, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, XCircle, ArrowLeft, Star, Loader2, Edit2 } from "lucide-react"
-import { format, parseISO } from "date-fns"
 import { submitMealRating } from "@/app/actions/meal-rating"
+import { formatISTDisplayDateTime } from "@/lib/utils/time"
 import type { ConfirmationScreenProps, MealPreference, SelectionStatus } from "@/types/employee"
 
 function getStatusConfig(
@@ -42,8 +42,7 @@ function getStatusConfig(
 }
 
 function formatTimestamp(iso: string) {
-  // Use a local date for the "Last Updated" timestamp to show the user's actual relative time
-  return format(parseISO(iso), "dd MMM yyyy, hh:mm a")
+  return formatISTDisplayDateTime(iso)
 }
 
 function StarRating({ mealDate, existingRating }: { mealDate: string; existingRating?: { rating: number; comment: string | null } | null }) {

@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Edit2, Plus, Trash2, Loader2, Download } from "lucide-react"
 import { AddonUploadButton } from "@/components/ops/addon-upload-button"
+import { getISTYearMonth } from "@/lib/utils/time"
 
 type AddonType = "MAIN_REPEAT" | "PROTEIN_SIDE" | "BEVERAGE" | "SIDE_DESSERT" | "BREAD_ADDITION"
 
@@ -143,7 +144,7 @@ export function AddonClient({ initialAddons }: { initialAddons: Addon[] }) {
                                     <Input
                                         type="month"
                                         id="invoice-month"
-                                        defaultValue={new Date().toISOString().slice(0, 7)}
+                                        defaultValue={getISTYearMonth()}
                                     />
                                 </div>
                             </div>

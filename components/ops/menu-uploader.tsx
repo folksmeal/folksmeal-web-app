@@ -9,7 +9,7 @@ import {
     AlertCircle,
     Loader2,
 } from "lucide-react"
-import { format } from "date-fns"
+import { formatISTDisplayMonthDay } from "@/lib/utils/time"
 
 interface MenuUploaderProps {
     addressId: string
@@ -154,7 +154,7 @@ export function MenuUploader({ addressId, onClose: _onClose }: MenuUploaderProps
                                     <div className="ml-6 text-xs text-muted-foreground space-y-0.5">
                                         {result.results.slice(0, 7).map((r, i) => (
                                             <p key={i}>
-                                                {format(new Date(r.date.split("T")[0] + "T00:00:00"), "dd MMM")}: {r.vegItem}
+                                                {formatISTDisplayMonthDay(new Date(`${r.date.split("T")[0]}T12:00:00.000Z`))}: {r.vegItem}
                                                 {r.nonvegItem ? ` | ${r.nonvegItem}` : ""}
                                             </p>
                                         ))}

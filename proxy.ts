@@ -5,7 +5,7 @@ const SECURE_SESSION_COOKIE = "__Secure-authjs.session-token"
 const STATIC_ASSET_PREFIXES = [
     "/_next",
     "/images",
-    "/favicon.png",
+    "/favicon.ico",
     "/icon-192.png",
     "/icon-512.png",
     "/manifest.webmanifest",
@@ -204,6 +204,6 @@ export function proxy(request: NextRequest): NextResponse {
 
 export const config = {
     matcher: [
-        "/((?!_next/static|_next/image|favicon.png|icon-192.png|icon-512.png|manifest.webmanifest).*)",
+        "/((?!_next/static|_next/image|favicon.ico|icon-192.png|icon-512.png|manifest.webmanifest).*)",
     ],
 }
