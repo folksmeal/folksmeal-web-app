@@ -10,6 +10,9 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.AUTH_URL ?? "http://localhost:3000"),
+  alternates: {
+    canonical: "/",
+  },
   applicationName: "FolksMeal",
   title: "FolksMeal - Corporate Meals",
   description:
@@ -18,6 +21,7 @@ export const metadata: Metadata = {
   themeColor: "#4F624F",
   openGraph: {
     type: "website",
+    url: "/",
     siteName: "FolksMeal",
     title: "FolksMeal - Corporate Meals",
     description:
