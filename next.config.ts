@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
             hmrRefreshes: false,
         },
         incomingRequests: {
-            ignore: [/\/_next\//, /\/favicon\.ico/],
+            ignore: [/\/_next\//, /\/favicon\.png/],
         },
     },
 

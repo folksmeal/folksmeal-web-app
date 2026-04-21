@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 
-// --- Constants ---
 const SESSION_COOKIE = "authjs.session-token"
 const SECURE_SESSION_COOKIE = "__Secure-authjs.session-token"
-const STATIC_ASSET_PREFIXES = ["/_next", "/images", "/favicon.ico"] as const
+const STATIC_ASSET_PREFIXES = [
+    "/_next",
+    "/images",
+    "/favicon.png",
+    "/icon-192.png",
+    "/icon-512.png",
+    "/manifest.webmanifest",
+] as const
 const AUTH_API_PREFIX = "/api/auth"
 const API_PREFIX = "/api/"
 const PUBLIC_PATHS = new Set(["/", "/login"])
@@ -14,11 +20,11 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000
 const MAX_IP_ENTRIES = 10_000
 let lastCleanup = Date.now()
 
-// Different limits for different route types
 const RATE_LIMITS: Record<string, number> = {
-    auth: 60,       // Auth endpoints: 60 req/min
-    mutation: 60,   // POST/PUT/DELETE: 60 req/min
-    read: 200,      // GET: 200 req/min
+    // Requests per minute, per IP.
+    auth: 60,
+    mutation: 60,
+    read: 200,
 }
 
 function cleanupExpiredEntries() {
@@ -75,6 +81,7 @@ function getSessionToken(request: NextRequest): string | undefined {
 function isStaticAsset(pathname: string): boolean {
     return (
         STATIC_ASSET_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
+        // If it looks like a file request, skip middleware rewrites/rate-limits.
         pathname.includes(".")
     )
 }
@@ -149,14 +156,11 @@ function handleEmployeeRouting(
     return NextResponse.next()
 }
 
-// --- Main Proxy Entry ---
 export function proxy(request: NextRequest): NextResponse {
     const { pathname } = request.nextUrl
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
 
-    // 1. Rate Limiting for all API routes
     if (pathname.startsWith(API_PREFIX)) {
-        // Auth endpoints get strictest limit
         if (pathname.startsWith(AUTH_API_PREFIX)) {
             if (!checkRateLimit(ip, "auth", RATE_LIMITS.auth)) {
                 return rateLimitResponse()
@@ -164,14 +168,12 @@ export function proxy(request: NextRequest): NextResponse {
             return NextResponse.next()
         }
 
-        // All other API routes
         const method = request.method
         if (method === "GET") {
             if (!checkRateLimit(ip, "read", RATE_LIMITS.read)) {
                 return rateLimitResponse()
             }
         } else {
-            // POST, PUT, DELETE, PATCH
             if (!checkRateLimit(ip, "mutation", RATE_LIMITS.mutation)) {
                 return rateLimitResponse()
             }
@@ -179,12 +181,10 @@ export function proxy(request: NextRequest): NextResponse {
         return NextResponse.next()
     }
 
-    // 2. Static Assets
     if (isStaticAsset(pathname)) {
         return NextResponse.next()
     }
 
-    // 3. Routing Logic
     const token = getSessionToken(request)
     const hasSession = !!token
     const hostname = request.headers.get("host") || ""
@@ -203,5 +203,7 @@ export function proxy(request: NextRequest): NextResponse {
 }
 
 export const config = {
-    matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+    matcher: [
+        "/((?!_next/static|_next/image|favicon.png|icon-192.png|icon-512.png|manifest.webmanifest).*)",
+    ],
 }
