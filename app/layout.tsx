@@ -9,12 +9,35 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.AUTH_URL ?? "http://localhost:3000"),
   applicationName: "FolksMeal",
   title: "FolksMeal - Corporate Meals",
   description:
     "Corporate meal ordering and management with reporting and analytics.",
   manifest: "/manifest.webmanifest",
   themeColor: "#4F624F",
+  openGraph: {
+    type: "website",
+    siteName: "FolksMeal",
+    title: "FolksMeal - Corporate Meals",
+    description:
+      "Corporate meal ordering and management with reporting and analytics.",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "FolksMeal",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FolksMeal - Corporate Meals",
+    description:
+      "Corporate meal ordering and management with reporting and analytics.",
+    images: ["/og.png"],
+  },
   icons: {
     icon: [
       { url: "/favicon.png", sizes: "32x32", type: "image/png" },
